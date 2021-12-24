@@ -1,1 +1,1 @@
-# tasmota-outlet
+# tasmota-control
