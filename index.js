@@ -85,6 +85,7 @@ class tasmotaDevice {
     this.checkDeviceInfo = true;
     this.checkDeviceState = false;
     this.startPrepareAccessory = true;
+
     this.prefDir = path.join(api.user.storagePath(), 'tasmota');
     this.url = `http://${this.host}/cm?user=${this.user}&password=${this.passwd}&cmnd=`
 
@@ -103,19 +104,18 @@ class tasmotaDevice {
     setInterval(function () {
       if (this.checkDeviceInfo) {
         this.getDeviceInfo();
-      }
-      if (this.checkDeviceState) {
+      } else {
         this.updateDeviceState();
       }
     }.bind(this), this.refreshInterval * 1000);
-
-    //start prepare accessory
   }
 
   async getDeviceInfo() {
     this.log.debug('Device: %s %s, requesting Device Info.', this.host, this.name);
     try {
       const response = await this.axiosInstance(STATUS);
+      const debug = this.enableDebugMode ? this.log('Device: %s %s, debug response: %s', this.host, this.name, response.data) : false;
+
       const deviceName = response.data.Status.DeviceName;
       const modelName = response.data.StatusFWR.Hardware;
       const addressMac = response.data.StatusNET.Mac;
@@ -133,7 +133,9 @@ class tasmotaDevice {
       this.firmwareRevision = firmwareRevision;
 
       this.checkDeviceInfo = false;
-      this.updateDeviceState();
+      if (this.startPrepareAccessory) {
+        this.prepareAccessory();
+      }
     } catch (error) {
       this.log.error('Device: %s %s, Device Info eror: %s, state: Offline, trying to reconnect', this.host, this.name, error);
       this.checkDeviceInfo = true;
@@ -154,10 +156,6 @@ class tasmotaDevice {
         }
       }
       this.checkDeviceState = true;
-
-      if (this.startPrepareAccessory) {
-        this.prepareAccessory();
-      }
     } catch (error) {
       this.log.error('Device: %s %s, update Device state error: %s, state: Offline', this.host, this.name, error);
       this.checkDeviceState = false;
@@ -188,7 +186,6 @@ class tasmotaDevice {
       .setCharacteristic(Characteristic.Model, modelName)
       .setCharacteristic(Characteristic.SerialNumber, serialNumber)
       .setCharacteristic(Characteristic.FirmwareRevision, firmwareRevision);
-
     accessory.addService(informationService);
 
     //Prepare service 
