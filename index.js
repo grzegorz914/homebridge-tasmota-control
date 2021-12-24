@@ -133,9 +133,6 @@ class tasmotaDevice {
       this.firmwareRevision = firmwareRevision;
 
       this.checkDeviceInfo = false;
-      if (this.startPrepareAccessory) {
-        this.prepareAccessory();
-      }
     } catch (error) {
       this.log.error('Device: %s %s, Device Info eror: %s, state: Offline, trying to reconnect', this.host, this.name, error);
       this.checkDeviceInfo = true;
@@ -145,17 +142,25 @@ class tasmotaDevice {
   async updateDeviceState() {
     this.log.debug('Device: %s %s, requesting Device state.', this.host, this.name);
     try {
+      const response = await this.axiosInstance(POWER + 0);
+      const debug = this.enableDebugMode ? this.log('Device: %s %s, debug response: %s', this.host, this.name, response.data) : false;
+
+      this.powerState = new Array();
       for (let i = 0; i < this.channelsCount; i++) {
-        const channel = this.channelsCount == 1 ? 'POWER' : 'POWER' + i;
-        const response = await this.axiosInstance(channel);
-        const debug = this.enableDebugMode ? this.log('Device: %s %s, debug response: %s', this.host, this.name, response.data) : false;
+        const channel = this.channelsCount == 1 ? 'POWER' : 'POWER' + (i + 1);
         const powerState = (response.data[channel] != undefined) ? (response.data[channel] == 'ON') : false;
         if (this.tasmotaServices) {
           this.tasmotaServices[i]
+            .updateCharacteristic(Characteristic.On, powerState)
             .updateCharacteristic(Characteristic.OutletInUse, powerState);
         }
+        this.powerState.push(powerState);
       }
       this.checkDeviceState = true;
+
+      if (this.startPrepareAccessory) {
+        this.prepareAccessory();
+      }
     } catch (error) {
       this.log.error('Device: %s %s, update Device state error: %s, state: Offline', this.host, this.name, error);
       this.checkDeviceState = false;
@@ -195,10 +200,8 @@ class tasmotaDevice {
       const tasmotaService = new Service.Outlet(accessoryName, `tasmotaService${[i]}`);
       tasmotaService.getCharacteristic(Characteristic.On)
         .onGet(async () => {
-          const channel = this.channelsCount == 1 ? 'POWER' : 'POWER' + i;
-          const response = await this.axiosInstance(channel);
-          const state = (response.data[channel] != undefined) ? (response.data[channel] == 'ON') : false;
-          const logInfo = this.disableLogInfo ? false : this.log('Device: %s, get state: %s', accessoryName, state ? 'ON' : 'OFF');
+          const state = this.powerState[i];
+          const logInfo = this.disableLogInfo ? false : this.log('Device: %s %s, get state: %s', this.host, accessoryName, state ? 'ON' : 'OFF');
           return state;
         })
         .onSet(async (state) => {
@@ -206,14 +209,12 @@ class tasmotaDevice {
           const powerOff = this.channelsCount == 1 ? POWER + OFF : POWER + (i + 1) + OFF;
           state = state ? powerOn : powerOff;
           this.axiosInstance(state);
-          const logInfo = this.disableLogInfo ? false : this.log('Device: %s, set state: %s', accessoryName, state ? 'ON' : 'OFF');
+          const logInfo = this.disableLogInfo ? false : this.log('Device: %s %s, set state: %s', this.host, accessoryName, state ? 'ON' : 'OFF');
         });
       tasmotaService.getCharacteristic(Characteristic.OutletInUse)
         .onGet(async () => {
-          const channel = this.channelsCount == 1 ? 'POWER' : 'POWER' + i;
-          const response = await this.axiosInstance(channel);
-          const state = (response.data[channel] != undefined) ? (response.data[channel] == 'ON') : false;
-          const logInfo = this.disableLogInfo ? false : this.log('Device: %s, in use: %s', accessoryName, state ? 'YES' : 'NO');
+          const state = this.powerState[i];
+          const logInfo = this.disableLogInfo ? false : this.log('Device: %s %s, in use: %s', this.host, accessoryName, state ? 'YES' : 'NO');
           return state;
         });
       this.tasmotaServices.push(tasmotaService);
