@@ -26,6 +26,12 @@
               "required": true,
               "format": "hostname"
             },
+            "auth": {
+              "title": "Authorization",
+              "type": "boolean",
+              "default": false,
+              "required": true
+            },
             "user": {
               "title": "User",
               "type": "string",
@@ -81,6 +87,21 @@
     "items": [
       "devices[].name",
       "devices[].host",
+      "devices[].auth",
+      {
+        "key": "devices[]",
+        "type": "section",
+        "title": "Authorization",
+        "expandable": true,
+        "expanded": false,
+        "items": [
+          "devices[].user",
+          "devices[].passwd"
+        ],
+        "condition": {
+          "functionBody": "return model.devices[arrayIndices].auth === true;"
+        }
+      },
       {
         "key": "devices[]",
         "type": "section",
@@ -88,8 +109,6 @@
         "expandable": true,
         "expanded": false,
         "items": [
-          "devices[].user",
-          "devices[].passwd",
           "devices[].channelsCount",
           "devices[].enableDebugMode",
           "devices[].disableLogInfo",

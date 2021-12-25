@@ -6,6 +6,7 @@ const fs = require('fs');
 const fsPromises = require('fs').promises;
 
 const STATUS = 'Status0';
+const POWER_STATUS = 'POWER0';
 const POWER = 'Power';
 const ON = '%20on'
 const OFF = '%20off';
@@ -70,10 +71,11 @@ class tasmotaDevice {
     this.host = config.host;
     this.user = config.user;
     this.passwd = config.passwd;
+    this.auth = config.auth;
     this.refreshInterval = config.refreshInterval || 5;
     this.channelsCount = config.channelsCount || 1;
     this.enableDebugMode = config.enableDebugMode || false;
-    this.disableLogInfo = config.disableLogInfo || true;
+    this.disableLogInfo = config.disableLogInfo || false;
 
     //get Device info
     this.manufacturer = 'Tasmota';
@@ -87,11 +89,11 @@ class tasmotaDevice {
     this.startPrepareAccessory = true;
 
     this.prefDir = path.join(api.user.storagePath(), 'tasmota');
-    this.url = `http://${this.host}/cm?user=${this.user}&password=${this.passwd}&cmnd=`
+    const url = this.auth ? `http://${this.host}/cm?user=${this.user}&password=${this.passwd}&cmnd=` : `http://${this.host}/cm?cmnd=`
 
     this.axiosInstance = axios.create({
       method: 'GET',
-      baseURL: this.url,
+      baseURL: url,
       timeout: 5000
     });
 
@@ -142,7 +144,7 @@ class tasmotaDevice {
   async updateDeviceState() {
     this.log.debug('Device: %s %s, requesting Device state.', this.host, this.name);
     try {
-      const response = await this.axiosInstance(POWER + 0);
+      const response = await this.axiosInstance(POWER_STATUS);
       const debug = this.enableDebugMode ? this.log('Device: %s %s, debug response: %s', this.host, this.name, response.data) : false;
 
       this.powerState = new Array();
