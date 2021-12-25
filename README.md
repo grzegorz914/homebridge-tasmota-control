@@ -37,7 +37,7 @@ Install and use [Homebridge Config UI X](https://github.com/oznu/homebridge-conf
 | `auth` | If enabled, authorizatins credentials will be used for login. |
 | `user` | Here set the authorization *Username*. |
 | `passwd` | Here set the authorization *Password*. |
-| `channelsCount` | Here set number of channels of device. |
+| `channelsCount` | Here select the channels count. |
 | `enableDebugMode` | This enable deep log in homebridge console. |
 | `disableLogInfo` | This disable log info, all values and state will not be displayed in Homebridge log console. |
 
