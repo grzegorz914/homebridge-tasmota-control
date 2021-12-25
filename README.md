@@ -33,7 +33,7 @@ Install and use [Homebridge Config UI X](https://github.com/oznu/homebridge-conf
 | Key | Description | 
 | --- | --- |
 | `name` | Here set the accessory *Name* to be displayed in *Homebridge/HomeKit*. |
-| `host` | Here set the *Hsostname or Address IP* of Sat Receiver.|
+| `host` | Here set the *Hsostname or Address IP* of the Device.|
 | `auth` | If enabled, authorizatins credentials will be used for login. |
 | `user` | Here set the authorization *Username*. |
 | `passwd` | Here set the authorization *Password*. |
@@ -68,13 +68,6 @@ Each accessory needs to be manually paired.
 4. Select Your accessory. 
 5. Enter the Homebridge PIN or scan the QR code, this can be found in Homebridge UI or Homebridge logs.
 6. Complete the accessory setup.
-
-## Limitations
-* That maximum Services for 1 accessory is 100. If Services > 100, accessory stop responding.
-* To solved this problem the plugin couts the number of Services and not allow add more as 100.
-* If You have configured more as 100 Services some inputs or button will not be available in the Home app.
-* The Services in this accessory are:
-  * Outlets
 
 ## [What's New](https://github.com/grzegorz914/homebridge-tasmota-control/blob/master/CHANGELOG.md)
 
