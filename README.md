@@ -18,7 +18,7 @@ Homebridge plugin for Tasmota flashed devices.
 | --- | --- | --- | --- |
 | [Homebridge](https://github.com/homebridge/homebridge) | [Homebridge Wiki](https://github.com/homebridge/homebridge/wiki) | HomeKit Bridge | Required |
 | [Config UI X](https://github.com/oznu/homebridge-config-ui-x/wiki) | [Config UI X Wiki](https://github.com/oznu/homebridge-config-ui-x/wiki) | Web User Interface | Recommended |
-| [OpenWebIf TV](https://www.npmjs.com/package/homebridge-tasmota-control) | `npm install -g homebridge-tasmota-control` | Plug-In | Required |
+| [Tasmota Control](https://www.npmjs.com/package/homebridge-tasmota-control) | `npm install -g homebridge-tasmota-control` | Plug-In | Required |
 
 ## Note
 * Right now only switch/outlets devices are supported.
