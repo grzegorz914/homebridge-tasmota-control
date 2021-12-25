@@ -210,13 +210,17 @@ class tasmotaDevice {
           const powerOn = this.channelsCount == 1 ? POWER + ON : POWER + (i + 1) + ON;
           const powerOff = this.channelsCount == 1 ? POWER + OFF : POWER + (i + 1) + OFF;
           state = state ? powerOn : powerOff;
-          this.axiosInstance(state);
-          const logInfo = this.disableLogInfo ? false : this.log('Device: %s %s, set state: %s', this.host, accessoryName, state ? 'ON' : 'OFF');
+          try {
+            await this.axiosInstance(state);
+            const logInfo = this.disableLogInfo ? false : this.log('Device: %s %s, set state: %s', this.host, accessoryName, state ? 'ON' : 'OFF');
+          } catch (error) {
+            this.log.error('Device: %s %s, set state: %s', this.host, this.name, error);
+          }
         });
       tasmotaService.getCharacteristic(Characteristic.OutletInUse)
         .onGet(async () => {
           const state = this.powerState[i];
-          const logInfo = this.disableLogInfo ? false : this.log('Device: %s %s, in use: %s', this.host, accessoryName, state ? 'YES' : 'NO');
+          const logInfo = this.disableLogInfo ? false : this.log('Device: %s %s, in use state: %s', this.host, accessoryName, state ? 'YES' : 'NO');
           return state;
         });
       this.tasmotaServices.push(tasmotaService);
