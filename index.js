@@ -5,11 +5,16 @@ const axios = require('axios');
 const fs = require('fs');
 const fsPromises = require('fs').promises;
 
-const STATUS = 'Status0';
-const POWER_STATUS = 'POWER0';
-const POWER = 'Power';
-const ON = '%20on'
-const OFF = '%20off';
+const API_COMMANDS = {
+  Status: 'Status0',
+  PowerStatus: 'Power0', //0,1,2 - Power all
+  Power: 'Power',
+  Off: '%20off', //0
+  On: '%20on', //1
+  Toggle: '%20toggle', //2
+  Blink: '%20blink', //3
+  BlinkOff: '%20blinkoff' //4
+}
 
 const PLUGIN_NAME = 'homebridge-tasmota-control';
 const PLATFORM_NAME = 'tasmotaControl';
@@ -115,7 +120,7 @@ class tasmotaDevice {
   async getDeviceInfo() {
     this.log.debug('Device: %s %s, requesting Device Info.', this.host, this.name);
     try {
-      const response = await this.axiosInstance(STATUS);
+      const response = await this.axiosInstance(API_COMMANDS.Status);
       const debug = this.enableDebugMode ? this.log('Device: %s %s, debug response: %s', this.host, this.name, response.data) : false;
 
       const deviceName = response.data.Status.DeviceName;
@@ -137,14 +142,13 @@ class tasmotaDevice {
       this.checkDeviceInfo = false;
     } catch (error) {
       this.log.error('Device: %s %s, Device Info eror: %s, state: Offline, trying to reconnect', this.host, this.name, error);
-      this.checkDeviceInfo = true;
     }
   }
 
   async updateDeviceState() {
     this.log.debug('Device: %s %s, requesting Device state.', this.host, this.name);
     try {
-      const response = await this.axiosInstance(POWER_STATUS);
+      const response = await this.axiosInstance(API_COMMANDS.PowerStatus);
       const debug = this.enableDebugMode ? this.log('Device: %s %s, debug response: %s', this.host, this.name, response.data) : false;
 
       this.powerState = new Array();
@@ -160,6 +164,7 @@ class tasmotaDevice {
       }
       this.checkDeviceState = true;
 
+      //start prepare accessory
       if (this.startPrepareAccessory) {
         this.prepareAccessory();
       }
@@ -207,8 +212,8 @@ class tasmotaDevice {
           return state;
         })
         .onSet(async (state) => {
-          const powerOn = this.channelsCount == 1 ? POWER + ON : POWER + (i + 1) + ON;
-          const powerOff = this.channelsCount == 1 ? POWER + OFF : POWER + (i + 1) + OFF;
+          const powerOn = this.channelsCount == 1 ? API_COMMANDS.Power + API_COMMANDS.On : API_COMMANDS.Power + (i + 1) + API_COMMANDS.On;
+          const powerOff = this.channelsCount == 1 ? API_COMMANDS.Power + API_COMMANDS.Off : API_COMMANDS.Power + (i + 1) + API_COMMANDS.Off;
           state = state ? powerOn : powerOff;
           try {
             await this.axiosInstance(state);
@@ -220,7 +225,7 @@ class tasmotaDevice {
       tasmotaService.getCharacteristic(Characteristic.OutletInUse)
         .onGet(async () => {
           const state = this.powerState[i];
-          const logInfo = this.disableLogInfo ? false : this.log('Device: %s %s, in use state: %s', this.host, accessoryName, state ? 'YES' : 'NO');
+          const logInfo = this.disableLogInfo ? false : this.log('Device: %s %s, in use: %s', this.host, accessoryName, state ? 'YES' : 'NO');
           return state;
         });
       this.tasmotaServices.push(tasmotaService);

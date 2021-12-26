@@ -120,8 +120,8 @@
               "title": "Disable log info",
               "type": "boolean",
               "default": false,
-              "required": false,
-              "description": "This disable log info, all values and state will not be displayed in Homebridge log console."
+              "description": "This disable log info, all values and state will not be displayed in Homebridge log console.",
+              "required": false
             }
           }
         }
