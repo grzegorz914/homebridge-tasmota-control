@@ -154,11 +154,10 @@ class tasmotaDevice {
       this.powerState = new Array();
       for (let i = 0; i < this.channelsCount; i++) {
         const channel = this.channelsCount == 1 ? 'POWER' : 'POWER' + (i + 1);
-        const powerState = (response.data[channel] != undefined) ? (response.data[channel] == 'ON') : false;
+        const powerState = (response.data[channel] == 'ON');
         if (this.tasmotaServices) {
           this.tasmotaServices[i]
             .updateCharacteristic(Characteristic.On, powerState)
-            .updateCharacteristic(Characteristic.OutletInUse, powerState);
         }
         this.powerState.push(powerState);
       }
@@ -221,12 +220,6 @@ class tasmotaDevice {
           } catch (error) {
             this.log.error('Device: %s %s, set state: %s', this.host, this.name, error);
           }
-        });
-      tasmotaService.getCharacteristic(Characteristic.OutletInUse)
-        .onGet(async () => {
-          const state = this.powerState[i];
-          const logInfo = this.disableLogInfo ? false : this.log('Device: %s %s, in use: %s', this.host, accessoryName, state ? 'YES' : 'NO');
-          return state;
         });
       this.tasmotaServices.push(tasmotaService);
       accessory.addService(this.tasmotaServices[i]);
