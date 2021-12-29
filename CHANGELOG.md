@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.3.45] - (29.12.2021)
+## Changs
+- prepare directory and files synchronously
+
 ## [0.3.44] - (28.12.2021)
 ## Changs
 - update node minimum requirements

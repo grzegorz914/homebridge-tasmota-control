@@ -3,7 +3,6 @@
 const path = require('path');
 const axios = require('axios');
 const fs = require('fs');
-const fsPromises = require('fs').promises;
 
 const API_COMMANDS = {
   Status: 'Status0',
@@ -104,7 +103,7 @@ class tasmotaDevice {
 
     //check if the directory exists, if not then create it
     if (fs.existsSync(this.prefDir) == false) {
-      fsPromises.mkdir(this.prefDir);
+      fs.mkdirSync(this.prefDir);
     }
 
     //Check device state
