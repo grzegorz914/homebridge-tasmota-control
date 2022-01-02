@@ -70,7 +70,7 @@ Each accessory needs to be manually paired.
 5. Enter the Homebridge PIN or scan the QR code, this can be found in Homebridge UI or Homebridge logs.
 6. Complete the accessory setup.
 
-## [What's New](https://github.com/grzegorz914/homebridge-tasmota-control/blob/master/CHANGELOG.md)
+## [What's New](https://github.com/grzegorz914/homebridge-tasmota-control/blob/master/CHANGELOG.md).
 
 ## Development
 * Pull request and help in development highly appreciated.
