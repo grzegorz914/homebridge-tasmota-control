@@ -25,7 +25,7 @@ Homebridge plugin for Tasmota flashed devices.
 * Right now only switch/outlets devices are supported.
 * Tested with latest Tasmota 10.1.0
 
-## Troubleshoot
+## Troubleshooting
 * If for some reason the device will not be displayed in Home app try this procedure:
    * Go to `./homebridge/persist`.
    * Remove `AccessoryInfo.xxx` file which contain Your device data: `{"displayName":"Tasmota"}`.
