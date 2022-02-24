@@ -120,7 +120,7 @@ class tasmotaDevice {
     this.log.debug('Device: %s %s, requesting Device Info.', this.host, this.name);
     try {
       const response = await this.axiosInstance(API_COMMANDS.Status);
-      const debug = this.enableDebugMode ? this.log('Device: %s %s, debug response: %s', this.host, this.name, response.data) : false;
+      const debug = this.enableDebugMode ? this.log('Device: %s %s, debug response: %s', this.host, this.name, JSON.stringify(response.data, null, 2)) : false;
 
       const deviceName = response.data.Status.DeviceName;
       const modelName = response.data.StatusFWR.Hardware;
@@ -148,7 +148,7 @@ class tasmotaDevice {
     this.log.debug('Device: %s %s, requesting Device state.', this.host, this.name);
     try {
       const response = await this.axiosInstance(API_COMMANDS.PowerStatus);
-      const debug = this.enableDebugMode ? this.log('Device: %s %s, debug response: %s', this.host, this.name, response.data) : false;
+      const debug = this.enableDebugMode ? this.log('Device: %s %s, debug response: %s', this.host, this.name, JSON.stringify(response.data, null, 2)) : false;
 
       this.powerState = new Array();
       for (let i = 0; i < this.channelsCount; i++) {
