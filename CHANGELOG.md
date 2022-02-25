@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.0] - (25.02.2022)
 ## Added
 - automatically check channels count
+
 ## Changes
 - removed channelsCount properties from config.json
 
