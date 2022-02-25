@@ -22,7 +22,6 @@
       "auth": false,
       "user": "user",
       "passwd": "password",
-      "channelsCount": 1,
       "refreshInterval": 5,
       "disableLogInfo": false,
       "enableDebugMode": false

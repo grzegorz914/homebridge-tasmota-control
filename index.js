@@ -77,7 +77,6 @@ class tasmotaDevice {
     this.passwd = config.passwd;
     this.auth = config.auth;
     this.refreshInterval = config.refreshInterval || 5;
-    this.channelsCount = config.channelsCount || 1;
     this.enableDebugMode = config.enableDebugMode || false;
     this.disableLogInfo = config.disableLogInfo || false;
 
@@ -88,6 +87,7 @@ class tasmotaDevice {
     this.firmwareRevision = 'Firmware Revision';
 
     //setup variables
+    this.channelsCount = 0;
     this.checkDeviceInfo = true;
     this.checkDeviceState = false;
     this.startPrepareAccessory = true;
@@ -126,8 +126,9 @@ class tasmotaDevice {
       const modelName = response.data.StatusFWR.Hardware;
       const addressMac = response.data.StatusNET.Mac;
       const firmwareRevision = response.data.StatusFWR.Version;
+      const channelsCount = response.data.Status.FriendlyName.length;
 
-      this.log('-------- %s --------', deviceName);
+      this.log(`----- ${deviceName} ${channelsCount}CH -----`);
       this.log('Manufacturer: %s', this.manufacturer);
       this.log('Hardware: %s', modelName);
       this.log('Serialnr: %s', addressMac);
@@ -137,8 +138,9 @@ class tasmotaDevice {
       this.modelName = modelName;
       this.serialNumber = addressMac;
       this.firmwareRevision = firmwareRevision;
+      this.channelsCount = channelsCount;
 
-      this.checkDeviceInfo = false;
+      this.checkDeviceInfo = (channelsCount == 0);
     } catch (error) {
       this.log.error('Device: %s %s, Device Info eror: %s, state: Offline, trying to reconnect', this.host, this.name, error);
     }

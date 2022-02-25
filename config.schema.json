@@ -52,63 +52,6 @@
               "maximum": 60,
               "required": true
             },
-            "channelsCount": {
-              "title": "Channels count",
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 8,
-              "description": "Here select the channels count.",
-              "oneOf": [{
-                  "title": "1CH",
-                  "enum": [
-                    1
-                  ]
-                },
-                {
-                  "title": "2CH",
-                  "enum": [
-                    2
-                  ]
-                },
-                {
-                  "title": "3CH",
-                  "enum": [
-                    3
-                  ]
-                },
-                {
-                  "title": "4CH",
-                  "enum": [
-                    4
-                  ]
-                },
-                {
-                  "title": "5CH",
-                  "enum": [
-                    5
-                  ]
-                },
-                {
-                  "title": "6CH",
-                  "enum": [
-                    6
-                  ]
-                },
-                {
-                  "title": "7CH",
-                  "enum": [
-                    7
-                  ]
-                },
-                {
-                  "title": "8CH",
-                  "enum": [
-                    8
-                  ]
-                }
-              ],
-              "required": true
-            },
             "enableDebugMode": {
               "title": "Enable Debug Mode",
               "type": "boolean",
@@ -157,7 +100,6 @@
         "expandable": true,
         "expanded": false,
         "items": [
-          "devices[].channelsCount",
           "devices[].enableDebugMode",
           "devices[].disableLogInfo",
           "devices[].refreshInterval"
