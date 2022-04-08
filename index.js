@@ -128,11 +128,12 @@ class tasmotaDevice {
       const firmwareRevision = response.data.StatusFWR.Version;
       const channelsCount = response.data.Status.FriendlyName.length;
 
-      this.log(`----- ${deviceName} ${channelsCount}CH -----`);
-      this.log('Manufacturer: %s', this.manufacturer);
-      this.log('Hardware: %s', modelName);
-      this.log('Serialnr: %s', addressMac);
-      this.log('Firmware: %s', firmwareRevision);
+      this.log(`----- ${deviceName} -----`);
+      this.log(`Manufacturer: ${this.manufacturer}`);
+      this.log(`Hardware: ${modelName}`);
+      this.log(`Serialnr: ${addressMac}`);
+      this.log(`Firmware: ${firmwareRevision}`);
+      this.log(`Channels: ${channelsCount}`);
       this.log('----------------------------------');
 
       this.modelName = modelName;
