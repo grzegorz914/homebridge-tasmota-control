@@ -98,7 +98,7 @@ class tasmotaDevice {
     this.axiosInstance = axios.create({
       method: 'GET',
       baseURL: url,
-      timeout: 5000
+      timeout: 10000
     });
 
     //check if the directory exists, if not then create it
