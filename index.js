@@ -13,7 +13,7 @@ const API_COMMANDS = {
   Toggle: '%20toggle', //2
   Blink: '%20blink', //3
   BlinkOff: '%20blinkoff' //4
-}
+};
 
 const PLUGIN_NAME = 'homebridge-tasmota-control';
 const PLATFORM_NAME = 'tasmotaControl';
@@ -27,7 +27,7 @@ module.exports = (api) => {
   Categories = api.hap.Categories;
   UUID = api.hap.uuid;
   api.registerPlatform(PLUGIN_NAME, PLATFORM_NAME, tasmotaPlatform, true);
-}
+};
 
 class tasmotaPlatform {
   constructor(log, config, api) {
@@ -35,7 +35,7 @@ class tasmotaPlatform {
     if (!config || !Array.isArray(config.devices)) {
       log(`No configuration found for ${deviceName}.`, PLUGIN_NAME);
       return;
-    }
+    };
 
     this.log = log;
     this.api = api;
@@ -50,21 +50,21 @@ class tasmotaPlatform {
           this.log.warn('Device name or host missing!');
         } else {
           new tasmotaDevice(this.log, device, this.api);
-        }
-      }
+        };
+      };
     });
-  }
+  };
 
   configureAccessory(accessory) {
     this.log.debug('configureAccessory');
     this.accessories.push(accessory);
-  }
+  };
 
   removeAccessory(accessory) {
     this.log.debug('removeAccessory');
     this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
-  }
-}
+  };
+};
 
 class tasmotaDevice {
   constructor(log, config, api) {
@@ -103,22 +103,22 @@ class tasmotaDevice {
     //check if the directory exists, if not then create it
     if (fs.existsSync(this.prefDir) == false) {
       fs.mkdirSync(this.prefDir);
-    }
+    };
 
     this.getDeviceInfo();
-  }
+  };
 
   reconnect() {
     setTimeout(() => {
       this.getDeviceInfo();
     }, 15000);
-  }
+  };
 
   updateDeviceState() {
     setTimeout(() => {
       this.checkDeviceState();
     }, this.refreshInterval * 1000);
-  }
+  };
 
   async getDeviceInfo() {
     this.log.debug(`Device: ${this.host} ${this.name}, requesting info.`);
@@ -149,8 +149,8 @@ class tasmotaDevice {
     } catch (error) {
       this.log.error(`Device: ${this.host} ${this.name}, check info error: ${error}, trying to reconnect in 15s.`);
       this.reconnect();
-    }
-  }
+    };
+  };
 
   async checkDeviceState() {
     this.log.debug(`Device: ${this.host} ${this.name}, requesting state.`, this.host, this.name);
@@ -161,28 +161,29 @@ class tasmotaDevice {
 
       this.powerState = new Array();
       for (let i = 0; i < channelsCount; i++) {
-        const channel = channelsCount == 1 ? 'POWER' || 'POWER1' : 'POWER' + (i + 1);
-        const powerState = (deviceState.data[channel] == 'ON');
+        const power = channelsCount == 1 ? 'POWER' : 'POWER' + (i + 1);
+        const power1 = channelsCount == 1 ? 'POWER1' : 'POWER' + (i + 1);
+        const powerState = (deviceState.data[power] != undefined) ? (deviceState.data[power] == 'ON') : (deviceState.data[power1] == 'ON');
 
         if (this.tasmotaServices) {
           this.tasmotaServices[i]
-            .updateCharacteristic(Characteristic.On, powerState)
-        }
+            .updateCharacteristic(Characteristic.On, powerState);
+        };
 
         this.powerState.push(powerState);
-      }
+      };
 
       this.updateDeviceState();
 
       //start prepare accessory
       if (this.startPrepareAccessory && this.serialNumber) {
         this.prepareAccessory();
-      }
+      };
     } catch (error) {
       this.log.error(`Device: ${this.host} ${this.name}, check state error: ${error}, trying again.`);
       this.updateDeviceState();
-    }
-  }
+    };
+  };
 
   //Prepare accessory
   prepareAccessory() {
@@ -230,10 +231,10 @@ class tasmotaDevice {
         });
       this.tasmotaServices.push(tasmotaService);
       accessory.addService(this.tasmotaServices[i]);
-    }
+    };
 
     this.startPrepareAccessory = false;
     this.log.debug(`Device: ${this.host} ${accessoryName}, publish as external accessory.`);
     this.api.publishExternalAccessories(PLUGIN_NAME, [accessory]);
-  }
-}
+  };
+};
