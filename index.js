@@ -133,7 +133,7 @@ class tasmotaDevice {
       const addressMac = deviceInfo.data.StatusNET.Mac;
       const firmwareRevision = deviceInfo.data.StatusFWR.Version;
 
-      this.log(`----- ${deviceName} -----`);
+      this.log(`----- ${this.name} -----`);
       this.log(`Manufacturer: ${this.manufacturer}`);
       this.log(`Hardware: ${modelName}`);
       this.log(`Serialnr: ${addressMac}`);
@@ -216,13 +216,15 @@ class tasmotaDevice {
     this.log.debug('prepareTasmotaService');
     this.tasmotaServices = new Array();
     const channelsName = this.names;
-    const channelsCount = this.channelsCount;
+    const channelsCount = this.channelsCount;;
     for (let i = 0; i < channelsCount; i++) {
-      const tasmotaService = new Service.Outlet(`${accessoryName} ${channelsName[i]}`, `tasmotaService${[i]}`);
+      const serviceName = (channelsCount > 1) ? `${accessoryName} ${channelsName[i]}` : accessoryName;
+      const logName = (channelsCount > 1) ? `${accessoryName}, channel: ${channelsName[i]}` : `${accessoryName}`
+      const tasmotaService = new Service.Outlet(serviceName, `tasmotaService${[i]}`);
       tasmotaService.getCharacteristic(Characteristic.On)
         .onGet(async () => {
           const state = this.powerState[i];
-          const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${accessoryName}, channel: ${channelsName[i]}, state: ${state ? 'ON' : 'OFF'}`);
+          const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${logName}, state: ${state ? 'ON' : 'OFF'}`);
           return state;
         })
         .onSet(async (state) => {
@@ -231,9 +233,9 @@ class tasmotaDevice {
           state = state ? powerOn : powerOff;
           try {
             await this.axiosInstance(state);
-            const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${accessoryName}, set channel: ${channelsName[i]}, state: ${state ? 'ON' : 'OFF'}`);
+            const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${logName}, set state: ${state ? 'ON' : 'OFF'}`);
           } catch (error) {
-            this.log.error(`Device: ${this.host} ${accessoryName}, set state error: ${error}`);
+            this.log.error(`Device: ${this.host} ${logName}, set state error: ${error}`);
           }
         });
       this.tasmotaServices.push(tasmotaService);
