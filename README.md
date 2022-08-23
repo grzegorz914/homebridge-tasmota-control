@@ -29,7 +29,7 @@ Homebridge plugin for Tasmota flashed devices.
 
 ## Troubleshooting
 * If for some reason the device is not displayed in HomeKit app try this procedure:
-   * Go to `./homebridge/persist` or `/var/lib/homebridge/persist` for RPI.
+   * Go to `./homebridge/persist` macOS or `/var/lib/homebridge/persist` for RPI.
    * Remove `AccessoryInfo.xxx` file which contain Your device data: `{"displayName":"Tasmota"}`.
    * Next remove `IdentifierCashe.xxx` file with same name as `AccessoryInfo.xxx`.
    * Restart Homebridge and try add it to the Home app again.
@@ -72,13 +72,13 @@ Homebridge plugin for Tasmota flashed devices.
 ```
 
 ### Adding to HomeKit
-Each accessory needs to be manually paired. 
-1. Open the Home <img src='https://user-images.githubusercontent.com/3979615/78010622-4ea1d380-738e-11ea-8a17-e6a465eeec35.png' width='16.42px'> app on your device. 
-2. Tap the Home tab, then tap <img src='https://user-images.githubusercontent.com/3979615/78010869-9aed1380-738e-11ea-9644-9f46b3633026.png' width='16.42px'>. 
-3. Tap *Add Accessory*, and select *I Don't Have a Code, Cannot Scan* or *More options*. 
-4. Select Your accessory and press add anyway. 
-5. Enter the PIN or scan the QR code, this can be found in Homebridge UI or Homebridge logs.
-6. Complete the accessory setup.
+* Each accessory needs to be manually paired. 
+  * Open the Home <img src='https://user-images.githubusercontent.com/3979615/78010622-4ea1d380-738e-11ea-8a17-e6a465eeec35.png' width='16.42px'> app on your device. 
+  * Tap the Home tab, then tap <img src='https://user-images.githubusercontent.com/3979615/78010869-9aed1380-738e-11ea-9644-9f46b3633026.png' width='16.42px'>. 
+  * Tap *Add Accessory*, and select *I Don't Have a Code, Cannot Scan* or *More options*. 
+  * Select Your accessory and press add anyway. 
+  * Enter the PIN or scan the QR code, this can be found in Homebridge UI or Homebridge logs.
+  * Complete the accessory setup.
 
 ## [What's New](https://github.com/grzegorz914/homebridge-tasmota-control/main/master/CHANGELOG.md).
 
