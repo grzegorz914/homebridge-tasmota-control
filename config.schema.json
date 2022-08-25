@@ -14,15 +14,15 @@
           "type": "object",
           "properties": {
             "name": {
-              "title": "Device name",
+              "title": "Name",
               "type": "string",
-              "default": "Gniazdo",
+              "placeholder": "socket",
               "required": true
             },
             "host": {
-              "title": "IP address",
+              "title": "IP/Hostname",
               "type": "string",
-              "default": "192.168.1.61",
+              "placeholder": "192.168.1.5",
               "required": true,
               "format": "hostname"
             },
@@ -35,17 +35,17 @@
             "user": {
               "title": "User",
               "type": "string",
-              "default": "admin",
+              "placeholder": "username",
               "required": true
             },
             "passwd": {
               "title": "Password",
               "type": "string",
-              "default": "password",
+              "placeholder": "password",
               "required": true
             },
             "refreshInterval": {
-              "title": "Refresh interval (sec)",
+              "title": "Refresh Interval (sec)",
               "type": "integer",
               "default": 10,
               "minimum": 0,
@@ -53,21 +53,21 @@
               "required": true
             },
             "enableDebugMode": {
-              "title": "Enable debug mode",
+              "title": "Enable Debug Mode",
               "type": "boolean",
               "default": false,
               "description": "This enable debug mode.",
               "required": false
             },
             "disableLogInfo": {
-              "title": "Disable log info",
+              "title": "Disable Log Info",
               "type": "boolean",
               "default": false,
               "description": "This disable log info, all values and state will not be displayed in Homebridge log console.",
               "required": false
             },
             "disableLogDeviceInfo": {
-              "title": "Disable log device info",
+              "title": "Disable Log Device Info",
               "type": "boolean",
               "default": false,
               "description": "This disable log device info by every connections device to the network.",
