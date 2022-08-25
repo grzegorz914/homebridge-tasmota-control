@@ -80,6 +80,7 @@ class tasmotaDevice {
     this.refreshInterval = config.refreshInterval || 5;
     this.enableDebugMode = config.enableDebugMode || false;
     this.disableLogInfo = config.disableLogInfo || false;
+    this.disableLogDeviceInfo = config.disableLogDeviceInfo || false;
 
     //get Device info
     this.manufacturer = 'Tasmota';
@@ -133,13 +134,15 @@ class tasmotaDevice {
       const addressMac = deviceInfo.data.StatusNET.Mac;
       const firmwareRevision = deviceInfo.data.StatusFWR.Version;
 
-      this.log(`----- ${this.name} -----`);
-      this.log(`Manufacturer: ${this.manufacturer}`);
-      this.log(`Hardware: ${modelName}`);
-      this.log(`Serialnr: ${addressMac}`);
-      this.log(`Firmware: ${firmwareRevision}`);
-      this.log(`Channels: ${friendlyNameCount}`);
-      this.log(`----------------------------------`);
+      if (!this.disableLogDeviceInfo) {
+        this.log(`----- ${this.name} -----`);
+        this.log(`Manufacturer: ${this.manufacturer}`);
+        this.log(`Hardware: ${modelName}`);
+        this.log(`Serialnr: ${addressMac}`);
+        this.log(`Firmware: ${firmwareRevision}`);
+        this.log(`Channels: ${friendlyNameCount}`);
+        this.log(`----------------------------------`);
+      };
 
       this.modelName = modelName;
       this.serialNumber = addressMac;

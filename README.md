@@ -52,6 +52,7 @@ Homebridge plugin for Tasmota flashed devices.
 | `passwd` | Here set the authorization *Password*. |
 | `enableDebugMode` | This enable deep log in homebridge console. |
 | `disableLogInfo` | This disable log info, all values and state will not be displayed in Homebridge log console. |
+| `disableLogDeviceInfo` | If enabled, add ability to disable log device info by every connections device to the network. |
 
 ```json
 {
@@ -65,7 +66,8 @@ Homebridge plugin for Tasmota flashed devices.
         "passwd": "password",
         "refreshInterval": 5,
         "disableLogInfo": false,
-        "enableDebugMode": false,
+        "disableLogDeviceInfo": false,
+        "enableDebugMode": false
       }
     ]
   }

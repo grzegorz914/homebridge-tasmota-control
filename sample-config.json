@@ -14,17 +14,22 @@
     "comment": "In this section set the port for Homebridge accessories."
   },
   "accessories": [],
-  "platforms": [{
-    "platform": "tasmotaControl",
-    "devices": [{
-      "name": "Outlet",
-      "host": "192.168.1.5",
-      "auth": false,
-      "user": "user",
-      "passwd": "password",
-      "refreshInterval": 5,
-      "disableLogInfo": false,
-      "enableDebugMode": false
-    }]
-  }]
+  "platforms": [
+    {
+      "platform": "tasmotaControl",
+      "devices": [
+        {
+          "name": "Outlet",
+          "host": "192.168.1.5",
+          "auth": false,
+          "user": "user",
+          "passwd": "password",
+          "refreshInterval": 5,
+          "disableLogInfo": false,
+          "disableLogDeviceInfo": false,
+          "enableDebugMode": false
+        }
+      ]
+    }
+  ]
 }
