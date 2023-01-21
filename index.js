@@ -165,8 +165,8 @@ class tasmotaDevice {
       const deviceState = await this.axiosInstance(API_COMMANDS.PowerStatus);
       const debug = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, debug state: ${JSON.stringify(deviceState.data, null, 2)}`) : false;
 
-      this.powerState = new Array();
-      this.names = new Array();
+      this.powerState = [];
+      this.names = [];
       for (let i = 0; i < channelsCount; i++) {
         const power = channelsCount == 1 ? 'POWER' : 'POWER' + (i + 1);
         const power1 = channelsCount == 1 ? 'POWER1' : 'POWER' + (i + 1);
@@ -217,7 +217,7 @@ class tasmotaDevice {
 
     //Prepare service 
     this.log.debug('prepareTasmotaService');
-    this.tasmotaServices = new Array();
+    this.tasmotaServices = [];
     const channelsName = this.names;
     const channelsCount = this.channelsCount;;
     for (let i = 0; i < channelsCount; i++) {
