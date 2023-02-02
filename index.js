@@ -39,18 +39,17 @@ class tasmotaPlatform {
 
     this.log = log;
     this.api = api;
-    this.devices = config.devices;
     this.accessories = [];
+    const devices = config.devices;
 
     this.api.on('didFinishLaunching', () => {
       this.log.debug('didFinishLaunching');
-      for (let i = 0; i < this.devices.length; i++) {
-        const device = this.devices[i];
+      for (const device of devices) {
         if (!device.name || !device.host) {
           this.log.warn('Device name or host missing!');
-        } else {
-          new tasmotaDevice(this.log, device, this.api);
-        };
+          return;
+        }
+        new tasmotaDevice(this.log, device, this.api);
       };
     });
   };
@@ -76,7 +75,7 @@ class tasmotaDevice {
     this.host = config.host;
     this.user = config.user;
     this.passwd = config.passwd;
-    this.auth = config.auth;
+    this.auth = config.auth || false;
     this.refreshInterval = config.refreshInterval || 5;
     this.enableDebugMode = config.enableDebugMode || false;
     this.disableLogInfo = config.disableLogInfo || false;
@@ -109,16 +108,14 @@ class tasmotaDevice {
     this.getDeviceInfo();
   };
 
-  reconnect() {
-    setTimeout(() => {
-      this.getDeviceInfo();
-    }, 15000);
+  async reconnect() {
+    await new Promise(resolve => setTimeout(resolve, 15000));
+    this.getDeviceInfo();
   };
 
-  updateDeviceState() {
-    setTimeout(() => {
-      this.checkDeviceState();
-    }, this.refreshInterval * 1000);
+  async updateDeviceState() {
+    await new Promise(resolve => setTimeout(resolve, this.refreshInterval * 1000));
+    this.checkDeviceState();
   };
 
   async getDeviceInfo() {
@@ -168,18 +165,18 @@ class tasmotaDevice {
       this.powerState = [];
       this.names = [];
       for (let i = 0; i < channelsCount; i++) {
-        const power = channelsCount == 1 ? 'POWER' : 'POWER' + (i + 1);
-        const power1 = channelsCount == 1 ? 'POWER1' : 'POWER' + (i + 1);
-        const powerState = (deviceState.data[power] != undefined) ? (deviceState.data[power] == 'ON') : (deviceState.data[power1] == 'ON');
+        const power = channelsCount === 1 ? 'POWER' : 'POWER' + (i + 1);
+        const power1 = channelsCount === 1 ? 'POWER1' : 'POWER' + (i + 1);
+        const powerState = (deviceState.data[power] != undefined) ? (deviceState.data[power] === 'ON') : (deviceState.data[power1] === 'ON');
         const name = friendlyName[i];
 
-        this.powerState.push(powerState);
-        this.names.push(name);
-
-        if (this.tasmotaServices) {
+        if (this.tasmotaServices && (powerState !== this.powerState[i])) {
           this.tasmotaServices[i]
             .updateCharacteristic(Characteristic.On, powerState);
         };
+
+        this.powerState.push(powerState);
+        this.names.push(name);
       };
 
       this.updateDeviceState();
@@ -231,8 +228,8 @@ class tasmotaDevice {
           return state;
         })
         .onSet(async (state) => {
-          const powerOn = (channelsCount == 1) ? API_COMMANDS.Power + API_COMMANDS.On : API_COMMANDS.Power + (i + 1) + API_COMMANDS.On;
-          const powerOff = (channelsCount == 1) ? API_COMMANDS.Power + API_COMMANDS.Off : API_COMMANDS.Power + (i + 1) + API_COMMANDS.Off;
+          const powerOn = (channelsCount === 1) ? API_COMMANDS.Power + API_COMMANDS.On : API_COMMANDS.Power + (i + 1) + API_COMMANDS.On;
+          const powerOff = (channelsCount === 1) ? API_COMMANDS.Power + API_COMMANDS.Off : API_COMMANDS.Power + (i + 1) + API_COMMANDS.Off;
           state = state ? powerOn : powerOff;
           try {
             await this.axiosInstance(state);
@@ -245,8 +242,8 @@ class tasmotaDevice {
       accessory.addService(this.tasmotaServices[i]);
     };
 
-    this.startPrepareAccessory = false;
-    this.log.debug(`Device: ${this.host} ${accessoryName}, publish as external accessory.`);
     this.api.publishExternalAccessories(PLUGIN_NAME, [accessory]);
+    this.log.debug(`Device: ${this.host} ${accessoryName}, publish as external accessory.`);
+    this.startPrepareAccessory = false;
   };
 };
