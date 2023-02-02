@@ -88,6 +88,8 @@ class tasmotaDevice {
     this.firmwareRevision = 'Firmware Revision';
 
     //setup variables
+    this.powerStates = [];
+    this.names = [];
     this.channelsCount = 0;
     this.startPrepareAccessory = true;
 
@@ -162,29 +164,27 @@ class tasmotaDevice {
       const deviceState = await this.axiosInstance(API_COMMANDS.PowerStatus);
       const debug = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, debug state: ${JSON.stringify(deviceState.data, null, 2)}`) : false;
 
-      this.powerState = [];
-      this.names = [];
       for (let i = 0; i < channelsCount; i++) {
         const power = channelsCount === 1 ? 'POWER' : 'POWER' + (i + 1);
         const power1 = channelsCount === 1 ? 'POWER1' : 'POWER' + (i + 1);
-        const powerState = (deviceState.data[power] != undefined) ? (deviceState.data[power] === 'ON') : (deviceState.data[power1] === 'ON');
+        const powerState = deviceState.data[power] !== undefined ? (deviceState.data[power] === 'ON') : (deviceState.data[power1] === 'ON');
         const name = friendlyName[i];
 
-        if (this.tasmotaServices && (powerState !== this.powerState[i])) {
+        if (this.tasmotaServices && (powerState !== this.powerStates[i])) {
           this.tasmotaServices[i]
             .updateCharacteristic(Characteristic.On, powerState);
         };
 
-        this.powerState.push(powerState);
-        this.names.push(name);
+        const pushReplace = this.startPrepareAccessory ? this.powerStates.push(powerState) : this.powerStates[i] = powerState;
+        const pushReplace1 = this.startPrepareAccessory ? this.names.push(name) : this.names[i] = name;
       };
-
-      this.updateDeviceState();
 
       //start prepare accessory
       if (this.startPrepareAccessory && this.serialNumber) {
         this.prepareAccessory();
       };
+
+      this.updateDeviceState();
     } catch (error) {
       this.log.error(`Device: ${this.host} ${this.name}, check state error: ${error}, trying again.`);
       this.updateDeviceState();
@@ -218,18 +218,18 @@ class tasmotaDevice {
     const channelsName = this.names;
     const channelsCount = this.channelsCount;;
     for (let i = 0; i < channelsCount; i++) {
-      const serviceName = (channelsCount > 1) ? `${accessoryName} ${channelsName[i]}` : accessoryName;
-      const logName = (channelsCount > 1) ? `${accessoryName}, channel: ${channelsName[i]}` : `${accessoryName}`
+      const serviceName = channelsCount > 1 ? `${accessoryName} ${channelsName[i]}` : accessoryName;
+      const logName = channelsCount > 1 ? `${accessoryName}, channel: ${channelsName[i]}` : `${accessoryName}`
       const tasmotaService = new Service.Outlet(serviceName, `tasmotaService${[i]}`);
       tasmotaService.getCharacteristic(Characteristic.On)
         .onGet(async () => {
-          const state = this.powerState[i];
+          const state = this.powerStates[i];
           const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${logName}, state: ${state ? 'ON' : 'OFF'}`);
           return state;
         })
         .onSet(async (state) => {
-          const powerOn = (channelsCount === 1) ? API_COMMANDS.Power + API_COMMANDS.On : API_COMMANDS.Power + (i + 1) + API_COMMANDS.On;
-          const powerOff = (channelsCount === 1) ? API_COMMANDS.Power + API_COMMANDS.Off : API_COMMANDS.Power + (i + 1) + API_COMMANDS.Off;
+          const powerOn = channelsCount === 1 ? API_COMMANDS.Power + API_COMMANDS.On : API_COMMANDS.Power + (i + 1) + API_COMMANDS.On;
+          const powerOff = channelsCount === 1 ? API_COMMANDS.Power + API_COMMANDS.Off : API_COMMANDS.Power + (i + 1) + API_COMMANDS.Off;
           state = state ? powerOn : powerOff;
           try {
             await this.axiosInstance(state);
