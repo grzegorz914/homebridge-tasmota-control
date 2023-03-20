@@ -47,9 +47,10 @@
             "refreshInterval": {
               "title": "Refresh Interval (sec)",
               "type": "integer",
-              "default": 10,
+              "default": 5,
               "minimum": 0,
               "maximum": 60,
+              "description": "Here set the data refresh time in (sec).",
               "required": true
             },
             "enableDebugMode": {
