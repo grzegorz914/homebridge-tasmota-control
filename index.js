@@ -221,6 +221,8 @@ class tasmotaDevice {
       const serviceName = channelsCount > 1 ? `${accessoryName} ${channelsName[i]}` : accessoryName;
       const logName = channelsCount > 1 ? `${accessoryName}, channel: ${channelsName[i]}` : `${accessoryName}`
       const tasmotaService = new Service.Outlet(serviceName, `tasmotaService${[i]}`);
+      tasmotaService.addOptionalCharacteristic(Characteristic.ConfiguredName);
+      tasmotaService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
       tasmotaService.getCharacteristic(Characteristic.On)
         .onGet(async () => {
           const state = this.powerStates[i];
