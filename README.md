@@ -26,8 +26,7 @@ Homebridge plugin for Tasmota flashed devices.
 ### Configuration
 * Run this plugin as a [Child Bridge](https://github.com/homebridge/homebridge/wiki/Child-Bridges) (Highly Recommended), this prevent crash Homebridge if plugin crashes.
 * Install and use [Homebridge Config UI X](https://github.com/oznu/homebridge-config-ui-x/wiki) to configure this plugin (Highly Recommended). 
-* The sample configuration can be edited and used manually as an alternative. 
-* See the `sample-config.json` file example or copy the example below into your config.json file, making the apporpriate changes before saving it. 
+* The `sample-config.json` can be edited and used as an alternative. 
 * Be sure to always make a backup copy of your config.json file before making any changes to it.
 
 <p align="left">
@@ -44,22 +43,3 @@ Homebridge plugin for Tasmota flashed devices.
 | `enableDebugMode` | This enable deep log in homebridge console. |
 | `disableLogInfo` | This disable log info, all values and state will not be displayed in Homebridge log console. |
 | `disableLogDeviceInfo` | If enabled, add ability to disable log device info by every connections device to the network. |
-
-```json
-{
-      "platform": "tasmotaControl",
-      "devices": [
-        {
-        "name": "Outlet",
-        "host": "192.168.0.4",
-        "auth": false,
-        "user": "user",
-        "passwd": "password",
-        "refreshInterval": 5,
-        "disableLogInfo": false,
-        "disableLogDeviceInfo": false,
-        "enableDebugMode": false
-      }
-    ]
-  }
-```
