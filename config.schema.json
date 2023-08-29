@@ -37,13 +37,19 @@
               "title": "User",
               "type": "string",
               "placeholder": "username",
-              "required": true
+              "required": true,
+              "condition": {
+                "functionBody": "return model.devices[arrayIndices].auth === true;"
+              }
             },
             "passwd": {
               "title": "Password",
               "type": "string",
               "placeholder": "password",
-              "required": true
+              "required": true,
+              "condition": {
+                "functionBody": "return model.devices[arrayIndices].auth === true;"
+              }
             },
             "refreshInterval": {
               "title": "Refresh Interval (sec)",
@@ -88,21 +94,6 @@
       "items": [
         "devices[].name",
         "devices[].host",
-        "devices[].auth",
-        {
-          "key": "devices[]",
-          "type": "section",
-          "title": "Authorization",
-          "expandable": true,
-          "expanded": false,
-          "items": [
-            "devices[].user",
-            "devices[].passwd"
-          ],
-          "condition": {
-            "functionBody": "return model.devices[arrayIndices].auth === true;"
-          }
-        },
         {
           "key": "devices[]",
           "type": "section",
@@ -110,10 +101,32 @@
           "expandable": true,
           "expanded": false,
           "items": [
-            "devices[].enableDebugMode",
-            "devices[].disableLogInfo",
-            "devices[].disableLogDeviceInfo",
-            "devices[].refreshInterval"
+            {
+              "key": "devices[]",
+              "type": "tabarray",
+              "title": "{{ value.title }}",
+              "items": [
+                {
+                  "key": "devices[]",
+                  "title": "Authorization",
+                  "items": [
+                    "devices[].auth",
+                    "devices[].user",
+                    "devices[].passwd"
+                  ]
+                },
+                {
+                  "key": "devices[]",
+                  "title": "System",
+                  "items": [
+                    "devices[].enableDebugMode",
+                    "devices[].disableLogInfo",
+                    "devices[].disableLogDeviceInfo",
+                    "devices[].refreshInterval"
+                  ]
+                }
+              ]
+            }
           ]
         }
       ]
