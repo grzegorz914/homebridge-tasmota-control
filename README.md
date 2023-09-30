@@ -29,7 +29,7 @@ Homebridge plugin for Tasmota flashed devices.
 * The `sample-config.json` can be edited and used as an alternative. 
 * Be sure to always make a backup copy of your config.json file before making any changes to it.
 
-<p align="left">
+<p align="center">
   <a href="https://github.com/grzegorz914/homebridge-tasmota-control"><img src="https://raw.githubusercontent.com/grzegorz914/homebridge-tasmota-control/master/graphics/ustawienia.png" width="840"></a>
 </p>
 
