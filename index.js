@@ -241,7 +241,7 @@ class tasmotaDevice {
           }
         });
       this.tasmotaServices.push(tasmotaService);
-      accessory.addService(this.tasmotaServices[i]);
+      accessory.addService(tasmotaService);
     };
 
     this.api.publishExternalAccessories(PLUGIN_NAME, [accessory]);
