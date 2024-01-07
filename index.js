@@ -36,32 +36,27 @@ class tasmotaPlatform {
       log(`No configuration found for ${PLUGIN_NAME}.`);
       return;
     };
-
-    this.log = log;
-    this.api = api;
     this.accessories = [];
-    const devices = config.devices;
 
-    this.api.on('didFinishLaunching', () => {
-      this.log.debug('didFinishLaunching');
-      for (const device of devices) {
+    api.on('didFinishLaunching', () => {
+      for (const device of config.devices) {
         if (!device.name || !device.host) {
-          this.log.warn('Device name or host missing!');
+          log.warn('Device name or host missing!');
           return;
         }
+
+        //debug config
+        const debug = device.enableDebugMode ? log(`Device: ${device.host} ${device.name}, did finish launching.`) : false;
+        const debug1 = device.enableDebugMode ? log(`Device: ${device.host} ${device.name}, Config: ${JSON.stringify(device, null, 2)}`) : false;
+
+        //tasmota device
         new tasmotaDevice(this.log, device, this.api);
       };
     });
   };
 
   configureAccessory(accessory) {
-    this.log.debug('configureAccessory');
     this.accessories.push(accessory);
-  };
-
-  removeAccessory(accessory) {
-    this.log.debug('removeAccessory');
-    this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
   };
 };
 
