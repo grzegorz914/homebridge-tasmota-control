@@ -50,7 +50,7 @@ class tasmotaPlatform {
         const debug1 = device.enableDebugMode ? log(`Device: ${device.host} ${device.name}, Config: ${JSON.stringify(device, null, 2)}`) : false;
 
         //tasmota device
-        new tasmotaDevice(this.log, device, this.api);
+        new tasmotaDevice(log, device, api);
       };
     });
   };
