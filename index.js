@@ -5,7 +5,7 @@ const axios = require('axios');
 const fs = require('fs');
 
 const API_COMMANDS = {
-  Status: 'Status0',
+  Status: 'Status 0',
   PowerStatus: 'Power0', //0,1,2 - Power all
   Power: 'Power',
   Off: '%20off', //0
@@ -124,7 +124,7 @@ class tasmotaDevice {
       const deviceName = deviceInfo.data.Status.DeviceName;
       const friendlyName = Array.isArray(deviceInfo.data.Status.FriendlyName) ? deviceInfo.data.Status.FriendlyName : [];
       const friendlyNameCount = friendlyName.length;
-      const modelName = deviceInfo.data.StatusFWR.Hardware;
+      const modelName = deviceInfo.data.StatusFWR.Hardware ?? '';
       const addressMac = deviceInfo.data.StatusNET.Mac;
       const firmwareRevision = deviceInfo.data.StatusFWR.Version;
 
