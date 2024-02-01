@@ -1,0 +1,14 @@
+{
+    "PlatformName": "tasmotaControl",
+    "PluginName": "homebridge-tasmota-control",
+    "ApiCommands": {
+        "Status": "Status 0",
+        "PowerStatus": "Power0",
+        "Power": "Power",
+        "Off": "%20off",
+        "On": "%20on",
+        "Toggle": "%20toggle",
+        "Blink": "%20blink",
+        "BlinkOff": "%20blinkoff"
+    }
+}

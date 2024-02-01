@@ -3,7 +3,7 @@
   "pluginType": "platform",
   "singular": true,
   "fixArrays": true,
-  "headerDisplay": "This plugin works with Tasmota Firmware flashed deevices. Devices are exposed to HomeKit as separate accessories and each needs to be manually paired.",
+  "headerDisplay": "This plugin works with Tasmota Firmware flashed devices. Devices are exposed to HomeKit as separate accessories and each needs to be manually paired.",
   "footerDisplay": "For documentation please see [GitHub repository](https://github.com/grzegorz914/homebridge-tasmota-control).",
   "schema": {
     "type": "object",
@@ -24,8 +24,8 @@
               "title": "IP/Hostname",
               "type": "string",
               "placeholder": "192.168.1.5",
-              "required": true,
-              "format": "hostname"
+              "format": "hostname",
+              "required": true
             },
             "auth": {
               "title": "Authorization",
@@ -61,7 +61,7 @@
               "required": true
             },
             "enableDebugMode": {
-              "title": "Enable Debug Mode",
+              "title": "Debug",
               "type": "boolean",
               "default": false,
               "description": "This enable debug mode.",
@@ -71,7 +71,7 @@
               "title": "Disable Log Info",
               "type": "boolean",
               "default": false,
-              "description": "This disable log info, all values and state will not be displayed in Homebridge log console.",
+              "description": "This disable logging values and states on every it change.",
               "required": false
             },
             "disableLogDeviceInfo": {
