@@ -12,22 +12,36 @@
         "BlinkOff": "%20blinkoff"
     },
     "StatusSNS": [
+        "AZ7798",
         "AM2301",
         "AM2302",
         "AM2320",
         "AM2321",
+        "APDS9960",
         "BME280",
         "BME680",
         "DHT1",
         "DS18B20",
+        "DS18S20",
+        "DS1822",
+        "MAX31850",
+        "MCP9808",
+        "MHZ19",
         "HTU21",
-        "SHT3X"
+        "SCD30",
+        "SCD40",
+        "SCD41",
+        "SHT10",
+        "SHT30",
+        "SHT40"
     ],
     "StatusSNSProperties": [
         "Temperature",
         "Humidity",
         "DewPoint",
         "Pressure",
-        "Gas"
+        "Gas",
+        "CarbonDioxyde",
+        "Ambient"
     ]
 }

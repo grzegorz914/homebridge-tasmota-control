@@ -126,8 +126,9 @@ class TasmotaDevice {
                 //status sns
                 const statusSNSSupported = deviceInfoKeys.includes('StatusSNS') ?? false;
                 if (statusSNSSupported) {
+                    const sensorTypes = CONSTANS.StatusSNS;
                     const sensor = Object.entries(deviceInfo.StatusSNS)
-                        .filter(([key]) => CONSTANS.StatusSNS.includes(key))
+                        .filter(([key]) => sensorTypes.some(type => key.includes(type)))
                         .reduce((obj, [key, value]) => {
                             obj[key] = value;
                             return obj;
@@ -217,13 +218,15 @@ class TasmotaDevice {
                         const dewPoint = sensorData.DewPoint ?? false;
                         const pressure = sensorData.Pressure ?? false;
                         const gas = sensorData.Gas ?? false;
+                        const carbonDioxyde = sensorData.CarbonDioxyde ?? false;
+                        const ambientLight = sensorData.Ambient ?? false;
 
                         const push = sensorName !== false && sensorName !== undefined && sensorName !== null ? this.sensorsName.push(sensorName) : false;
                         const push1 = temperature !== false && temperature !== undefined && temperature !== null ? this.sensorsTemperature.push(temperature) : false;
-                        const push2 = humidity !== false && temperature !== undefined && temperature !== null ? this.sensorsHumidity.push(humidity) : false;
-                        const push3 = dewPoint !== false && temperature !== undefined && temperature !== null ? this.sensorsDewPoint.push(dewPoint) : false;
-                        const push4 = pressure !== false && temperature !== undefined && temperature !== null ? this.sensorsPressure.push(pressure) : false;
-                        const push5 = gas !== false && temperature !== undefined && temperature !== null ? this.sensorsGas.push(gas) : false;
+                        const push2 = humidity !== false && humidity !== undefined && humidity !== null ? this.sensorsHumidity.push(humidity) : false;
+                        const push3 = dewPoint !== false && dewPoint !== undefined && dewPoint !== null ? this.sensorsDewPoint.push(dewPoint) : false;
+                        const push4 = pressure !== false && pressure !== undefined && pressure !== null ? this.sensorsPressure.push(pressure) : false;
+                        const push5 = gas !== false && gas !== undefined && gas !== null ? this.sensorsGas.push(gas) : false;
                     };
 
                     this.sensorsTemperatureCount = this.sensorsTemperature.length;
@@ -387,7 +390,7 @@ class TasmotaDevice {
                             sensorDewPointService.getCharacteristic(Characteristic.CurrentTemperature)
                                 .onGet(async () => {
                                     const value = this.sensorsDewPoint[i];
-                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${accessoryName}, sensor:${sensorName} dew point: ${value} °${this.tempUnit}`);
+                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${accessoryName}, sensor: ${sensorName} dew point: ${value} °${this.tempUnit}`);
                                     return value;
                                 });
                             this.sensorDewPointServices.push(sensorDewPointService);
@@ -398,6 +401,9 @@ class TasmotaDevice {
                     //pressure
 
                     //gas
+
+                    //carbon dioxyde
+
                 };
 
                 resolve(accessory);
