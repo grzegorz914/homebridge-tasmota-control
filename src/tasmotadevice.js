@@ -44,6 +44,8 @@ class TasmotaDevice {
         this.sensorsDewPointCount = 0;
         this.sensorsPressureCount = 0;
         this.sensorsGasCount = 0;
+        this.sensorsCarbonDioxydeCount = 0;
+        this.sensorsAmbientLightCount = 0;
 
         //variable
         this.startPrepareAccessory = true;
@@ -205,6 +207,8 @@ class TasmotaDevice {
                     this.sensorsDewPoint = [];
                     this.sensorsPressure = [];
                     this.sensorsGas = [];
+                    this.sensorsCarbonDioxyde = [];
+                    this.sensorsAmbientLight = [];
 
                     const sensorsStatusData = await this.axiosInstance(CONSTANS.ApiCommands.Status);
                     const sensorsStatus = sensorsStatusData.data.StatusSNS;
@@ -227,6 +231,8 @@ class TasmotaDevice {
                         const push3 = dewPoint !== false && dewPoint !== undefined && dewPoint !== null ? this.sensorsDewPoint.push(dewPoint) : false;
                         const push4 = pressure !== false && pressure !== undefined && pressure !== null ? this.sensorsPressure.push(pressure) : false;
                         const push5 = gas !== false && gas !== undefined && gas !== null ? this.sensorsGas.push(gas) : false;
+                        const push6 = carbonDioxyde !== false && carbonDioxyde !== undefined && carbonDioxyde !== null ? this.sensorsCarbonDioxyde.push(carbonDioxyde) : false;
+                        const push7 = ambientLight !== false && ambientLight !== undefined && ambientLight !== null ? this.sensorsAmbientLight.push(ambientLight) : false;
                     };
 
                     this.sensorsTemperatureCount = this.sensorsTemperature.length;
@@ -234,6 +240,8 @@ class TasmotaDevice {
                     this.sensorsDewPointCount = this.sensorsDewPoint.length;
                     this.sensorsPressureCount = this.sensorsPressure.length;
                     this.sensorsGasCount = this.sensorsGas.length;
+                    this.sensorsCarbonDioxydeCount = this.sensorsCarbonDioxyde.length;
+                    this.sensorsAmbientLightCount = this.sensorsAmbientLight.length;
                     this.tempUnit = sensorsStatus.TempUnit ?? 'C';
                     this.pressureUnit = sensorsStatus.PressureUnit ?? 'hPa';
 
@@ -260,6 +268,25 @@ class TasmotaDevice {
                             const dewPoint = this.sensorsDewPoint[i];
                             this.sensorDewPointServices[i]
                                 .updateCharacteristic(Characteristic.CurrentTemperature, dewPoint);
+                        };
+                    };
+
+                    if (this.sensorCarbonDioxydeServices && this.sensorsCarbonDioxydeCount > 0) {
+                        for (let i = 0; i < this.sensorsCarbonDioxydeCount; i++) {
+                            const carbonDioxydeDetected = this.sensorsCarbonDioxyde[i] > 1000;
+                            const carbonDioxydeLevel = this.sensorsCarbonDioxyde[i];
+                            this.sensorCarbonDioxydeServices[i]
+                                .updateCharacteristic(Characteristic.CarbonDioxideDetected, carbonDioxydeDetected)
+                                .updateCharacteristic(Characteristic.CarbonDioxideLevel, carbonDioxydeLevel)
+                                .updateCharacteristic(Characteristic.CarbonDioxidePeakLevel, carbonDioxydeLevel);
+                        };
+                    };
+
+                    if (this.sensorAmbientLightServices && this.sensorsAmbientLightCount > 0) {
+                        for (let i = 0; i < this.sensorsAmbientLightCount; i++) {
+                            const ambientLight = this.sensorsAmbientLight[i];
+                            this.sensorAmbientLightServices[i]
+                                .updateCharacteristic(Characteristic.CurrentAmbientLightLevel, ambientLight);
                         };
                     };
                 };
@@ -403,7 +430,60 @@ class TasmotaDevice {
                     //gas
 
                     //carbon dioxyde
+                    const sensorsCarbonDioxydeCount = this.sensorsCarbonDioxydeCount;
+                    if (sensorsCarbonDioxydeCount > 0) {
+                        const debug = this.enableDebugMode ? this.log('Prepare Carbon Dioxyde Sensor Services') : false;
+                        this.sensorCarbonDioxydeServices = [];
+                        for (let i = 0; i < sensorsCarbonDioxydeCount; i++) {
+                            const sensorName = this.sensorsName[i];
+                            const serviceName = `${accessoryName} ${sensorName} Carbon Dioxyde`;
+                            const sensorCarbonDioxydeService = new Service.CarbonDioxideSensor(serviceName, `Carbon Dioxyde Sensor${i}`);
+                            sensorCarbonDioxydeService.addOptionalCharacteristic(Characteristic.ConfiguredName);
+                            sensorCarbonDioxydeService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
+                            sensorCarbonDioxydeService.getCharacteristic(Characteristic.CarbonDioxideDetected)
+                                .onGet(async () => {
+                                    const state = this.sensorsCarbonDioxyde[i] > 1000;
+                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${accessoryName}, sensor: ${sensorName} carbon dioxyde detected: ${state ? 'Yes' : 'No'}`);
+                                    return state;
+                                });
+                            sensorCarbonDioxydeService.getCharacteristic(Characteristic.CarbonDioxideLevel)
+                                .onGet(async () => {
+                                    const value = this.sensorsCarbonDioxyde[i];
+                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${accessoryName}, sensor: ${sensorName} carbon dioxyde level: ${value} ppm`);
+                                    return value;
+                                });
+                            sensorCarbonDioxydeService.getCharacteristic(Characteristic.CarbonDioxidePeakLevel)
+                                .onGet(async () => {
+                                    const value = this.sensorsCarbonDioxyde[i];
+                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${accessoryName}, sensor: ${sensorName} carbon dioxyde peak level: ${value} ppm`);
+                                    return value;
+                                });
+                            this.sensorCarbonDioxydeServices.push(sensorCarbonDioxydeService);
+                            accessory.addService(sensorCarbonDioxydeService);
+                        };
+                    }
 
+                    //ambient light
+                    const sensorsAmbientLightCount = this.sensorsAmbientLightCount;
+                    if (sensorsAmbientLightCount > 0) {
+                        const debug = this.enableDebugMode ? this.log('Prepare Ambient Light Sensor Services') : false;
+                        this.sensorAmbientLightServices = [];
+                        for (let i = 0; i < sensorsAmbientLightCount; i++) {
+                            const sensorName = this.sensorsName[i];
+                            const serviceName = `${accessoryName} ${sensorName} Ambient Light`;
+                            const sensorAmbientLightService = new Service.LightSensor(serviceName, `Ambient Light Sensor${i}`);
+                            sensorAmbientLightService.addOptionalCharacteristic(Characteristic.ConfiguredName);
+                            sensorAmbientLightService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
+                            sensorAmbientLightService.getCharacteristic(Characteristic.CurrentAmbientLightLevel)
+                                .onGet(async () => {
+                                    const value = this.sensorsAmbientLight[i];
+                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${accessoryName}, sensor: ${sensorName} ambient light: ${value} lx`);
+                                    return value;
+                                });
+                            this.sensorAmbientLightServices.push(sensorAmbientLightService);
+                            accessory.addService(sensorAmbientLightService);
+                        };
+                    }
                 };
 
                 resolve(accessory);
