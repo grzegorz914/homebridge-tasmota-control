@@ -33,6 +33,8 @@ Homebridge plugin for Tasmota flashed devices.
   * Temperature
   * Humidity
   * Dew Point
+  * Carbon Dioxyde
+  * Ambient Light
 
 ### Configuration
 
