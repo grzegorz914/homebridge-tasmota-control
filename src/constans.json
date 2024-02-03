@@ -20,8 +20,8 @@
         "BME680",
         "DHT1",
         "DS18B20",
-        "SHT3X",
-        "HTU21"
+        "HTU21",
+        "SHT3X"
     ],
     "StatusSNSProperties": [
         "Temperature",

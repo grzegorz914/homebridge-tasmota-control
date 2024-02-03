@@ -61,186 +61,211 @@ class TasmotaDevice {
             fs.mkdirSync(prefDir);
         };
 
-        this.getDeviceInfo();
+        this.start();
     };
 
-    async reconnect() {
-        await new Promise(resolve => setTimeout(resolve, 15000));
-        this.getDeviceInfo();
+    async start() {
+        try {
+            const serialNumber = await this.getDeviceInfo();
+            await this.checkDeviceState();
+
+            //start prepare accessory
+            const accessory = this.startPrepareAccessory && serialNumber ? await this.prepareAccessory() : false;
+            this.startPrepareAccessory = false;
+
+            this.api.publishExternalAccessories(CONSTANS.PluginName, [accessory]);
+            const debug = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, published as external accessory.`) : false;
+
+            this.updateDeviceState();
+        } catch (error) {
+            this.log.error(error);
+            await new Promise(resolve => setTimeout(resolve, 15000));
+            this.start();
+        };
     };
 
     async updateDeviceState() {
-        await new Promise(resolve => setTimeout(resolve, this.refreshInterval * 1000));
-        this.checkDeviceState();
-    };
-
-    async getDeviceInfo() {
-        const debug = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, requesting info.`) : false;
-
         try {
-            const deviceInfoData = await this.axiosInstance(CONSTANS.ApiCommands.Status);
-            const deviceInfo = deviceInfoData.data;
-            const debug = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, debug info: ${JSON.stringify(deviceInfo, null, 2)}`) : false;
-
-            //keys
-            const deviceInfoKeys = Object.keys(deviceInfo);
-
-            //status
-            const deviceName = deviceInfo.Status.DeviceName ?? 'Tasmota';
-            const relaysCount = deviceInfo.Status.FriendlyName.length ?? 0;
-            for (let i = 0; i < relaysCount; i++) {
-                const friendlyName = deviceInfo.Status.FriendlyName[i] ?? false;
-                const push = friendlyName ? this.relaysFriendlyNames.push(friendlyName) : false;
-            };
-
-            //status fwr
-            this.statusFWRSupported = deviceInfoKeys.includes('StatusFWR');
-            const firmwareRevision = deviceInfo.StatusFWR.Version ?? 'unknown';
-            const modelName = deviceInfo.StatusFWR.Hardware ?? '';
-
-            //status net
-            const addressMac = deviceInfo.StatusNET.Mac;
-
-            //status sns
-            this.statusSNSSupported = deviceInfoKeys.includes('StatusSNS');
-            CONSTANS.StatusSNS.forEach(sensor => {
-                const sensorData = deviceInfo.StatusSNS[sensor] ?? false;
-                const push = sensorData ? this.sensors.push(sensorData) : false;
-            });
-            const sensorsCount = this.sensors.length
-
-            //device info
-            if (!this.disableLogDeviceInfo) {
-                this.log(`----- ${this.name} -----`);
-                this.log(`Manufacturer: ${this.manufacturer}`);
-                this.log(`Hardware: ${modelName}`);
-                this.log(`Serialnr: ${addressMac}`);
-                this.log(`Firmware: ${firmwareRevision}`);
-                const log = relaysCount > 0 ? this.log(`Relays: ${relaysCount}`) : false;
-                const log1 = sensorsCount > 0 ? this.log(`Sensors: ${sensorsCount}`) : false;
-                this.log(`----------------------------------`);
-            };
-
-            this.modelName = modelName;
-            this.serialNumber = addressMac;
-            this.firmwareRevision = firmwareRevision;
-            this.relaysCount = relaysCount;
-            this.sensorsCount = sensorsCount;
-
-            this.checkDeviceState();
+            await this.checkDeviceState();
         } catch (error) {
-            this.log.error(`Device: ${this.host} ${this.name}, check info error: ${error}, trying to reconnect in 15s.`);
-            this.reconnect();
+            this.log.error(error);
         };
+
+        await new Promise(resolve => setTimeout(resolve, this.refreshInterval * 1000));
+        this.updateDeviceState();
     };
 
-    async checkDeviceState() {
-        const debug = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, requesting status.`, this.host, this.name) : false;
+    getDeviceInfo() {
+        return new Promise(async (resolve, reject) => {
+            const debug = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, requesting info.`) : false;
 
-        try {
-            //relays
-            const relaysCount = this.relaysCount;
-            if (relaysCount > 0) {
-                this.relaysStete = [];
+            try {
+                const deviceInfoData = await this.axiosInstance(CONSTANS.ApiCommands.Status);
+                const deviceInfo = deviceInfoData.data;
+                const debug = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, debug info: ${JSON.stringify(deviceInfo, null, 2)}`) : false;
 
-                const relaysStatusData = await this.axiosInstance(CONSTANS.ApiCommands.PowerStatus);
-                const relaysStatus = relaysStatusData.data;
-                const debug = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, debug ${relaysCount === 1 ? 'relay' : 'relays'} status: ${JSON.stringify(relaysStatus, null, 2)}`) : false;
+                //keys
+                const deviceInfoKeys = Object.keys(deviceInfo);
 
+                //status
+                const deviceName = deviceInfo.Status.DeviceName ?? 'Tasmota';
+                const relaysCount = deviceInfo.Status.FriendlyName.length ?? 0;
                 for (let i = 0; i < relaysCount; i++) {
-                    const statusKey = relaysCount === 1 ? 'POWER' : 'POWER' + (i + 1);
-                    const status = relaysStatus[statusKey] === 'ON'
-                    this.relaysStete.push(status);
+                    const friendlyName = deviceInfo.Status.FriendlyName[i] ?? false;
+                    const push = friendlyName ? this.relaysFriendlyNames.push(friendlyName) : false;
+                };
+
+                //status fwr
+                this.statusFWRSupported = deviceInfoKeys.includes('StatusFWR');
+                const firmwareRevision = deviceInfo.StatusFWR.Version ?? 'unknown';
+                const modelName = deviceInfo.StatusFWR.Hardware ?? '';
+
+                //status net
+                const addressMac = deviceInfo.StatusNET.Mac;
+
+                //status sns
+                const statusSNSSupported = deviceInfoKeys.includes('StatusSNS') ?? false;
+                if (statusSNSSupported) {
+                    const sensor = Object.entries(deviceInfo.StatusSNS)
+                        .filter(([key]) => CONSTANS.StatusSNS.includes(key))
+                        .reduce((obj, [key, value]) => {
+                            obj[key] = value;
+                            return obj;
+                        }, {});
+
+                    for (const [key, value] of Object.entries(sensor)) {
+                        const obj = {
+                            'name': key,
+                            'data': value
+                        }
+                        this.sensors.push(obj);
+                    }
+                }
+                const sensorsCount = this.sensors.length;
+
+                //device info
+                if (!this.disableLogDeviceInfo) {
+                    this.log(`----- ${this.name} -----`);
+                    this.log(`Manufacturer: ${this.manufacturer}`);
+                    this.log(`Hardware: ${modelName}`);
+                    this.log(`Serialnr: ${addressMac}`);
+                    this.log(`Firmware: ${firmwareRevision}`);
+                    const log = relaysCount > 0 ? this.log(`Relays: ${relaysCount}`) : false;
+                    const log1 = sensorsCount > 0 ? this.log(`Sensors: ${sensorsCount}`) : false;
+                    this.log(`----------------------------------`);
+                };
+
+                this.modelName = modelName;
+                this.serialNumber = addressMac;
+                this.firmwareRevision = firmwareRevision;
+                this.relaysCount = relaysCount;
+                this.sensorsCount = sensorsCount;
+
+                resolve(addressMac)
+            } catch (error) {
+                reject(`Device: ${this.host} ${this.name}, check info error: ${error}, trying to reconnect in 15s.`);
+            };
+        });
+    };
+
+    checkDeviceState() {
+        return new Promise(async (resolve, reject) => {
+            const debug = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, requesting status.`, this.host, this.name) : false;
+
+            try {
+                //relays
+                const relaysCount = this.relaysCount;
+                if (relaysCount > 0) {
+                    this.relaysStete = [];
+
+                    const relaysStatusData = await this.axiosInstance(CONSTANS.ApiCommands.PowerStatus);
+                    const relaysStatus = relaysStatusData.data;
+                    const debug = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, debug ${relaysCount === 1 ? 'relay' : 'relays'} status: ${JSON.stringify(relaysStatus, null, 2)}`) : false;
+
+                    for (let i = 0; i < relaysCount; i++) {
+                        const statusKey = relaysCount === 1 ? 'POWER' : 'POWER' + (i + 1);
+                        const status = relaysStatus[statusKey] === 'ON' ?? false;
+                        this.relaysStete.push(status);
+
+                        //update characteristics
+                        if (this.relayServices) {
+                            this.relayServices[i]
+                                .updateCharacteristic(Characteristic.On, status);
+                        };
+                    };
+                };
+
+                //sensors
+                const sensorsCount = this.sensorsCount;
+                if (sensorsCount > 0) {
+                    this.sensorsName = [];
+                    this.sensorsTemperature = [];
+                    this.sensorsHumidity = [];
+                    this.sensorsDewPoint = [];
+                    this.sensorsPressure = [];
+                    this.sensorsGas = [];
+
+                    const sensorsStatusData = await this.axiosInstance(CONSTANS.ApiCommands.Status);
+                    const sensorsStatus = sensorsStatusData.data.StatusSNS;
+                    const debug = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, debug ${sensorsCount === 1 ? 'sensor' : 'sensors'} status: ${JSON.stringify(sensorsStatus, null, 2)}`) : false;
+
+                    for (let i = 0; i < sensorsCount; i++) {
+                        const sensorName = this.sensors[i].name;
+                        const sensorData = this.sensors[i].data;
+                        const temperature = sensorData.Temperature ?? false;
+                        const humidity = sensorData.Humidity ?? false;
+                        const dewPoint = sensorData.DewPoint ?? false;
+                        const pressure = sensorData.Pressure ?? false;
+                        const gas = sensorData.Gas ?? false;
+
+                        const push = sensorName !== false && sensorName !== undefined && sensorName !== null ? this.sensorsName.push(sensorName) : false;
+                        const push1 = temperature !== false && temperature !== undefined && temperature !== null ? this.sensorsTemperature.push(temperature) : false;
+                        const push2 = humidity !== false && temperature !== undefined && temperature !== null ? this.sensorsHumidity.push(humidity) : false;
+                        const push3 = dewPoint !== false && temperature !== undefined && temperature !== null ? this.sensorsDewPoint.push(dewPoint) : false;
+                        const push4 = pressure !== false && temperature !== undefined && temperature !== null ? this.sensorsPressure.push(pressure) : false;
+                        const push5 = gas !== false && temperature !== undefined && temperature !== null ? this.sensorsGas.push(gas) : false;
+                    };
+
+                    this.sensorsTemperatureCount = this.sensorsTemperature.length;
+                    this.sensorsHumidityCount = this.sensorsHumidity.length;
+                    this.sensorsDewPointCount = this.sensorsDewPoint.length;
+                    this.sensorsPressureCount = this.sensorsPressure.length;
+                    this.sensorsGasCount = this.sensorsGas.length;
+                    this.tempUnit = sensorsStatus.TempUnit ?? 'C';
+                    this.pressureUnit = sensorsStatus.PressureUnit ?? 'hPa';
+
 
                     //update characteristics
-                    if (this.relayServices) {
-                        this.relayServices[i]
-                            .updateCharacteristic(Characteristic.On, status);
+                    if (this.sensorTemperatureServices && this.sensorsTemperatureCount > 0) {
+                        for (let i = 0; i < this.sensorsTemperatureCount; i++) {
+                            const temperature = this.sensorsTemperature[i];
+                            this.sensorTemperatureServices[i]
+                                .updateCharacteristic(Characteristic.CurrentTemperature, temperature);
+                        };
+                    };
+
+                    if (this.sensorHumidityServices && this.sensorsHumidityCount > 0) {
+                        for (let i = 0; i < this.sensorsHumidityCount; i++) {
+                            const humidity = this.sensorsHumidity[i];
+                            this.sensorHumidityServices[i]
+                                .updateCharacteristic(Characteristic.CurrentRelativeHumidity, humidity);
+                        };
+                    };
+
+                    if (this.sensorDewPointServices && this.sensorsDewPointCount > 0) {
+                        for (let i = 0; i < this.sensorsDewPointCount; i++) {
+                            const dewPoint = this.sensorsDewPoint[i];
+                            this.sensorDewPointServices[i]
+                                .updateCharacteristic(Characteristic.CurrentTemperature, dewPoint);
+                        };
                     };
                 };
+
+                resolve();
+            } catch (error) {
+                reject(`Device: ${this.host} ${this.name}, check state error: ${error}, trying again.`);
             };
-
-            //sensors
-            const sensorsCount = this.sensorsCount;
-            if (sensorsCount > 0) {
-                this.sensorsTemperature = [];
-                this.sensorsHumidity = [];
-                this.sensorsDewPoint = [];
-                this.sensorsPressure = [];
-                this.sensorsGas = [];
-
-                const sensorsStatusData = await this.axiosInstance(CONSTANS.ApiCommands.Status);
-                const sensorsStatus = sensorsStatusData.data.StatusSNS;
-                const debug = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, debug ${sensorsCount === 1 ? 'sensor' : 'sensors'} status: ${JSON.stringify(sensorsStatus, null, 2)}`) : false;
-
-                for (let i = 0; i < sensorsCount; i++) {
-                    const sensor = this.sensors[i];
-                    const temperature = sensor.Temperature ?? false;
-                    const humidity = sensor.Humidity ?? false;
-                    const dewPoint = sensor.DewPoint ?? false;
-                    const pressure = sensor.Pressure ?? false;
-                    const gas = sensor.Gas ?? false;
-
-                    const push = temperature ? this.sensorsTemperature.push(temperature) : false;
-                    const push1 = humidity ? this.sensorsHumidity.push(humidity) : false;
-                    const push2 = dewPoint ? this.sensorsDewPoint.push(dewPoint) : false;
-                    const push3 = pressure ? this.sensorsPressure.push(pressure) : false;
-                    const push4 = gas ? this.sensorsGas.push(gas) : false;
-                };
-
-                this.sensorsTemperatureCount = this.sensorsTemperature.length;
-                this.sensorsHumidityCount = this.sensorsHumidity.length;
-                this.sensorsDewPointCount = this.sensorsDewPoint.length;
-                this.sensorsPressureCount = this.sensorsPressure.length;
-                this.sensorsGasCount = this.sensorsGas.length;
-                this.tempUnit = sensorsStatus.TempUnit ?? 'C';
-                this.pressureUnit = sensorsStatus.PressureUnit ?? 'hPa';
-
-
-                //update characteristics
-                if (this.sensorTemperatureServices && this.sensorsTemperatureCount > 0) {
-                    for (let i = 0; i < this.sensorsTemperatureCount; i++) {
-                        const temperature = this.sensorsTemperature[i];
-                        this.sensorTemperatureServices[i]
-                            .updateCharacteristic(Characteristic.CurrentTemperature, temperature);
-                    };
-                };
-
-                if (this.sensorHumidityServices && this.sensorsHumidityCount > 0) {
-                    for (let i = 0; i < this.sensorsHumidityCount; i++) {
-                        const humidity = this.sensorsHumidity[i];
-                        this.sensorHumidityServices[i]
-                            .updateCharacteristic(Characteristic.CurrentRelativeHumidity, humidity);
-                    };
-                };
-
-                if (this.sensorDewPointServices && this.sensorsDewPointCount > 0) {
-                    for (let i = 0; i < this.sensorsDewPointCount; i++) {
-                        const dewPoint = this.sensorsDewPoint[i];
-                        this.sensorDewPointServices[i]
-                            .updateCharacteristic(Characteristic.CurrentTemperature, dewPoint);
-                    };
-                };
-            };
-
-            //start prepare accessory
-            if (this.startPrepareAccessory && this.serialNumber) {
-                try {
-                    const accessory = await this.prepareAccessory();
-                    this.startPrepareAccessory = false;
-
-                    this.api.publishExternalAccessories(CONSTANS.PluginName, [accessory]);
-                    const debug = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, published as external accessory.`) : false;
-                } catch (error) {
-                    this.log.error(`Device: ${this.host} ${this.name}, Prepare accessory error: ${error}`);
-                };
-            };
-
-            this.updateDeviceState();
-        } catch (error) {
-            this.log.error(`Device: ${this.host} ${this.name}, check state error: ${error}, trying again.`);
-            this.updateDeviceState();
-        };
+        });
     };
 
     //Prepare accessory
@@ -279,7 +304,7 @@ class TasmotaDevice {
                         relayService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
                         relayService.getCharacteristic(Characteristic.On)
                             .onGet(async () => {
-                                const state = this.relaysStete[i];
+                                const state = this.relaysStete[i] ?? false;
                                 const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${logName}, state: ${state ? 'ON' : 'OFF'}`);
                                 return state;
                             })
@@ -310,14 +335,15 @@ class TasmotaDevice {
                         const debug = this.enableDebugMode ? this.log('Prepare Temperature Sensor Services') : false;
                         this.sensorTemperatureServices = [];
                         for (let i = 0; i < sensorsTemperatureCount; i++) {
-                            const serviceName = `${accessoryName} Temperature`;
+                            const sensorName = this.sensorsName[i];
+                            const serviceName = `${accessoryName} ${sensorName} Temperature`;
                             const sensorTemperatureService = new Service.TemperatureSensor(serviceName, `Temperature Sensor${i}`);
                             sensorTemperatureService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                             sensorTemperatureService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
                             sensorTemperatureService.getCharacteristic(Characteristic.CurrentTemperature)
                                 .onGet(async () => {
                                     const value = this.sensorsTemperature[i];
-                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${accessoryName}, temperature: ${value} °${this.tempUnit}`);
+                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${accessoryName}, sensor:${sensorName} temperature: ${value} °${this.tempUnit}`);
                                     return value;
                                 });
                             this.sensorTemperatureServices.push(sensorTemperatureService);
@@ -331,14 +357,15 @@ class TasmotaDevice {
                         const debug = this.enableDebugMode ? this.log('Prepare Humidity Sensor Services') : false;
                         this.sensorHumidityServices = [];
                         for (let i = 0; i < sensorsHumidityCount; i++) {
-                            const serviceName = `${accessoryName} Humidity`;
+                            const sensorName = this.sensorsName[i];
+                            const serviceName = `${accessoryName} ${sensorName} Humidity`;
                             const sensorHumidityService = new Service.HumiditySensor(serviceName, `Humidity Sensor${i}`);
                             sensorHumidityService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                             sensorHumidityService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
                             sensorHumidityService.getCharacteristic(Characteristic.CurrentRelativeHumidity)
                                 .onGet(async () => {
                                     const value = this.sensorsHumidity[i];
-                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${accessoryName}, humidity: ${value} %`);
+                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${accessoryName}, sensor: ${sensorName} humidity: ${value} %`);
                                     return value;
                                 });
                             this.sensorHumidityServices.push(sensorHumidityService);
@@ -352,14 +379,15 @@ class TasmotaDevice {
                         const debug = this.enableDebugMode ? this.log('Prepare Dew Point Sensor Services') : false;
                         this.sensorDewPointServices = [];
                         for (let i = 0; i < sensorsDewPointCount; i++) {
-                            const serviceName = `${accessoryName} Dew Point`;
+                            const sensorName = this.sensorsName[i];
+                            const serviceName = `${accessoryName} ${sensorName} Dew Point`;
                             const sensorDewPointService = new Service.TemperatureSensor(serviceName, `Dew Point Sensor${i}`);
                             sensorDewPointService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                             sensorDewPointService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
                             sensorDewPointService.getCharacteristic(Characteristic.CurrentTemperature)
                                 .onGet(async () => {
                                     const value = this.sensorsDewPoint[i];
-                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${accessoryName}, dew point: ${value} °${this.tempUnit}`);
+                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${accessoryName}, sensor:${sensorName} dew point: ${value} °${this.tempUnit}`);
                                     return value;
                                 });
                             this.sensorDewPointServices.push(sensorDewPointService);
@@ -370,7 +398,7 @@ class TasmotaDevice {
                     //pressure
 
                     //gas
-                }
+                };
 
                 resolve(accessory);
             } catch (error) {
