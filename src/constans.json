@@ -10,5 +10,24 @@
         "Toggle": "%20toggle",
         "Blink": "%20blink",
         "BlinkOff": "%20blinkoff"
-    }
+    },
+    "StatusSNS": [
+        "AM2301",
+        "AM2302",
+        "AM2320",
+        "AM2321",
+        "BME280",
+        "BME680",
+        "DHT1",
+        "DS18B20",
+        "SHT3X",
+        "HTU21"
+    ],
+    "StatusSNSProperties": [
+        "Temperature",
+        "Humidity",
+        "DewPoint",
+        "Pressure",
+        "Gas"
+    ]
 }

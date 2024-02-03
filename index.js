@@ -23,8 +23,7 @@ class tasmotaPlatform {
     api.on('didFinishLaunching', () => {
       for (const device of config.devices) {
         if (!device.name || !device.host) {
-          log.warn('Device name or host missing!');
-          log.warn(`Name: ${device.name ? 'OK' : device.name}, host: ${device.host ? 'OK' : device.host}, in config wrong or missing.`);
+          log.warn(`Device Name: ${device.name ? 'OK' : device.name}, host: ${device.host ? 'OK' : device.host}, in config wrong or missing.`);
           return;
         }
 

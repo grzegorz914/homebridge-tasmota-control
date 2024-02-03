@@ -17,13 +17,25 @@ Homebridge plugin for Tasmota flashed devices.
 </span>
 
 ## Package Requirements
+
 | Package | Installation | Role | Required |
 | --- | --- | --- | --- |
 | [Homebridge](https://github.com/homebridge/homebridge) | [Homebridge Wiki](https://github.com/homebridge/homebridge/wiki) | HomeKit Bridge | Required |
 | [Config UI X](https://github.com/homebridge/homebridge-config-ui-x) | [Config UI X Wiki](https://github.com/homebridge/homebridge-config-ui-x/wiki) | Homebridge Web User Interface | Recommended |
 | [Tasmota Control](https://www.npmjs.com/package/homebridge-tasmota-control) | [Plug-In Wiki](https://github.com/grzegorz914/homebridge-tasmota-control/wiki) | Homebridge Plug-In | Required |
 
+## About The Plugin
+
+* Plugin work witch Tasmota falshed devices, communicate over web requests.
+* Control devices:
+  * Switches, Relays
+* Read Sensors:
+  * Temperature
+  * Humidity
+  * Dew Point
+
 ### Configuration
+
 * Run this plugin as a [Child Bridge](https://github.com/homebridge/homebridge/wiki/Child-Bridges) (Highly Recommended), this prevent crash Homebridge if plugin crashes.
 * Install and use [Homebridge Config UI X](https://github.com/homebridge/homebridge-config-ui-x/wiki) to configure this plugin (Highly Recommended). 
 * The `sample-config.json` can be edited and used as an alternative. 
@@ -40,6 +52,6 @@ Homebridge plugin for Tasmota flashed devices.
 | `auth` | If enabled, authorizatins credentials will be used for login. |
 | `user` | Here set the authorization *Username*. |
 | `passwd` | Here set the authorization *Password*. |
-| `enableDebugMode` | This enable deep log in homebridge console. |
+| `enableDebugMode` | This enable debug log in homebridge console. |
 | `disableLogInfo` | This disable log info, all values and state will not be displayed in Homebridge log console. |
 | `disableLogDeviceInfo` | If enabled, add ability to disable log device info by every connections device to the network. |
