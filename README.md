@@ -27,7 +27,7 @@ Homebridge plugin for Tasmota flashed devices.
 
 ## About The Plugin
 
-* Plugin work witch Tasmota falshed devices.
+* Plugin work with Tasmota falshed devices.
 * Supported relay devices:
   * Light - `Power ON/OFF`, `Dimmer`, `Color Temperature`, `Hue`, `Saturation`
   * Outlet - `Power ON/OFF`
