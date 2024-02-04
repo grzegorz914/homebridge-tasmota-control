@@ -5,13 +5,32 @@
         "Status": "Status 0",
         "PowerStatus": "Power0",
         "Power": "Power",
+        "PowerOn": "Power%20on",
+        "PowerOff": "Power%20off",
         "Off": "%20off",
         "On": "%20on",
         "Toggle": "%20toggle",
         "Blink": "%20blink",
-        "BlinkOff": "%20blinkoff"
+        "BlinkOff": "%20blinkoff",
+        "Dimmer": "Dimmer",
+        "DimmerAllChannels": "Dimmer1",
+        "DimmerForRgbChannels": "Dimmer2",
+        "DimmerForWhiteChannels": "Dimmer3",
+        "ColorTemperature": "CT",
+        "HSBColor": "HSBColor",
+        "HSBHue": "HSBColor1",
+        "HSBSaturation": "HSBColor2",
+        "HSBBrightness": "HSBColor3"
     },
-    "StatusSNS": [
+    "LightKeys": [
+        "Dimmer",
+        "HSBColor",
+        "HSBColor1",
+        "HSBColor2",
+        "HSBColor3",
+        "CT"
+    ],
+    "SensorKeys": [
         "AZ7798",
         "AM2301",
         "AM2302",
@@ -31,8 +50,11 @@
         "SCD30",
         "SCD40",
         "SCD41",
+        "SHT1X",
         "SHT10",
+        "SHT3X",
         "SHT30",
+        "SHT4X",
         "SHT40"
     ],
     "StatusSNSProperties": [

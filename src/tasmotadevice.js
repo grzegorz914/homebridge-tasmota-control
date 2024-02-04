@@ -21,6 +21,10 @@ class TasmotaDevice {
         this.user = config.user;
         this.passwd = config.passwd;
         this.auth = config.auth || false;
+        this.relaysNamePrefix = config.relaysNamePrefix || false;
+        this.relaysDisplayType = config.relaysDisplayType || 0;
+        this.lightsNamePrefix = config.lightsNamePrefix || false;
+        this.sensorsNamePrefix = config.sensorsNamePrefix || false;
         this.refreshInterval = config.refreshInterval || 5;
         this.enableDebugMode = config.enableDebugMode || false;
         this.disableLogInfo = config.disableLogInfo || false;
@@ -32,8 +36,8 @@ class TasmotaDevice {
         this.serialNumber = 'Serial Number';
         this.firmwareRevision = 'Firmware Revision';
 
-        //relays
-        this.relaysFriendlyNames = [];
+        //switches, outlets, lights
+        this.friendlyNames = [];
         this.relaysCount = 0;
 
         //sensors
@@ -109,12 +113,13 @@ class TasmotaDevice {
                 //keys
                 const deviceInfoKeys = Object.keys(deviceInfo);
 
-                //status
+                //relays
                 const deviceName = deviceInfo.Status.DeviceName ?? 'Tasmota';
-                const relaysCount = deviceInfo.Status.FriendlyName.length ?? 0;
+                const friendlyNames = Array.isArray(deviceInfo.Status.FriendlyName) ? deviceInfo.Status.FriendlyName : [deviceInfo.Status.FriendlyName];
+                const relaysCount = friendlyNames.length ?? 0;
                 for (let i = 0; i < relaysCount; i++) {
-                    const friendlyName = deviceInfo.Status.FriendlyName[i] ?? false;
-                    const push = friendlyName ? this.relaysFriendlyNames.push(friendlyName) : false;
+                    const friendlyName = friendlyNames[i] ?? `Unknown Nmae ${i}`;
+                    this.friendlyNames.push(friendlyName);
                 };
 
                 //status fwr
@@ -128,7 +133,7 @@ class TasmotaDevice {
                 //status sns
                 const statusSNSSupported = deviceInfoKeys.includes('StatusSNS') ?? false;
                 if (statusSNSSupported) {
-                    const sensorTypes = CONSTANS.StatusSNS;
+                    const sensorTypes = CONSTANS.SensorKeys;
                     const sensor = Object.entries(deviceInfo.StatusSNS)
                         .filter(([key]) => sensorTypes.some(type => key.includes(type)))
                         .reduce((obj, [key, value]) => {
@@ -176,24 +181,73 @@ class TasmotaDevice {
             const debug = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, requesting status.`, this.host, this.name) : false;
 
             try {
-                //relays
+                //switches, outlets, lights
                 const relaysCount = this.relaysCount;
                 if (relaysCount > 0) {
-                    this.relaysStete = [];
+                    this.devicesType = [];
+                    this.powersStete = [];
 
-                    const relaysStatusData = await this.axiosInstance(CONSTANS.ApiCommands.PowerStatus);
-                    const relaysStatus = relaysStatusData.data;
-                    const debug = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, debug ${relaysCount === 1 ? 'relay' : 'relays'} status: ${JSON.stringify(relaysStatus, null, 2)}`) : false;
+                    this.lightsBrightnessSupported = [];
+                    this.lightsBrightness = [];
+                    this.lightsColorTemperatueSupported = [];
+                    this.lightsColorTemperatue = [];
+                    this.lightsHueSupported = [];
+                    this.lightsHue = [];
+                    this.lightsSaturationSupported = [];
+                    this.lightsSaturation = [];
+
+                    const powersStatusData = await this.axiosInstance(CONSTANS.ApiCommands.PowerStatus);
+                    const powersStatus = powersStatusData.data;
+                    const debug = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, debug power status: ${JSON.stringify(powersStatus, null, 2)}`) : false;
 
                     for (let i = 0; i < relaysCount; i++) {
-                        const statusKey = relaysCount === 1 ? 'POWER' : 'POWER' + (i + 1);
-                        const status = relaysStatus[statusKey] === 'ON' ?? false;
-                        this.relaysStete.push(status);
+                        const powerKeys = Object.keys(powersStatus);
+                        const deviceType = powerKeys.some(key => CONSTANS.LightKeys.includes(key)) ? 1 : 0; //0 - switch/outlet, 1 - light
+                        const powerKey = relaysCount === 1 ? 'POWER' : 'POWER' + (i + 1);
+                        const status = powersStatus[powerKey] === 'ON' ?? false;
+
+                        const brightnessSupported = powerKeys.includes('Dimmer');
+                        const brightness = powersStatus.Dimmer ?? false;
+                        const colorTemperatureSupported = powerKeys.includes('CT');
+                        const colorTemperature = powersStatus.CT ?? false;
+                        const hueSupported = powerKeys.includes('HSBColor1');
+                        const hue = powersStatus.HSBColor1 ?? false;
+                        const saturationSupported = powerKeys.includes('HSBColor2');
+                        const saturation = powersStatus.HSBColor2 ?? false;
+
+                        this.devicesType.push(deviceType);
+                        this.powersStete.push(status);
+                        this.lightsBrightnessSupported.push(brightnessSupported)
+                        const push = brightnessSupported ? this.lightsBrightness.push(brightness) : false;
+                        this.lightsColorTemperatueSupported.push(colorTemperatureSupported)
+                        const push1 = colorTemperatureSupported ? this.lightsColorTemperatue.push(colorTemperature) : false;
+                        this.lightsHueSupported.push(hueSupported)
+                        const push2 = hueSupported ? this.lightsHue.push(hue) : false;
+                        this.lightsSaturationSupported.push(saturationSupported)
+                        const push3 = saturationSupported ? this.lightsHue.push(saturation) : false;
 
                         //update characteristics
-                        if (this.relayServices) {
-                            this.relayServices[i]
+                        if (this.switchOutletLightServices) {
+                            this.switchOutletLightServices[i]
                                 .updateCharacteristic(Characteristic.On, status);
+
+                            if (deviceType === 1) {
+                                this.switchOutletLightServices[i].updateCharacteristic(Characteristic.On, status);
+
+                                if (brightnessSupported) {
+                                    this.switchOutletLightServices[i].updateCharacteristic(Characteristic.Brightness, brightness);
+                                };
+                                if (colorTemperatureSupported) {
+                                    const value = colorTemperature > 153 ? colorTemperature : 140;
+                                    this.switchOutletLightServices[i].updateCharacteristic(Characteristic.ColorTemperature, value);
+                                };
+                                if (hueSupported) {
+                                    this.switchOutletLightServices[i].updateCharacteristic(Characteristic.Hue, hue);
+                                };
+                                if (saturationSupported) {
+                                    this.switchOutletLightServices[i].updateCharacteristic(Characteristic.Saturation, saturation);
+                                };
+                            };
                         };
                     };
                 };
@@ -320,39 +374,114 @@ class TasmotaDevice {
                 //Prepare services 
                 const debug2 = this.enableDebugMode ? this.log('Prepare Services') : false;
 
-                //relays
+                //switches, outlets, lights
                 const relaysCount = this.relaysCount;
                 if (relaysCount > 0) {
-                    const debug = this.enableDebugMode ? this.log('Prepare Relay Services') : false;
-                    this.relayServices = [];
+                    const debug = this.enableDebugMode ? this.log(`Prepare Switch/Outlet/Light Services`) : false;
+                    this.switchOutletLightServices = [];
+
                     for (let i = 0; i < relaysCount; i++) {
-                        const relaysName = this.relaysFriendlyNames[i];
-                        const serviceName = relaysCount > 1 ? `${accessoryName} ${relaysName}` : accessoryName;
-                        const logName = relaysCount > 1 ? `${accessoryName}, relay: ${relaysName}` : `${accessoryName}`
-                        const relayService = new Service.Outlet(serviceName, `Relay${[i]}`);
-                        relayService.addOptionalCharacteristic(Characteristic.ConfiguredName);
-                        relayService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
-                        relayService.getCharacteristic(Characteristic.On)
+                        const friendlyName = this.friendlyNames[i];
+                        const deviceType = this.devicesType[i];
+                        const serviceType = [[Service.Outlet, Service.Switch][this.relaysDisplayType], Service.Lightbulb][deviceType];
+                        const serviceName = [[this.relaysNamePrefix ? `${accessoryName} ${friendlyName}` : friendlyName], this.lightsNamePrefix ? `${accessoryName} ${friendlyName}` : friendlyName][deviceType];
+                        const switchOutletLightService = new serviceType(serviceName, `Power ${[i]}`);
+                        switchOutletLightService.addOptionalCharacteristic(Characteristic.ConfiguredName);
+                        switchOutletLightService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
+                        switchOutletLightService.getCharacteristic(Characteristic.On)
                             .onGet(async () => {
-                                const state = this.relaysStete[i] ?? false;
-                                const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${logName}, state: ${state ? 'ON' : 'OFF'}`);
+                                const state = this.powersStete[i] ?? false;
+                                const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${accessoryName} ${friendlyName}, state: ${state ? 'ON' : 'OFF'}`);
                                 return state;
                             })
                             .onSet(async (state) => {
-                                const powerOn = relaysCount === 1 ? CONSTANS.ApiCommands.Power + CONSTANS.ApiCommands.On : CONSTANS.ApiCommands.Power + (i + 1) + CONSTANS.ApiCommands.On;
-                                const powerOff = relaysCount === 1 ? CONSTANS.ApiCommands.Power + CONSTANS.ApiCommands.Off : CONSTANS.ApiCommands.Power + (i + 1) + CONSTANS.ApiCommands.Off;
-                                state = state ? powerOn : powerOff;
                                 try {
+                                    const relayNr = i + 1;
+                                    const powerOn = relaysCount === 1 ? CONSTANS.ApiCommands.PowerOn : `${CONSTANS.ApiCommands.Power}${relayNr}${CONSTANS.ApiCommands.On}`;
+                                    const powerOff = relaysCount === 1 ? CONSTANS.ApiCommands.PowerOff : `${CONSTANS.ApiCommands.Power}${relayNr}${CONSTANS.ApiCommands.Off}`;
+                                    state = state ? powerOn : powerOff;
+
                                     await this.axiosInstance(state);
-                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${logName}, set state: ${state ? 'ON' : 'OFF'}`);
+                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${accessoryName} ${friendlyName}, set state: ${state ? 'ON' : 'OFF'}`);
                                 } catch (error) {
-                                    this.log.error(`Device: ${this.host} ${logName}, set state error: ${error}`);
+                                    this.log.error(`Device: ${this.host} ${accessoryName} ${friendlyName}, set state error: ${error}`);
                                 }
                             });
-                        this.relayServices.push(relayService);
-                        accessory.addService(relayService);
+                        if (deviceType === 1) {
+                            if (this.lightsBrightnessSupported[i]) {
+                                switchOutletLightService.getCharacteristic(Characteristic.Brightness)
+                                    .onGet(async () => {
+                                        const value = this.lightsBrightness[i] ?? 0;
+                                        const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${accessoryName}, brightness: ${value} %`);
+                                        return value;
+                                    })
+                                    .onSet(async (value) => {
+                                        try {
+                                            const brightness = `${CONSTANS.ApiCommands.Dimmer}${value}`; //0..100
+                                            await this.axiosInstance(brightness);
+                                            const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${accessoryName}, set brightness: ${value} %`);
+                                        } catch (error) {
+                                            this.log.error(`Device: ${this.host} ${accessoryName}, set brightness error: ${error}`);
+                                        }
+                                    });
+                            };
+                            if (this.lightsColorTemperatueSupported[i]) {
+                                switchOutletLightService.getCharacteristic(Characteristic.ColorTemperature)
+                                    .onGet(async () => {
+                                        const value = this.lightsColorTemperatue[i] > 153 ? this.lightsColorTemperatue[i] : 140;
+                                        const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${accessoryName}, color temperatur: ${value}`);
+                                        return value;
+                                    })
+                                    .onSet(async (value) => {
+                                        try {
+                                            value = value < 153 ? 153 : value;
+                                            const colorTemperature = `${CONSTANS.ApiCommands.ColorTemperature}${value}`; //140..500
+                                            await this.axiosInstance(colorTemperature);
+                                            const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${accessoryName}, set brightness: ${value} °`);
+                                        } catch (error) {
+                                            this.log.error(`Device: ${this.host} ${accessoryName}, set color temperatur error: ${error}`);
+                                        }
+                                    });
+                            };
+                            if (this.lightsHueSupported[i]) {
+                                switchOutletLightService.getCharacteristic(Characteristic.Hue)
+                                    .onGet(async () => {
+                                        const value = this.lightsHue[i] ?? 0;
+                                        const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${accessoryName}, hue: ${value} %`);
+                                        return value;
+                                    })
+                                    .onSet(async (value) => {
+                                        try {
+                                            const hue = `${CONSTANS.ApiCommands.HSBHue}${value}`; //0..360
+                                            await this.axiosInstance(hue);
+                                            const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${accessoryName}, set hue: ${value} °`);
+                                        } catch (error) {
+                                            this.log.error(`Device: ${this.host} ${accessoryName}, set hue error: ${error}`);
+                                        }
+                                    });
+                            };
+                            if (this.lightsSaturationSupported[i]) {
+                                switchOutletLightService.getCharacteristic(Characteristic.Saturation)
+                                    .onGet(async () => {
+                                        const value = this.lightsSaturation[i] ?? 0;
+                                        const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${accessoryName}, saturation: ${value} %`);
+                                        return value;
+                                    })
+                                    .onSet(async (value) => {
+                                        try {
+                                            const saturation = `${CONSTANS.ApiCommands.HSBSaturation}${value}`; //0..100
+                                            await this.axiosInstance(saturation);
+                                            const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${accessoryName}, set saturation: ${value} °`);
+                                        } catch (error) {
+                                            this.log.error(`Device: ${this.host} ${accessoryName}, set saturation error: ${error}`);
+                                        }
+                                    });
+                            };
+                        };
+                        this.switchOutletLightServices.push(switchOutletLightService);
+                        accessory.addService(switchOutletLightService);
                     };
-                }
+                };
 
                 //sensors
                 const sensorsCount = this.sensorsCount;
@@ -366,14 +495,14 @@ class TasmotaDevice {
                         this.sensorTemperatureServices = [];
                         for (let i = 0; i < sensorsTemperatureCount; i++) {
                             const sensorName = this.sensorsName[i];
-                            const serviceName = `${accessoryName} ${sensorName} Temperature`;
-                            const sensorTemperatureService = new Service.TemperatureSensor(serviceName, `Temperature Sensor${i}`);
+                            const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Temperature` : `${sensorName} Temperature`;
+                            const sensorTemperatureService = new Service.TemperatureSensor(serviceName, `Temperature Sensor ${i}`);
                             sensorTemperatureService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                             sensorTemperatureService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
                             sensorTemperatureService.getCharacteristic(Characteristic.CurrentTemperature)
                                 .onGet(async () => {
                                     const value = this.sensorsTemperature[i];
-                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${accessoryName}, sensor:${sensorName} temperature: ${value} °${this.tempUnit}`);
+                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${accessoryName}, sensor: ${sensorName} temperature: ${value} °${this.tempUnit}`);
                                     return value;
                                 });
                             this.sensorTemperatureServices.push(sensorTemperatureService);
@@ -388,8 +517,8 @@ class TasmotaDevice {
                         this.sensorHumidityServices = [];
                         for (let i = 0; i < sensorsHumidityCount; i++) {
                             const sensorName = this.sensorsName[i];
-                            const serviceName = `${accessoryName} ${sensorName} Humidity`;
-                            const sensorHumidityService = new Service.HumiditySensor(serviceName, `Humidity Sensor${i}`);
+                            const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Humidity` : `${sensorName} Humidity`;
+                            const sensorHumidityService = new Service.HumiditySensor(serviceName, `Humidity Sensor ${i}`);
                             sensorHumidityService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                             sensorHumidityService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
                             sensorHumidityService.getCharacteristic(Characteristic.CurrentRelativeHumidity)
@@ -410,8 +539,8 @@ class TasmotaDevice {
                         this.sensorDewPointServices = [];
                         for (let i = 0; i < sensorsDewPointCount; i++) {
                             const sensorName = this.sensorsName[i];
-                            const serviceName = `${accessoryName} ${sensorName} Dew Point`;
-                            const sensorDewPointService = new Service.TemperatureSensor(serviceName, `Dew Point Sensor${i}`);
+                            const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Dew Point` : `${sensorName} Dew Point`;
+                            const sensorDewPointService = new Service.TemperatureSensor(serviceName, `Dew Point Sensor ${i}`);
                             sensorDewPointService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                             sensorDewPointService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
                             sensorDewPointService.getCharacteristic(Characteristic.CurrentTemperature)
@@ -436,8 +565,8 @@ class TasmotaDevice {
                         this.sensorCarbonDioxydeServices = [];
                         for (let i = 0; i < sensorsCarbonDioxydeCount; i++) {
                             const sensorName = this.sensorsName[i];
-                            const serviceName = `${accessoryName} ${sensorName} Carbon Dioxyde`;
-                            const sensorCarbonDioxydeService = new Service.CarbonDioxideSensor(serviceName, `Carbon Dioxyde Sensor${i}`);
+                            const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Carbon Dioxyde` : `${sensorName} Carbon Dioxyde`;
+                            const sensorCarbonDioxydeService = new Service.CarbonDioxideSensor(serviceName, `Carbon Dioxyde Sensor ${i}`);
                             sensorCarbonDioxydeService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                             sensorCarbonDioxydeService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
                             sensorCarbonDioxydeService.getCharacteristic(Characteristic.CarbonDioxideDetected)
@@ -470,8 +599,8 @@ class TasmotaDevice {
                         this.sensorAmbientLightServices = [];
                         for (let i = 0; i < sensorsAmbientLightCount; i++) {
                             const sensorName = this.sensorsName[i];
-                            const serviceName = `${accessoryName} ${sensorName} Ambient Light`;
-                            const sensorAmbientLightService = new Service.LightSensor(serviceName, `Ambient Light Sensor${i}`);
+                            const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Ambient Light` : `${sensorName} Ambient Light`;
+                            const sensorAmbientLightService = new Service.LightSensor(serviceName, `Ambient Light Sensor ${i}`);
                             sensorAmbientLightService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                             sensorAmbientLightService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
                             sensorAmbientLightService.getCharacteristic(Characteristic.CurrentAmbientLightLevel)

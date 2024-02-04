@@ -51,6 +51,47 @@
                 "functionBody": "return model.devices[arrayIndices].auth === true;"
               }
             },
+            "relaysNamePrefix": {
+              "title": "Name Prefix",
+              "type": "boolean",
+              "description": "Here enable/disable the accessory name as a prefix for relays name.",
+              "required": true
+            },
+            "relaysDisplayType": {
+              "title": "Display Type",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0,
+              "oneOf": [
+                {
+                  "title": "Outlet",
+                  "enum": [
+                    0
+                  ]
+                },
+                {
+                  "title": "Switch",
+                  "enum": [
+                    1
+                  ]
+                }
+              ],
+              "description": "Here select characteristic display type for relays which are exposed in the HomeKit app.",
+              "required": true
+            },
+            "lightsNamePrefix": {
+              "title": "Name Prefix",
+              "type": "boolean",
+              "description": "Here enable/disable the accessory name as a prefix for light name.",
+              "required": true
+            },
+            "sensorsNamePrefix": {
+              "title": "Name Prefix",
+              "type": "boolean",
+              "description": "Here enable/disable the accessory name as a prefix for sensors name.",
+              "required": true
+            },
             "refreshInterval": {
               "title": "Refresh Interval (sec)",
               "type": "integer",
@@ -106,6 +147,28 @@
               "type": "tabarray",
               "title": "{{ value.title }}",
               "items": [
+                {
+                  "key": "devices[]",
+                  "title": "Relays",
+                  "items": [
+                    "devices[].relaysDisplayType",
+                    "devices[].relaysNamePrefix"
+                  ]
+                },
+                {
+                  "key": "devices[]",
+                  "title": "Lights",
+                  "items": [
+                    "devices[].lightsNamePrefix"
+                  ]
+                },
+                {
+                  "key": "devices[]",
+                  "title": "Sensors",
+                  "items": [
+                    "devices[].sensorsNamePrefix"
+                  ]
+                },
                 {
                   "key": "devices[]",
                   "title": "Authorization",

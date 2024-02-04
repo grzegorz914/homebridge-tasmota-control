@@ -5,8 +5,9 @@
 <span align="center">
 
 # Homebridge Tasmota Control
+
 [![verified-by-homebridge](https://badgen.net/badge/homebridge/verified/purple)](https://github.com/homebridge/homebridge/wiki/Verified-Plugins)
-[![npm](https://badgen.net/npm/dt/homebridge-tasmota-control?color=purple)](https://www.npmjs.com/package/homebridge-tasmota-control) 
+[![npm](https://badgen.net/npm/dt/homebridge-tasmota-control?color=purple)](https://www.npmjs.com/package/homebridge-tasmota-control)
 [![npm](https://badgen.net/npm/v/homebridge-tasmota-control?color=purple)](https://www.npmjs.com/package/homebridge-tasmota-control)
 [![npm](https://img.shields.io/npm/v/homebridge-tasmota-control/beta.svg?style=flat-square)](https://www.npmjs.com/package/homebridge-tasmota-control)
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/grzegorz914/homebridge-tasmota-control.svg)](https://github.com/grzegorz914/homebridge-tasmota-control/pulls)
@@ -26,9 +27,11 @@ Homebridge plugin for Tasmota flashed devices.
 
 ## About The Plugin
 
-* Plugin work witch Tasmota falshed devices, communicate over web requests.
-* Control devices:
-  * Switches, Relays
+* Plugin work witch Tasmota falshed devices.
+* Control relay devices:
+  * Light - `Power ON/OFF`, `Dimmer`, `Color Temperature`, `Hue`, `Saturation`
+  * Outlet - `Power ON/OFF`
+  * Switch - `Power ON/OFF`
 * Read Sensors:
   * Temperature
   * Humidity
@@ -39,21 +42,25 @@ Homebridge plugin for Tasmota flashed devices.
 ### Configuration
 
 * Run this plugin as a [Child Bridge](https://github.com/homebridge/homebridge/wiki/Child-Bridges) (Highly Recommended), this prevent crash Homebridge if plugin crashes.
-* Install and use [Homebridge Config UI X](https://github.com/homebridge/homebridge-config-ui-x/wiki) to configure this plugin (Highly Recommended). 
-* The `sample-config.json` can be edited and used as an alternative. 
+* Install and use [Homebridge Config UI X](https://github.com/homebridge/homebridge-config-ui-x/wiki) to configure this plugin (Highly Recommended).
+* The `sample-config.json` can be edited and used as an alternative.
 * Be sure to always make a backup copy of your config.json file before making any changes to it.
 
 <p align="center">
   <a href="https://github.com/grzegorz914/homebridge-tasmota-control"><img src="https://raw.githubusercontent.com/grzegorz914/homebridge-tasmota-control/master/graphics/ustawienia.png" width="840"></a>
 </p>
 
-| Key | Description | 
+| Key | Description |
 | --- | --- |
 | `name` | Here set the accessory *Name* to be displayed in *Homebridge/HomeKit*. |
 | `host` | Here set the *Hsostname or Address IP* of the Device.|
 | `auth` | If enabled, authorizatins credentials will be used for login. |
 | `user` | Here set the authorization *Username*. |
 | `passwd` | Here set the authorization *Password*. |
+| `relaysNamePrefix` | Here enable/disable the accessory name as a prefix for relays name. |
+| `relaysDisplayType` | Here select characteristic display type for relays which are exposed in the HomeKit app. |
+| `lightsNamePrefix` | Here enable/disable the accessory name as a prefix for lights name. |
+| `sensorsNamePrefix` | Here enable/disable the accessory name as a prefix for sensors name. |
 | `enableDebugMode` | This enable debug log in homebridge console. |
 | `disableLogInfo` | This disable log info, all values and state will not be displayed in Homebridge log console. |
 | `disableLogDeviceInfo` | If enabled, add ability to disable log device info by every connections device to the network. |
