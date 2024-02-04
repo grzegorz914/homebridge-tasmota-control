@@ -381,8 +381,11 @@ class TasmotaDevice {
                     for (let i = 0; i < relaysCount; i++) {
                         const friendlyName = this.friendlyNames[i];
                         const deviceType = this.devicesType[i];
-                        const serviceType = [[Service.Outlet, Service.Switch][this.relaysDisplayType], Service.Lightbulb][deviceType];
-                        const serviceName = [[this.relaysNamePrefix ? `${accessoryName} ${friendlyName}` : friendlyName], this.lightsNamePrefix ? `${accessoryName} ${friendlyName}` : friendlyName][deviceType];
+                        const serviceSwitchOutlet = [Service.Outlet, Service.Switch][this.relaysDisplayType];
+                        const serviceType = [serviceSwitchOutlet, Service.Lightbulb][deviceType];
+                        const serviceNameSwitchOutlet = this.relaysNamePrefix ? `${accessoryName} ${friendlyName}` : friendlyName;
+                        const serviceNameLightbulb = this.lightsNamePrefix ? `${accessoryName} ${friendlyName}` : friendlyName;
+                        const serviceName = [serviceNameSwitchOutlet, serviceNameLightbulb][deviceType];
                         const switchOutletLightService = new serviceType(serviceName, `Power ${[i]}`);
                         switchOutletLightService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                         switchOutletLightService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
