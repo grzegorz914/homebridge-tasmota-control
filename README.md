@@ -62,6 +62,8 @@ Homebridge plugin for Tasmota flashed devices.
 | `relaysDisplayType` | Here select characteristic display type for relays which are exposed in the HomeKit app. |
 | `lightsNamePrefix` | Here enable/disable the accessory name as a prefix for lights name. |
 | `sensorsNamePrefix` | Here enable/disable the accessory name as a prefix for sensors name. |
+| `loadNameFromDevice` | If enabled, the accessory name will be loaded direct from device. |
+| `refreshInterval` | Here set the data refresh time in (sec). |
 | `enableDebugMode` | This enable debug log in homebridge console. |
 | `disableLogInfo` | This disable log info, all values and state will not be displayed in Homebridge log console. |
 | `disableLogDeviceInfo` | If enabled, add ability to disable log device info by every connections device to the network. |
