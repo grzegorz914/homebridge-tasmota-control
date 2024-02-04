@@ -265,7 +265,7 @@ class TasmotaDevice {
                         const gas = sensorData.Gas ?? false;
                         const carbonDioxyde = sensorData.CarbonDioxyde ?? false;
                         const ambientLight = sensorData.Ambient ?? false;
-                        const motion = sensorData.Motion ?? false;
+                        const motion = sensorData === 'ON' ?? false;
 
                         const push = sensorName !== false && sensorName !== undefined && sensorName !== null ? this.sensorsName.push(sensorName) : false;
                         const push1 = temperature !== false && temperature !== undefined && temperature !== null ? this.sensorsTemperature.push(temperature) : false;

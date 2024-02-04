@@ -4,12 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - (04.02.2024)
+## Changes
+- add support for PIR Motion Sensors
+- cleanup
+
 ## [0.9.0] - (04.02.2024)
 ## Changes
 - add support for Light - On/Off, Brightness, Color Temperature, Hue, Saturation
 - add possibility to disable/enable name prefix for relays, ligts, sensors
 - config schema updated
-- cleanu
+- cleanup
 
 ## [0.8.0] - (03.02.2024)
 ## Changes

@@ -60,7 +60,8 @@
         "SHT30",
         "SHT4X",
         "SHT40",
-        "TC74"
+        "TC74",
+        "PIR"
     ],
     "SensorPropertiesKeys": [
         "Temperature",
