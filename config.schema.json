@@ -96,7 +96,7 @@
               "title": "Load Name From Device",
               "type": "boolean",
               "default": false,
-              "description": "If enabled the accessory name will be loaded direct from device..",
+              "description": "If enabled, the accessory name will be loaded direct from device.",
               "required": false
             },
             "refreshInterval": {
