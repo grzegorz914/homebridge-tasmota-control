@@ -92,6 +92,13 @@
               "description": "Here enable/disable the accessory name as a prefix for sensors name.",
               "required": true
             },
+            "loadNameFromDevice": {
+              "title": "Load Name From Device",
+              "type": "boolean",
+              "default": false,
+              "description": "If enabled the accessory name will be loaded direct from device..",
+              "required": false
+            },
             "refreshInterval": {
               "title": "Refresh Interval (sec)",
               "type": "integer",
@@ -180,12 +187,19 @@
                 },
                 {
                   "key": "devices[]",
+                  "title": "Device",
+                  "items": [
+                    "devices[].loadNameFromDevice",
+                    "devices[].refreshInterval"
+                  ]
+                },
+                {
+                  "key": "devices[]",
                   "title": "System",
                   "items": [
                     "devices[].enableDebugMode",
                     "devices[].disableLogInfo",
-                    "devices[].disableLogDeviceInfo",
-                    "devices[].refreshInterval"
+                    "devices[].disableLogDeviceInfo"
                   ]
                 }
               ]

@@ -29,6 +29,7 @@ class TasmotaDevice {
         this.enableDebugMode = config.enableDebugMode || false;
         this.disableLogInfo = config.disableLogInfo || false;
         this.disableLogDeviceInfo = config.disableLogDeviceInfo || false;
+        this.loadNameFromDevice = config.loadNameFromDevice || false;
 
         //device info
         this.manufacturer = 'Tasmota';
@@ -115,7 +116,7 @@ class TasmotaDevice {
                 const deviceInfoKeys = Object.keys(deviceInfo);
 
                 //relays
-                const deviceName = deviceInfo.Status.DeviceName ?? 'Tasmota';
+                const deviceName = this.loadNameFromDevice ? deviceInfo.Status.DeviceName : this.name;
                 const friendlyNames = Array.isArray(deviceInfo.Status.FriendlyName) ? deviceInfo.Status.FriendlyName : [deviceInfo.Status.FriendlyName];
                 const relaysCount = friendlyNames.length ?? 0;
                 for (let i = 0; i < relaysCount; i++) {
@@ -154,7 +155,7 @@ class TasmotaDevice {
 
                 //device info
                 if (!this.disableLogDeviceInfo) {
-                    this.log(`----- ${this.name} -----`);
+                    this.log(`----- ${deviceName} -----`);
                     this.log(`Manufacturer: ${this.manufacturer}`);
                     this.log(`Hardware: ${modelName}`);
                     this.log(`Serialnr: ${addressMac}`);
@@ -164,6 +165,7 @@ class TasmotaDevice {
                     this.log(`----------------------------------`);
                 };
 
+                this.deviceName = deviceName;
                 this.modelName = modelName;
                 this.serialNumber = addressMac;
                 this.firmwareRevision = firmwareRevision;
@@ -253,7 +255,7 @@ class TasmotaDevice {
 
                     const sensorsStatusData = await this.axiosInstance(CONSTANS.ApiCommands.Status);
                     const sensorsStatus = sensorsStatusData.data.StatusSNS;
-                    const debug = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, debug ${sensorsCount === 1 ? 'sensor' : 'sensors'} status: ${JSON.stringify(sensorsStatus, null, 2)}`) : false;
+                    const debug = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, debug sensors status: ${JSON.stringify(sensorsStatus, null, 2)}`) : false;
 
                     for (let i = 0; i < sensorsCount; i++) {
                         const sensorName = this.sensors[i].name;
@@ -353,16 +355,16 @@ class TasmotaDevice {
     //Prepare accessory
     prepareAccessory() {
         return new Promise((resolve, reject) => {
-            const debug = this.enableDebugMode ? this.log('Prepare Accessory') : false;
+            const debug = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, Prepare Accessory`) : false;
 
             try {
-                const accessoryName = this.name;
+                const accessoryName = this.deviceName;
                 const accessoryUUID = UUID.generate(this.serialNumber);
                 const accessoryCategory = Categories.OTHER;
                 const accessory = new Accessory(accessoryName, accessoryUUID, accessoryCategory);
 
                 //Prepare information service
-                const debug1 = this.enableDebugMode ? this.log('Prepare Information Service') : false;
+                const debug1 = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, Prepare Information Service`) : false;
                 accessory.getService(Service.AccessoryInformation)
                     .setCharacteristic(Characteristic.Manufacturer, this.manufacturer)
                     .setCharacteristic(Characteristic.Model, this.modelName)
@@ -370,12 +372,12 @@ class TasmotaDevice {
                     .setCharacteristic(Characteristic.FirmwareRevision, this.firmwareRevision);
 
                 //Prepare services 
-                const debug2 = this.enableDebugMode ? this.log('Prepare Services') : false;
+                const debug2 = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, Prepare Services`) : false;
 
                 //switches, outlets, lights
                 const relaysCount = this.relaysCount;
                 if (relaysCount > 0) {
-                    const debug = this.enableDebugMode ? this.log(`Prepare Switch/Outlet/Light Services`) : false;
+                    const debug = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, Prepare Switch/Outlet/Light Services`) : false;
                     this.switchOutletLightServices = [];
 
                     for (let i = 0; i < relaysCount; i++) {
@@ -392,7 +394,7 @@ class TasmotaDevice {
                         switchOutletLightService.getCharacteristic(Characteristic.On)
                             .onGet(async () => {
                                 const state = this.powersStete[i] ?? false;
-                                const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${accessoryName} ${friendlyName}, state: ${state ? 'ON' : 'OFF'}`);
+                                const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${this.name}, ${friendlyName}, state: ${state ? 'ON' : 'OFF'}`);
                                 return state;
                             })
                             .onSet(async (state) => {
@@ -403,9 +405,9 @@ class TasmotaDevice {
                                     state = state ? powerOn : powerOff;
 
                                     await this.axiosInstance(state);
-                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${accessoryName} ${friendlyName}, set state: ${state ? 'ON' : 'OFF'}`);
+                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${this.name}, ${friendlyName}, set state: ${state ? 'ON' : 'OFF'}`);
                                 } catch (error) {
-                                    this.log.error(`Device: ${this.host} ${accessoryName} ${friendlyName}, set state error: ${error}`);
+                                    this.log.error(`Device: ${this.host} ${this.name}, ${friendlyName}, set state error: ${error}`);
                                 }
                             });
                         if (deviceType === 1) {
@@ -413,16 +415,16 @@ class TasmotaDevice {
                                 switchOutletLightService.getCharacteristic(Characteristic.Brightness)
                                     .onGet(async () => {
                                         const value = this.brightness[i] ?? 0;
-                                        const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${accessoryName}, brightness: ${value} %`);
+                                        const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${this.name}, brightness: ${value} %`);
                                         return value;
                                     })
                                     .onSet(async (value) => {
                                         try {
                                             const brightness = `${CONSTANS.ApiCommands.Dimmer}${value}`; //0..100
                                             await this.axiosInstance(brightness);
-                                            const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${accessoryName}, set brightness: ${value} %`);
+                                            const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${this.name}, set brightness: ${value} %`);
                                         } catch (error) {
-                                            this.log.error(`Device: ${this.host} ${accessoryName}, set brightness error: ${error}`);
+                                            this.log.error(`Device: ${this.host} ${this.name}, set brightness error: ${error}`);
                                         }
                                     });
                             };
@@ -430,7 +432,7 @@ class TasmotaDevice {
                                 switchOutletLightService.getCharacteristic(Characteristic.ColorTemperature)
                                     .onGet(async () => {
                                         const value = this.colorTemperatue[i] > 153 ? this.colorTemperatue[i] : 140;
-                                        const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${accessoryName}, color temperatur: ${value}`);
+                                        const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${this.name}, color temperatur: ${value}`);
                                         return value;
                                     })
                                     .onSet(async (value) => {
@@ -440,7 +442,7 @@ class TasmotaDevice {
                                             await this.axiosInstance(colorTemperature);
                                             const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${accessoryName}, set brightness: ${value} °`);
                                         } catch (error) {
-                                            this.log.error(`Device: ${this.host} ${accessoryName}, set color temperatur error: ${error}`);
+                                            this.log.error(`Device: ${this.host} ${this.name}, set color temperatur error: ${error}`);
                                         }
                                     });
                             };
@@ -448,16 +450,16 @@ class TasmotaDevice {
                                 switchOutletLightService.getCharacteristic(Characteristic.Hue)
                                     .onGet(async () => {
                                         const value = this.hue[i] ?? 0;
-                                        const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${accessoryName}, hue: ${value} %`);
+                                        const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${this.name}, hue: ${value} %`);
                                         return value;
                                     })
                                     .onSet(async (value) => {
                                         try {
                                             const hue = `${CONSTANS.ApiCommands.HSBHue}${value}`; //0..360
                                             await this.axiosInstance(hue);
-                                            const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${accessoryName}, set hue: ${value} °`);
+                                            const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${this.name}, set hue: ${value} °`);
                                         } catch (error) {
-                                            this.log.error(`Device: ${this.host} ${accessoryName}, set hue error: ${error}`);
+                                            this.log.error(`Device: ${this.host} ${this.name}, set hue error: ${error}`);
                                         }
                                     });
                             };
@@ -465,16 +467,16 @@ class TasmotaDevice {
                                 switchOutletLightService.getCharacteristic(Characteristic.Saturation)
                                     .onGet(async () => {
                                         const value = this.saturation[i] ?? 0;
-                                        const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${accessoryName}, saturation: ${value} %`);
+                                        const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${this.name}, saturation: ${value} %`);
                                         return value;
                                     })
                                     .onSet(async (value) => {
                                         try {
                                             const saturation = `${CONSTANS.ApiCommands.HSBSaturation}${value}`; //0..100
                                             await this.axiosInstance(saturation);
-                                            const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${accessoryName}, set saturation: ${value} °`);
+                                            const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${this.name}, set saturation: ${value} °`);
                                         } catch (error) {
-                                            this.log.error(`Device: ${this.host} ${accessoryName}, set saturation error: ${error}`);
+                                            this.log.error(`Device: ${this.host} ${this.name}, set saturation error: ${error}`);
                                         }
                                     });
                             };
@@ -487,12 +489,12 @@ class TasmotaDevice {
                 //sensors
                 const sensorsCount = this.sensorsCount;
                 if (sensorsCount > 0) {
-                    const debug = this.enableDebugMode ? this.log('Prepare Sensor Services') : false;
+                    const debug = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, Prepare Sensor Services`) : false;
 
                     //temperature
                     const sensorsTemperatureCount = this.sensorsTemperatureCount;
                     if (sensorsTemperatureCount > 0) {
-                        const debug = this.enableDebugMode ? this.log('Prepare Temperature Sensor Services') : false;
+                        const debug = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, Prepare Temperature Sensor Services`) : false;
                         this.sensorTemperatureServices = [];
                         for (let i = 0; i < sensorsTemperatureCount; i++) {
                             const sensorName = this.sensorsName[i];
@@ -503,7 +505,7 @@ class TasmotaDevice {
                             sensorTemperatureService.getCharacteristic(Characteristic.CurrentTemperature)
                                 .onGet(async () => {
                                     const value = this.sensorsTemperature[i];
-                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${accessoryName}, sensor: ${sensorName} temperature: ${value} °${this.tempUnit}`);
+                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${this.name}, sensor: ${sensorName} temperature: ${value} °${this.tempUnit}`);
                                     return value;
                                 });
                             this.sensorTemperatureServices.push(sensorTemperatureService);
@@ -514,7 +516,7 @@ class TasmotaDevice {
                     //humidity
                     const sensorsHumidityCount = this.sensorsHumidityCount;
                     if (sensorsTemperatureCount > 0) {
-                        const debug = this.enableDebugMode ? this.log('Prepare Humidity Sensor Services') : false;
+                        const debug = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, Prepare Humidity Sensor Services`) : false;
                         this.sensorHumidityServices = [];
                         for (let i = 0; i < sensorsHumidityCount; i++) {
                             const sensorName = this.sensorsName[i];
@@ -525,7 +527,7 @@ class TasmotaDevice {
                             sensorHumidityService.getCharacteristic(Characteristic.CurrentRelativeHumidity)
                                 .onGet(async () => {
                                     const value = this.sensorsHumidity[i];
-                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${accessoryName}, sensor: ${sensorName} humidity: ${value} %`);
+                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${this.name}, sensor: ${sensorName} humidity: ${value} %`);
                                     return value;
                                 });
                             this.sensorHumidityServices.push(sensorHumidityService);
@@ -536,7 +538,7 @@ class TasmotaDevice {
                     //dew point
                     const sensorsDewPointCount = this.sensorsDewPointCount;
                     if (sensorsDewPointCount > 0) {
-                        const debug = this.enableDebugMode ? this.log('Prepare Dew Point Sensor Services') : false;
+                        const debug = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, Prepare Dew Point Sensor Services`) : false;
                         this.sensorDewPointServices = [];
                         for (let i = 0; i < sensorsDewPointCount; i++) {
                             const sensorName = this.sensorsName[i];
@@ -547,7 +549,7 @@ class TasmotaDevice {
                             sensorDewPointService.getCharacteristic(Characteristic.CurrentTemperature)
                                 .onGet(async () => {
                                     const value = this.sensorsDewPoint[i];
-                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${accessoryName}, sensor: ${sensorName} dew point: ${value} °${this.tempUnit}`);
+                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${this.name}, sensor: ${sensorName} dew point: ${value} °${this.tempUnit}`);
                                     return value;
                                 });
                             this.sensorDewPointServices.push(sensorDewPointService);
@@ -562,7 +564,7 @@ class TasmotaDevice {
                     //carbon dioxyde
                     const sensorsCarbonDioxydeCount = this.sensorsCarbonDioxydeCount;
                     if (sensorsCarbonDioxydeCount > 0) {
-                        const debug = this.enableDebugMode ? this.log('Prepare Carbon Dioxyde Sensor Services') : false;
+                        const debug = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, Prepare Carbon Dioxyde Sensor Services`) : false;
                         this.sensorCarbonDioxydeServices = [];
                         for (let i = 0; i < sensorsCarbonDioxydeCount; i++) {
                             const sensorName = this.sensorsName[i];
@@ -573,19 +575,19 @@ class TasmotaDevice {
                             sensorCarbonDioxydeService.getCharacteristic(Characteristic.CarbonDioxideDetected)
                                 .onGet(async () => {
                                     const state = this.sensorsCarbonDioxyde[i] > 1000;
-                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${accessoryName}, sensor: ${sensorName} carbon dioxyde detected: ${state ? 'Yes' : 'No'}`);
+                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${this.name}, sensor: ${sensorName} carbon dioxyde detected: ${state ? 'Yes' : 'No'}`);
                                     return state;
                                 });
                             sensorCarbonDioxydeService.getCharacteristic(Characteristic.CarbonDioxideLevel)
                                 .onGet(async () => {
                                     const value = this.sensorsCarbonDioxyde[i];
-                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${accessoryName}, sensor: ${sensorName} carbon dioxyde level: ${value} ppm`);
+                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${this.name}, sensor: ${sensorName} carbon dioxyde level: ${value} ppm`);
                                     return value;
                                 });
                             sensorCarbonDioxydeService.getCharacteristic(Characteristic.CarbonDioxidePeakLevel)
                                 .onGet(async () => {
                                     const value = this.sensorsCarbonDioxyde[i];
-                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${accessoryName}, sensor: ${sensorName} carbon dioxyde peak level: ${value} ppm`);
+                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${this.name}, sensor: ${sensorName} carbon dioxyde peak level: ${value} ppm`);
                                     return value;
                                 });
                             this.sensorCarbonDioxydeServices.push(sensorCarbonDioxydeService);
@@ -596,7 +598,7 @@ class TasmotaDevice {
                     //ambient light
                     const sensorsAmbientLightCount = this.sensorsAmbientLightCount;
                     if (sensorsAmbientLightCount > 0) {
-                        const debug = this.enableDebugMode ? this.log('Prepare Ambient Light Sensor Services') : false;
+                        const debug = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, Prepare Ambient Light Sensor Services`) : false;
                         this.sensorAmbientLightServices = [];
                         for (let i = 0; i < sensorsAmbientLightCount; i++) {
                             const sensorName = this.sensorsName[i];
@@ -607,7 +609,7 @@ class TasmotaDevice {
                             sensorAmbientLightService.getCharacteristic(Characteristic.CurrentAmbientLightLevel)
                                 .onGet(async () => {
                                     const value = this.sensorsAmbientLight[i];
-                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${accessoryName}, sensor: ${sensorName} ambient light: ${value} lx`);
+                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${this.name}, sensor: ${sensorName} ambient light: ${value} lx`);
                                     return value;
                                 });
                             this.sensorAmbientLightServices.push(sensorAmbientLightService);
@@ -618,7 +620,7 @@ class TasmotaDevice {
                     //motion
                     const sensorsMotionCount = this.sensorsMotionCount;
                     if (sensorsMotionCount > 0) {
-                        const debug = this.enableDebugMode ? this.log('Prepare Motion Sensor Services') : false;
+                        const debug = this.enableDebugMode ? this.log(`Device: ${this.host} ${this.name}, Prepare Motion Sensor Services`) : false;
                         this.sensorMotionServices = [];
                         for (let i = 0; i < sensorsMotionCount; i++) {
                             const sensorName = this.sensorsName[i];
@@ -629,7 +631,7 @@ class TasmotaDevice {
                             sensorMotionService.getCharacteristic(Characteristic.MotionDetected)
                                 .onGet(async () => {
                                     const state = this.sensorsMotion[i];
-                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${accessoryName}, sensor: ${sensorName} motion: ${state ? 'ON' : 'OFF'}`);
+                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${this.name}, sensor: ${sensorName} motion: ${state ? 'ON' : 'OFF'}`);
                                     return state;
                                 });
                             this.sensorMotionServices.push(sensorMotionService);
