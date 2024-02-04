@@ -50,6 +50,7 @@ class TasmotaDevice {
         this.sensorsGasCount = 0;
         this.sensorsCarbonDioxydeCount = 0;
         this.sensorsAmbientLightCount = 0;
+        this.sensorsMotionCount = 0;
 
         //variable
         this.startPrepareAccessory = true;
@@ -199,7 +200,7 @@ class TasmotaDevice {
                         const powerKeys = Object.keys(powersStatus);
                         const deviceType = powerKeys.some(key => CONSTANS.LightKeys.includes(key)) ? 1 : 0; //0 - switch/outlet, 1 - light
                         const powerKey = relaysCount === 1 ? 'POWER' : 'POWER' + (i + 1);
-                        
+
                         const powerStase = powersStatus[powerKey] === 'ON' ?? false;
                         const brightness = powersStatus.Dimmer ?? false;
                         const colorTemperature = powersStatus.CT ?? false;
@@ -248,6 +249,7 @@ class TasmotaDevice {
                     this.sensorsGas = [];
                     this.sensorsCarbonDioxyde = [];
                     this.sensorsAmbientLight = [];
+                    this.sensorsMotion = [];
 
                     const sensorsStatusData = await this.axiosInstance(CONSTANS.ApiCommands.Status);
                     const sensorsStatus = sensorsStatusData.data.StatusSNS;
@@ -263,6 +265,7 @@ class TasmotaDevice {
                         const gas = sensorData.Gas ?? false;
                         const carbonDioxyde = sensorData.CarbonDioxyde ?? false;
                         const ambientLight = sensorData.Ambient ?? false;
+                        const motion = sensorData.Motion ?? false;
 
                         const push = sensorName !== false && sensorName !== undefined && sensorName !== null ? this.sensorsName.push(sensorName) : false;
                         const push1 = temperature !== false && temperature !== undefined && temperature !== null ? this.sensorsTemperature.push(temperature) : false;
@@ -272,6 +275,7 @@ class TasmotaDevice {
                         const push5 = gas !== false && gas !== undefined && gas !== null ? this.sensorsGas.push(gas) : false;
                         const push6 = carbonDioxyde !== false && carbonDioxyde !== undefined && carbonDioxyde !== null ? this.sensorsCarbonDioxyde.push(carbonDioxyde) : false;
                         const push7 = ambientLight !== false && ambientLight !== undefined && ambientLight !== null ? this.sensorsAmbientLight.push(ambientLight) : false;
+                        const push8 = motion !== false && motion !== undefined && motion !== null ? this.sensorsMotion.push(motion) : false;
                     };
 
                     this.sensorsTemperatureCount = this.sensorsTemperature.length;
@@ -281,6 +285,7 @@ class TasmotaDevice {
                     this.sensorsGasCount = this.sensorsGas.length;
                     this.sensorsCarbonDioxydeCount = this.sensorsCarbonDioxyde.length;
                     this.sensorsAmbientLightCount = this.sensorsAmbientLight.length;
+                    this.sensorsMotionCount = this.sensorsMotion.length;
                     this.tempUnit = sensorsStatus.TempUnit ?? 'C';
                     this.pressureUnit = sensorsStatus.PressureUnit ?? 'hPa';
 
@@ -288,44 +293,52 @@ class TasmotaDevice {
                     //update characteristics
                     if (this.sensorTemperatureServices && this.sensorsTemperatureCount > 0) {
                         for (let i = 0; i < this.sensorsTemperatureCount; i++) {
-                            const temperature = this.sensorsTemperature[i];
+                            const value = this.sensorsTemperature[i];
                             this.sensorTemperatureServices[i]
-                                .updateCharacteristic(Characteristic.CurrentTemperature, temperature);
+                                .updateCharacteristic(Characteristic.CurrentTemperature, value);
                         };
                     };
 
                     if (this.sensorHumidityServices && this.sensorsHumidityCount > 0) {
                         for (let i = 0; i < this.sensorsHumidityCount; i++) {
-                            const humidity = this.sensorsHumidity[i];
+                            const value = this.sensorsHumidity[i];
                             this.sensorHumidityServices[i]
-                                .updateCharacteristic(Characteristic.CurrentRelativeHumidity, humidity);
+                                .updateCharacteristic(Characteristic.CurrentRelativeHumidity, value);
                         };
                     };
 
                     if (this.sensorDewPointServices && this.sensorsDewPointCount > 0) {
                         for (let i = 0; i < this.sensorsDewPointCount; i++) {
-                            const dewPoint = this.sensorsDewPoint[i];
+                            const value = this.sensorsDewPoint[i];
                             this.sensorDewPointServices[i]
-                                .updateCharacteristic(Characteristic.CurrentTemperature, dewPoint);
+                                .updateCharacteristic(Characteristic.CurrentTemperature, value);
                         };
                     };
 
                     if (this.sensorCarbonDioxydeServices && this.sensorsCarbonDioxydeCount > 0) {
                         for (let i = 0; i < this.sensorsCarbonDioxydeCount; i++) {
-                            const carbonDioxydeDetected = this.sensorsCarbonDioxyde[i] > 1000;
-                            const carbonDioxydeLevel = this.sensorsCarbonDioxyde[i];
+                            const state = this.sensorsCarbonDioxyde[i] > 1000;
+                            const value = this.sensorsCarbonDioxyde[i];
                             this.sensorCarbonDioxydeServices[i]
-                                .updateCharacteristic(Characteristic.CarbonDioxideDetected, carbonDioxydeDetected)
-                                .updateCharacteristic(Characteristic.CarbonDioxideLevel, carbonDioxydeLevel)
-                                .updateCharacteristic(Characteristic.CarbonDioxidePeakLevel, carbonDioxydeLevel);
+                                .updateCharacteristic(Characteristic.CarbonDioxideDetected, state)
+                                .updateCharacteristic(Characteristic.CarbonDioxideLevel, value)
+                                .updateCharacteristic(Characteristic.CarbonDioxidePeakLevel, value);
                         };
                     };
 
                     if (this.sensorAmbientLightServices && this.sensorsAmbientLightCount > 0) {
                         for (let i = 0; i < this.sensorsAmbientLightCount; i++) {
-                            const ambientLight = this.sensorsAmbientLight[i];
+                            const value = this.sensorsAmbientLight[i];
                             this.sensorAmbientLightServices[i]
-                                .updateCharacteristic(Characteristic.CurrentAmbientLightLevel, ambientLight);
+                                .updateCharacteristic(Characteristic.CurrentAmbientLightLevel, value);
+                        };
+                    };
+
+                    if (this.sensorMotionServices && this.sensorsMotionCount > 0) {
+                        for (let i = 0; i < this.sensorsMotionCount; i++) {
+                            const state = this.sensorsMotion[i];
+                            this.sensorMotionServices[i]
+                                .updateCharacteristic(Characteristic.MotionDetected, state);
                         };
                     };
                 };
@@ -596,6 +609,28 @@ class TasmotaDevice {
                                 });
                             this.sensorAmbientLightServices.push(sensorAmbientLightService);
                             accessory.addService(sensorAmbientLightService);
+                        };
+                    }
+
+                    //motion
+                    const sensorsMotionCount = this.sensorsMotionCount;
+                    if (sensorsMotionCount > 0) {
+                        const debug = this.enableDebugMode ? this.log('Prepare Motion Sensor Services') : false;
+                        this.sensorMotionServices = [];
+                        for (let i = 0; i < sensorsMotionCount; i++) {
+                            const sensorName = this.sensorsName[i];
+                            const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Motion` : `${sensorName} Motion`;
+                            const sensorMotionService = new Service.MotionSensor(serviceName, `Motion Sensor ${i}`);
+                            sensorMotionService.addOptionalCharacteristic(Characteristic.ConfiguredName);
+                            sensorMotionService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
+                            sensorMotionService.getCharacteristic(Characteristic.MotionDetected)
+                                .onGet(async () => {
+                                    const state = this.sensorsMotion[i];
+                                    const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host}, ${accessoryName}, sensor: ${sensorName} motion: ${state ? 'ON' : 'OFF'}`);
+                                    return state;
+                                });
+                            this.sensorMotionServices.push(sensorMotionService);
+                            accessory.addService(sensorMotionService);
                         };
                     }
                 };

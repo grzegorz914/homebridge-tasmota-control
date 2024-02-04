@@ -52,20 +52,27 @@
         "SCD30",
         "SCD40",
         "SCD41",
+        "SEN0390",
+        "Si7021",
         "SHT1X",
         "SHT10",
         "SHT3X",
         "SHT30",
         "SHT4X",
-        "SHT40"
+        "SHT40",
+        "TC74"
     ],
-    "StatusSNSProperties": [
+    "SensorPropertiesKeys": [
         "Temperature",
         "Humidity",
         "DewPoint",
         "Pressure",
         "Gas",
         "CarbonDioxyde",
-        "Ambient"
+        "Ambient",
+        "Illuminance",
+        "Speed",
+        "Dir"
+
     ]
 }
