@@ -24,10 +24,12 @@
     },
     "LightKeys": [
         "Dimmer",
+        "Color",
         "HSBColor",
         "HSBColor1",
         "HSBColor2",
         "HSBColor3",
+        "White",
         "CT"
     ],
     "SensorKeys": [

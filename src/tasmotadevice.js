@@ -123,7 +123,7 @@ class TasmotaDevice {
                 };
 
                 //status fwr
-                this.statusFWRSupported = deviceInfoKeys.includes('StatusFWR');
+                const statusFWRSupported = deviceInfoKeys.includes('StatusFWR');
                 const firmwareRevision = deviceInfo.StatusFWR.Version ?? 'unknown';
                 const modelName = deviceInfo.StatusFWR.Hardware ?? '';
 
@@ -186,15 +186,10 @@ class TasmotaDevice {
                 if (relaysCount > 0) {
                     this.devicesType = [];
                     this.powersStete = [];
-
-                    this.lightsBrightnessSupported = [];
-                    this.lightsBrightness = [];
-                    this.lightsColorTemperatueSupported = [];
-                    this.lightsColorTemperatue = [];
-                    this.lightsHueSupported = [];
-                    this.lightsHue = [];
-                    this.lightsSaturationSupported = [];
-                    this.lightsSaturation = [];
+                    this.brightness = [];
+                    this.colorTemperatue = [];
+                    this.hue = [];
+                    this.saturation = [];
 
                     const powersStatusData = await this.axiosInstance(CONSTANS.ApiCommands.PowerStatus);
                     const powersStatus = powersStatusData.data;
@@ -204,47 +199,37 @@ class TasmotaDevice {
                         const powerKeys = Object.keys(powersStatus);
                         const deviceType = powerKeys.some(key => CONSTANS.LightKeys.includes(key)) ? 1 : 0; //0 - switch/outlet, 1 - light
                         const powerKey = relaysCount === 1 ? 'POWER' : 'POWER' + (i + 1);
-                        const status = powersStatus[powerKey] === 'ON' ?? false;
-
-                        const brightnessSupported = powerKeys.includes('Dimmer');
+                        
+                        const powerStase = powersStatus[powerKey] === 'ON' ?? false;
                         const brightness = powersStatus.Dimmer ?? false;
-                        const colorTemperatureSupported = powerKeys.includes('CT');
                         const colorTemperature = powersStatus.CT ?? false;
-                        const hueSupported = powerKeys.includes('HSBColor1');
                         const hue = powersStatus.HSBColor1 ?? false;
-                        const saturationSupported = powerKeys.includes('HSBColor2');
                         const saturation = powersStatus.HSBColor2 ?? false;
 
                         this.devicesType.push(deviceType);
-                        this.powersStete.push(status);
-                        this.lightsBrightnessSupported.push(brightnessSupported)
-                        const push = brightnessSupported ? this.lightsBrightness.push(brightness) : false;
-                        this.lightsColorTemperatueSupported.push(colorTemperatureSupported)
-                        const push1 = colorTemperatureSupported ? this.lightsColorTemperatue.push(colorTemperature) : false;
-                        this.lightsHueSupported.push(hueSupported)
-                        const push2 = hueSupported ? this.lightsHue.push(hue) : false;
-                        this.lightsSaturationSupported.push(saturationSupported)
-                        const push3 = saturationSupported ? this.lightsHue.push(saturation) : false;
+                        this.powersStete.push(powerStase);
+                        this.brightness.push(brightness);
+                        this.colorTemperatue.push(colorTemperature);
+                        this.hue.push(hue);
+                        this.saturation.push(saturation);
 
                         //update characteristics
                         if (this.switchOutletLightServices) {
                             this.switchOutletLightServices[i]
-                                .updateCharacteristic(Characteristic.On, status);
+                                .updateCharacteristic(Characteristic.On, powerStase);
 
                             if (deviceType === 1) {
-                                this.switchOutletLightServices[i].updateCharacteristic(Characteristic.On, status);
-
-                                if (brightnessSupported) {
+                                if (brightness !== false) {
                                     this.switchOutletLightServices[i].updateCharacteristic(Characteristic.Brightness, brightness);
                                 };
-                                if (colorTemperatureSupported) {
+                                if (colorTemperature !== false) {
                                     const value = colorTemperature > 153 ? colorTemperature : 140;
                                     this.switchOutletLightServices[i].updateCharacteristic(Characteristic.ColorTemperature, value);
                                 };
-                                if (hueSupported) {
+                                if (hue !== false) {
                                     this.switchOutletLightServices[i].updateCharacteristic(Characteristic.Hue, hue);
                                 };
-                                if (saturationSupported) {
+                                if (saturation !== false) {
                                     this.switchOutletLightServices[i].updateCharacteristic(Characteristic.Saturation, saturation);
                                 };
                             };
@@ -408,10 +393,10 @@ class TasmotaDevice {
                                 }
                             });
                         if (deviceType === 1) {
-                            if (this.lightsBrightnessSupported[i]) {
+                            if (this.brightness[i] !== false) {
                                 switchOutletLightService.getCharacteristic(Characteristic.Brightness)
                                     .onGet(async () => {
-                                        const value = this.lightsBrightness[i] ?? 0;
+                                        const value = this.brightness[i] ?? 0;
                                         const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${accessoryName}, brightness: ${value} %`);
                                         return value;
                                     })
@@ -425,10 +410,10 @@ class TasmotaDevice {
                                         }
                                     });
                             };
-                            if (this.lightsColorTemperatueSupported[i]) {
+                            if (this.colorTemperatue[i] !== false) {
                                 switchOutletLightService.getCharacteristic(Characteristic.ColorTemperature)
                                     .onGet(async () => {
-                                        const value = this.lightsColorTemperatue[i] > 153 ? this.lightsColorTemperatue[i] : 140;
+                                        const value = this.colorTemperatue[i] > 153 ? this.colorTemperatue[i] : 140;
                                         const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${accessoryName}, color temperatur: ${value}`);
                                         return value;
                                     })
@@ -443,10 +428,10 @@ class TasmotaDevice {
                                         }
                                     });
                             };
-                            if (this.lightsHueSupported[i]) {
+                            if (this.hue[i] !== false) {
                                 switchOutletLightService.getCharacteristic(Characteristic.Hue)
                                     .onGet(async () => {
-                                        const value = this.lightsHue[i] ?? 0;
+                                        const value = this.hue[i] ?? 0;
                                         const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${accessoryName}, hue: ${value} %`);
                                         return value;
                                     })
@@ -460,10 +445,10 @@ class TasmotaDevice {
                                         }
                                     });
                             };
-                            if (this.lightsSaturationSupported[i]) {
+                            if (this.saturation[i] !== false) {
                                 switchOutletLightService.getCharacteristic(Characteristic.Saturation)
                                     .onGet(async () => {
-                                        const value = this.lightsSaturation[i] ?? 0;
+                                        const value = this.saturation[i] ?? 0;
                                         const logInfo = this.disableLogInfo ? false : this.log(`Device: ${this.host} ${accessoryName}, saturation: ${value} %`);
                                         return value;
                                     })
