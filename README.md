@@ -33,9 +33,8 @@ Homebridge plugin for Tasmota flashed devices.
   * Outlet - `Power ON/OFF`
   * Switch - `Power ON/OFF`
 * Supported Sensors:
-  * Temperature
+  * Temperature - `Temperature`, `Dew Point`, `Reference`, `Obj`, `Amb`
   * Humidity
-  * Dew Point
   * Carbon Dioxyde
   * Ambient Light
   * Motion
