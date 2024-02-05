@@ -39,6 +39,8 @@ class TasmotaDevice extends EventEmitter {
         this.sensorsCount = 0;
         this.sensorsTemperatureCount = 0;
         this.sensorsReferenceTemperatureCount = 0;
+        this.sensorsObjTemperatureCount = 0;
+        this.sensorsAmbTemperatureCount = 0;
         this.sensorsHumidityCount = 0;
         this.sensorsDewPointCount = 0;
         this.sensorsPressureCount = 0;
@@ -235,6 +237,8 @@ class TasmotaDevice extends EventEmitter {
                     this.sensorsName = [];
                     this.sensorsTemperature = [];
                     this.sensorsReferenceTemperature = [];
+                    this.sensorsObjTemperature = [];
+                    this.sensorsAmbTemperature = [];
                     this.sensorsHumidity = [];
                     this.sensorsDewPoint = [];
                     this.sensorsPressure = [];
@@ -254,6 +258,8 @@ class TasmotaDevice extends EventEmitter {
                         //sensors
                         const temperature = sensorData.Temperature ?? false;
                         const referenceTemperature = sensorData.ReferenceTemperature ?? false;
+                        const objTemperature = sensorData.OBJTMP ?? false;
+                        const ambTemperature = sensorData.AMBTMP ?? false;
                         const humidity = sensorData.Humidity ?? false;
                         const dewPoint = sensorData.DewPoint ?? false;
                         const pressure = sensorData.Pressure ?? false;
@@ -277,6 +283,8 @@ class TasmotaDevice extends EventEmitter {
                         const push = sensorName !== false && sensorName !== undefined && sensorName !== null ? this.sensorsName.push(sensorName) : false;
                         const push1 = temperature !== false && temperature !== undefined && temperature !== null ? this.sensorsTemperature.push(temperature) : false;
                         const push1a = referenceTemperature !== false && referenceTemperature !== undefined && referenceTemperature !== null ? this.sensorsReferenceTemperature.push(referenceTemperature) : false;
+                        const push1b = objTemperature !== false && objTemperature !== undefined && objTemperature !== null ? this.sensorsAmbTemperature.push(objTemperature) : false;
+                        const push1c = ambTemperature !== false && ambTemperature !== undefined && ambTemperature !== null ? this.sensorsAmbTemperature.push(ambTemperature) : false;
                         const push2 = humidity !== false && humidity !== undefined && humidity !== null ? this.sensorsHumidity.push(humidity) : false;
                         const push3 = dewPoint !== false && dewPoint !== undefined && dewPoint !== null ? this.sensorsDewPoint.push(dewPoint) : false;
                         const push4 = pressure !== false && pressure !== undefined && pressure !== null ? this.sensorsPressure.push(pressure) : false;
@@ -288,6 +296,8 @@ class TasmotaDevice extends EventEmitter {
 
                     this.sensorsTemperatureCount = this.sensorsTemperature.length;
                     this.sensorsReferenceTemperatureCount = this.sensorsReferenceTemperature.length;
+                    this.sensorsObjTemperatureCount = this.sensorsObjTemperature.length;
+                    this.sensorsAmbTemperatureCount = this.sensorsAmbTemperature.length;
                     this.sensorsHumidityCount = this.sensorsHumidity.length;
                     this.sensorsDewPointCount = this.sensorsDewPoint.length;
                     this.sensorsPressureCount = this.sensorsPressure.length;
@@ -312,6 +322,22 @@ class TasmotaDevice extends EventEmitter {
                         for (let i = 0; i < this.sensorsReferenceTemperatureCount; i++) {
                             const value = this.sensorsReferenceTemperature[i];
                             this.sensorReferenceTemperatureServices[i]
+                                .updateCharacteristic(Characteristic.CurrentTemperature, value);
+                        };
+                    };
+
+                    if (this.sensorObjTemperatureServices && this.sensorsObjTemperatureCount > 0) {
+                        for (let i = 0; i < this.sensorsObjTemperatureCount; i++) {
+                            const value = this.sensorsObjTemperature[i];
+                            this.sensorObjTemperatureServices[i]
+                                .updateCharacteristic(Characteristic.CurrentTemperature, value);
+                        };
+                    };
+
+                    if (this.sensorAmbTemperatureServices && this.sensorsAmbTemperatureCount > 0) {
+                        for (let i = 0; i < this.sensorsAmbTemperatureCount; i++) {
+                            const value = this.sensorsAmbTemperature[i];
+                            this.sensorAmbTemperatureServices[i]
                                 .updateCharacteristic(Characteristic.CurrentTemperature, value);
                         };
                     };
@@ -547,6 +573,50 @@ class TasmotaDevice extends EventEmitter {
                                 });
                             this.sensorReferenceTemperatureServices.push(sensorReferenceTemperatureService);
                             accessory.addService(sensorReferenceTemperatureService);
+                        };
+                    }
+
+                    //obj temperature
+                    const sensorsObjTemperatureCount = this.sensorsObjTemperatureCount;
+                    if (sensorsObjTemperatureCount > 0) {
+                        const debug = this.enableDebugMode ? this.emit('debug', `Prepare Obj Temperature Sensor Services`) : false;
+                        this.sensorObjTemperatureServices = [];
+                        for (let i = 0; i < sensorsObjTemperatureCount; i++) {
+                            const sensorName = this.sensorsName[i];
+                            const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Obj Temperature` : `${sensorName} Obj Temperature`;
+                            const sensorObjTemperatureService = new Service.TemperatureSensor(serviceName, `Obj Temperature Sensor ${i}`);
+                            sensorObjTemperatureService.addOptionalCharacteristic(Characteristic.ConfiguredName);
+                            sensorObjTemperatureService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
+                            sensorObjTemperatureService.getCharacteristic(Characteristic.CurrentTemperature)
+                                .onGet(async () => {
+                                    const value = this.sensorsObjTemperature[i];
+                                    const logInfo = this.disableLogInfo ? false : this.emit('message', `sensor: ${sensorName} obj temperature: ${value} °${this.tempUnit}`);
+                                    return value;
+                                });
+                            this.sensorObjTemperatureServices.push(sensorObjTemperatureService);
+                            accessory.addService(sensorObjTemperatureService);
+                        };
+                    }
+
+                    //amb temperature
+                    const sensorsAmbTemperatureCount = this.sensorsAmbTemperatureCount;
+                    if (sensorsAmbTemperatureCount > 0) {
+                        const debug = this.enableDebugMode ? this.emit('debug', `Prepare Amb Temperature Sensor Services`) : false;
+                        this.sensorAmbTemperatureServices = [];
+                        for (let i = 0; i < sensorsAmbTemperatureCount; i++) {
+                            const sensorName = this.sensorsName[i];
+                            const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Amb Temperature` : `${sensorName} Amb Temperature`;
+                            const sensorAmbTemperatureService = new Service.TemperatureSensor(serviceName, `Amb Temperature Sensor ${i}`);
+                            sensorAmbTemperatureService.addOptionalCharacteristic(Characteristic.ConfiguredName);
+                            sensorAmbTemperatureService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
+                            sensorAmbTemperatureService.getCharacteristic(Characteristic.CurrentTemperature)
+                                .onGet(async () => {
+                                    const value = this.sensorsAmbTemperature[i];
+                                    const logInfo = this.disableLogInfo ? false : this.emit('message', `sensor: ${sensorName} amb temperature: ${value} °${this.tempUnit}`);
+                                    return value;
+                                });
+                            this.sensorAmbTemperatureServices.push(sensorAmbTemperatureService);
+                            accessory.addService(sensorAmbTemperatureService);
                         };
                     }
 
