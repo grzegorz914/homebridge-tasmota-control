@@ -1,7 +1,6 @@
 'use strict';
-
-const path = require('path');
 const fs = require('fs');
+const path = require('path');
 const TasmotaDevice = require('./src/tasmotadevice.js');
 const CONSTANS = require('./src/constans.json');
 
@@ -32,7 +31,23 @@ class tasmotaPlatform {
         const debug1 = device.enableDebugMode ? log(`Device: ${device.host} ${device.name}, Config: ${JSON.stringify(device, null, 2)}`) : false;
 
         //tasmota device
-        new TasmotaDevice(api, prefDir, device, log);
+        const tasmotaDevice = new TasmotaDevice(api, device);
+        tasmotaDevice.on('publishAccessory', (accessory) => {
+          api.publishExternalAccessories(CONSTANS.PluginName, [accessory]);
+          const debug = device.enableDebugMode ? log(`Device: ${device.host} ${device.name}, published as external accessory.`) : false;
+        })
+          .on('devInfo', (devInfo) => {
+            log(devInfo);
+          })
+          .on('message', (message) => {
+            log(`Device: ${device.host} ${device.name}, ${message}`);
+          })
+          .on('debug', (debug) => {
+            log(`Device: ${device.host} ${device.name}, debug: ${debug}`);
+          })
+          .on('error', (error) => {
+            log.error(`Device: ${device.host} ${device.name}, ${error}`);
+          });
       };
     });
   };
