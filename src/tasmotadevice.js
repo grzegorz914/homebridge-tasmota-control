@@ -73,7 +73,7 @@ class TasmotaDevice extends EventEmitter {
 
             //start prepare accessory
             const accessory = this.startPrepareAccessory && serialNumber ? await this.prepareAccessory() : false;
-            const publishAccessory = this.startPrepareAccessory && serialNumber ? this.emit('publishAccessory', accessory) : false;
+            const publishAccessory = this.startPrepareAccessory && accessory ? this.emit('publishAccessory', accessory) : false;
             this.startPrepareAccessory = false;
 
             this.updateDeviceState();
