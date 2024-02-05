@@ -42,7 +42,7 @@ class TasmotaDevice extends EventEmitter {
         this.sensorsObjTemperatureCount = 0;
         this.sensorsAmbTemperatureCount = 0;
         this.sensorsHumidityCount = 0;
-        this.sensorsDewPointCount = 0;
+        this.sensorsDewPointTemperatureCount = 0;
         this.sensorsPressureCount = 0;
         this.sensorsGasCount = 0;
         this.sensorsCarbonDioxydeCount = 0;
@@ -209,8 +209,7 @@ class TasmotaDevice extends EventEmitter {
 
                         //update characteristics
                         if (this.switchOutletLightServices) {
-                            this.switchOutletLightServices[i]
-                                .updateCharacteristic(Characteristic.On, powerState);
+                            this.switchOutletLightServices[i].updateCharacteristic(Characteristic.On, powerState);
 
                             if (deviceType === 1) {
                                 if (brightness !== false) {
@@ -239,8 +238,8 @@ class TasmotaDevice extends EventEmitter {
                     this.sensorsReferenceTemperature = [];
                     this.sensorsObjTemperature = [];
                     this.sensorsAmbTemperature = [];
+                    this.sensorsDewPointTemperature = [];
                     this.sensorsHumidity = [];
-                    this.sensorsDewPoint = [];
                     this.sensorsPressure = [];
                     this.sensorsGas = [];
                     this.sensorsCarbonDioxyde = [];
@@ -260,8 +259,8 @@ class TasmotaDevice extends EventEmitter {
                         const referenceTemperature = sensorData.ReferenceTemperature ?? false;
                         const objTemperature = sensorData.OBJTMP ?? false;
                         const ambTemperature = sensorData.AMBTMP ?? false;
+                        const dewPointTemperature = sensorData.DewPoint ?? false;
                         const humidity = sensorData.Humidity ?? false;
-                        const dewPoint = sensorData.DewPoint ?? false;
                         const pressure = sensorData.Pressure ?? false;
                         const gas = sensorData.Gas ?? false;
                         const carbonDioxyde = sensorData.CarbonDioxyde ?? false;
@@ -282,24 +281,24 @@ class TasmotaDevice extends EventEmitter {
                         //push to array
                         const push = sensorName !== false && sensorName !== undefined && sensorName !== null ? this.sensorsName.push(sensorName) : false;
                         const push1 = temperature !== false && temperature !== undefined && temperature !== null ? this.sensorsTemperature.push(temperature) : false;
-                        const push1a = referenceTemperature !== false && referenceTemperature !== undefined && referenceTemperature !== null ? this.sensorsReferenceTemperature.push(referenceTemperature) : false;
-                        const push1b = objTemperature !== false && objTemperature !== undefined && objTemperature !== null ? this.sensorsAmbTemperature.push(objTemperature) : false;
-                        const push1c = ambTemperature !== false && ambTemperature !== undefined && ambTemperature !== null ? this.sensorsAmbTemperature.push(ambTemperature) : false;
-                        const push2 = humidity !== false && humidity !== undefined && humidity !== null ? this.sensorsHumidity.push(humidity) : false;
-                        const push3 = dewPoint !== false && dewPoint !== undefined && dewPoint !== null ? this.sensorsDewPoint.push(dewPoint) : false;
-                        const push4 = pressure !== false && pressure !== undefined && pressure !== null ? this.sensorsPressure.push(pressure) : false;
-                        const push5 = gas !== false && gas !== undefined && gas !== null ? this.sensorsGas.push(gas) : false;
-                        const push6 = carbonDioxyde !== false && carbonDioxyde !== undefined && carbonDioxyde !== null ? this.sensorsCarbonDioxyde.push(carbonDioxyde) : false;
-                        const push7 = ambientLight !== false && ambientLight !== undefined && ambientLight !== null ? this.sensorsAmbientLight.push(ambientLight) : false;
-                        const push8 = motion !== false && motion !== undefined && motion !== null ? this.sensorsMotion.push(motion) : false;
+                        const push2 = referenceTemperature !== false && referenceTemperature !== undefined && referenceTemperature !== null ? this.sensorsReferenceTemperature.push(referenceTemperature) : false;
+                        const push3 = objTemperature !== false && objTemperature !== undefined && objTemperature !== null ? this.sensorsAmbTemperature.push(objTemperature) : false;
+                        const push4 = ambTemperature !== false && ambTemperature !== undefined && ambTemperature !== null ? this.sensorsAmbTemperature.push(ambTemperature) : false;
+                        const push5 = dewPointTemperature !== false && dewPointTemperature !== undefined && dewPointTemperature !== null ? this.sensorsDewPointTemperature.push(dewPointTemperature) : false;
+                        const push6 = humidity !== false && humidity !== undefined && humidity !== null ? this.sensorsHumidity.push(humidity) : false;
+                        const push7 = pressure !== false && pressure !== undefined && pressure !== null ? this.sensorsPressure.push(pressure) : false;
+                        const push8 = gas !== false && gas !== undefined && gas !== null ? this.sensorsGas.push(gas) : false;
+                        const push9 = carbonDioxyde !== false && carbonDioxyde !== undefined && carbonDioxyde !== null ? this.sensorsCarbonDioxyde.push(carbonDioxyde) : false;
+                        const push10 = ambientLight !== false && ambientLight !== undefined && ambientLight !== null ? this.sensorsAmbientLight.push(ambientLight) : false;
+                        const push11 = motion !== false && motion !== undefined && motion !== null ? this.sensorsMotion.push(motion) : false;
                     };
 
                     this.sensorsTemperatureCount = this.sensorsTemperature.length;
                     this.sensorsReferenceTemperatureCount = this.sensorsReferenceTemperature.length;
                     this.sensorsObjTemperatureCount = this.sensorsObjTemperature.length;
                     this.sensorsAmbTemperatureCount = this.sensorsAmbTemperature.length;
+                    this.sensorsDewPointTemperatureCount = this.sensorsDewPointTemperature.length;
                     this.sensorsHumidityCount = this.sensorsHumidity.length;
-                    this.sensorsDewPointCount = this.sensorsDewPoint.length;
                     this.sensorsPressureCount = this.sensorsPressure.length;
                     this.sensorsGasCount = this.sensorsGas.length;
                     this.sensorsCarbonDioxydeCount = this.sensorsCarbonDioxyde.length;
@@ -313,48 +312,42 @@ class TasmotaDevice extends EventEmitter {
                     if (this.sensorTemperatureServices && this.sensorsTemperatureCount > 0) {
                         for (let i = 0; i < this.sensorsTemperatureCount; i++) {
                             const value = this.sensorsTemperature[i];
-                            this.sensorTemperatureServices[i]
-                                .updateCharacteristic(Characteristic.CurrentTemperature, value);
+                            this.sensorTemperatureServices[i].updateCharacteristic(Characteristic.CurrentTemperature, value);
                         };
                     };
 
                     if (this.sensorReferenceTemperatureServices && this.sensorsReferenceTemperatureCount > 0) {
                         for (let i = 0; i < this.sensorsReferenceTemperatureCount; i++) {
                             const value = this.sensorsReferenceTemperature[i];
-                            this.sensorReferenceTemperatureServices[i]
-                                .updateCharacteristic(Characteristic.CurrentTemperature, value);
+                            this.sensorReferenceTemperatureServices[i].updateCharacteristic(Characteristic.CurrentTemperature, value);
                         };
                     };
 
                     if (this.sensorObjTemperatureServices && this.sensorsObjTemperatureCount > 0) {
                         for (let i = 0; i < this.sensorsObjTemperatureCount; i++) {
                             const value = this.sensorsObjTemperature[i];
-                            this.sensorObjTemperatureServices[i]
-                                .updateCharacteristic(Characteristic.CurrentTemperature, value);
+                            this.sensorObjTemperatureServices[i].updateCharacteristic(Characteristic.CurrentTemperature, value);
                         };
                     };
 
                     if (this.sensorAmbTemperatureServices && this.sensorsAmbTemperatureCount > 0) {
                         for (let i = 0; i < this.sensorsAmbTemperatureCount; i++) {
                             const value = this.sensorsAmbTemperature[i];
-                            this.sensorAmbTemperatureServices[i]
-                                .updateCharacteristic(Characteristic.CurrentTemperature, value);
+                            this.sensorAmbTemperatureServices[i].updateCharacteristic(Characteristic.CurrentTemperature, value);
+                        };
+                    };
+
+                    if (this.sensorDewPointTemperatureServices && this.sensorsDewPointTemperatureCount > 0) {
+                        for (let i = 0; i < this.sensorsDewPointTemperatureCount; i++) {
+                            const value = this.sensorsDewPointTemperature[i];
+                            this.sensorDewPointTemperatureServices[i].updateCharacteristic(Characteristic.CurrentTemperature, value);
                         };
                     };
 
                     if (this.sensorHumidityServices && this.sensorsHumidityCount > 0) {
                         for (let i = 0; i < this.sensorsHumidityCount; i++) {
                             const value = this.sensorsHumidity[i];
-                            this.sensorHumidityServices[i]
-                                .updateCharacteristic(Characteristic.CurrentRelativeHumidity, value);
-                        };
-                    };
-
-                    if (this.sensorDewPointServices && this.sensorsDewPointCount > 0) {
-                        for (let i = 0; i < this.sensorsDewPointCount; i++) {
-                            const value = this.sensorsDewPoint[i];
-                            this.sensorDewPointServices[i]
-                                .updateCharacteristic(Characteristic.CurrentTemperature, value);
+                            this.sensorHumidityServices[i].updateCharacteristic(Characteristic.CurrentRelativeHumidity, value);
                         };
                     };
 
@@ -372,16 +365,14 @@ class TasmotaDevice extends EventEmitter {
                     if (this.sensorAmbientLightServices && this.sensorsAmbientLightCount > 0) {
                         for (let i = 0; i < this.sensorsAmbientLightCount; i++) {
                             const value = this.sensorsAmbientLight[i];
-                            this.sensorAmbientLightServices[i]
-                                .updateCharacteristic(Characteristic.CurrentAmbientLightLevel, value);
+                            this.sensorAmbientLightServices[i].updateCharacteristic(Characteristic.CurrentAmbientLightLevel, value);
                         };
                     };
 
                     if (this.sensorMotionServices && this.sensorsMotionCount > 0) {
                         for (let i = 0; i < this.sensorsMotionCount; i++) {
                             const state = this.sensorsMotion[i];
-                            this.sensorMotionServices[i]
-                                .updateCharacteristic(Characteristic.MotionDetected, state);
+                            this.sensorMotionServices[i].updateCharacteristic(Characteristic.MotionDetected, state);
                         };
                     };
                 };
@@ -576,7 +567,7 @@ class TasmotaDevice extends EventEmitter {
                         };
                     }
 
-                    //obj temperature
+                    //object temperature
                     const sensorsObjTemperatureCount = this.sensorsObjTemperatureCount;
                     if (sensorsObjTemperatureCount > 0) {
                         const debug = this.enableDebugMode ? this.emit('debug', `Prepare Obj Temperature Sensor Services`) : false;
@@ -598,7 +589,7 @@ class TasmotaDevice extends EventEmitter {
                         };
                     }
 
-                    //amb temperature
+                    //ambient temperature
                     const sensorsAmbTemperatureCount = this.sensorsAmbTemperatureCount;
                     if (sensorsAmbTemperatureCount > 0) {
                         const debug = this.enableDebugMode ? this.emit('debug', `Prepare Amb Temperature Sensor Services`) : false;
@@ -617,6 +608,28 @@ class TasmotaDevice extends EventEmitter {
                                 });
                             this.sensorAmbTemperatureServices.push(sensorAmbTemperatureService);
                             accessory.addService(sensorAmbTemperatureService);
+                        };
+                    }
+
+                    //dew point temperature
+                    const sensorsDewPointTemperatureCount = this.sensorsDewPointTemperatureCount;
+                    if (sensorsDewPointTemperatureCount > 0) {
+                        const debug = this.enableDebugMode ? this.emit('debug', `Prepare Dew Point Temperature Sensor Services`) : false;
+                        this.sensorDewPointTemperatureServices = [];
+                        for (let i = 0; i < sensorsDewPointTemperatureCount; i++) {
+                            const sensorName = this.sensorsName[i];
+                            const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Dew Point` : `${sensorName} Dew Point`;
+                            const sensorDewPointTemperatureService = new Service.TemperatureSensor(serviceName, `Dew Point Temperature Sensor ${i}`);
+                            sensorDewPointTemperatureService.addOptionalCharacteristic(Characteristic.ConfiguredName);
+                            sensorDewPointTemperatureService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
+                            sensorDewPointTemperatureService.getCharacteristic(Characteristic.CurrentTemperature)
+                                .onGet(async () => {
+                                    const value = this.sensorsDewPointTemperature[i];
+                                    const logInfo = this.disableLogInfo ? false : this.emit('message', `sensor: ${sensorName} dew point: ${value} °${this.tempUnit}`);
+                                    return value;
+                                });
+                            this.sensorDewPointTemperatureServices.push(sensorDewPointTemperatureService);
+                            accessory.addService(sensorDewPointTemperatureService);
                         };
                     }
 
@@ -639,28 +652,6 @@ class TasmotaDevice extends EventEmitter {
                                 });
                             this.sensorHumidityServices.push(sensorHumidityService);
                             accessory.addService(sensorHumidityService);
-                        };
-                    }
-
-                    //dew point
-                    const sensorsDewPointCount = this.sensorsDewPointCount;
-                    if (sensorsDewPointCount > 0) {
-                        const debug = this.enableDebugMode ? this.emit('debug', `Prepare Dew Point Sensor Services`) : false;
-                        this.sensorDewPointServices = [];
-                        for (let i = 0; i < sensorsDewPointCount; i++) {
-                            const sensorName = this.sensorsName[i];
-                            const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Dew Point` : `${sensorName} Dew Point`;
-                            const sensorDewPointService = new Service.TemperatureSensor(serviceName, `Dew Point Sensor ${i}`);
-                            sensorDewPointService.addOptionalCharacteristic(Characteristic.ConfiguredName);
-                            sensorDewPointService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
-                            sensorDewPointService.getCharacteristic(Characteristic.CurrentTemperature)
-                                .onGet(async () => {
-                                    const value = this.sensorsDewPoint[i];
-                                    const logInfo = this.disableLogInfo ? false : this.emit('message', `sensor: ${sensorName} dew point: ${value} °${this.tempUnit}`);
-                                    return value;
-                                });
-                            this.sensorDewPointServices.push(sensorDewPointService);
-                            accessory.addService(sensorDewPointService);
                         };
                     }
 
