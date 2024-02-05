@@ -184,19 +184,21 @@ class TasmotaDevice extends EventEmitter {
                     const powersStatus = powersStatusData.data;
                     const debug = this.enableDebugMode ? this.emit('debug', `Power status: ${JSON.stringify(powersStatus, null, 2)}`) : false;
 
-                    for (let i = 0; i < relaysCount; i++) {
-                        const powerKeys = Object.keys(powersStatus);
-                        const deviceType = powerKeys.some(key => CONSTANS.LightKeys.includes(key)) ? 1 : 0; //0 - switch/outlet, 1 - light
-                        const powerKey = relaysCount === 1 ? 'POWER' : 'POWER' + (i + 1);
+                    //power status keys and device type
+                    const powerKeys = Object.keys(powersStatus);
+                    const deviceType = powerKeys.some(key => CONSTANS.LightKeys.includes(key)) ? 1 : 0; //0 - switch/outlet, 1 - light
 
-                        const powerStase = powersStatus[powerKey] === 'ON' ?? false;
+                    for (let i = 0; i < relaysCount; i++) {
+                        const powerNr = i + 1;
+                        const powerKey = relaysCount === 1 ? 'POWER' : `POWER${powerNr}`;
+                        const powerState = powersStatus[powerKey] === 'ON' ?? false;
                         const brightness = powersStatus.Dimmer ?? false;
                         const colorTemperature = powersStatus.CT ?? false;
                         const hue = powersStatus.HSBColor1 ?? false;
                         const saturation = powersStatus.HSBColor2 ?? false;
 
                         this.devicesType.push(deviceType);
-                        this.powersStete.push(powerStase);
+                        this.powersStete.push(powerState);
                         this.brightness.push(brightness);
                         this.colorTemperatue.push(colorTemperature);
                         this.hue.push(hue);
@@ -205,7 +207,7 @@ class TasmotaDevice extends EventEmitter {
                         //update characteristics
                         if (this.switchOutletLightServices) {
                             this.switchOutletLightServices[i]
-                                .updateCharacteristic(Characteristic.On, powerStase);
+                                .updateCharacteristic(Characteristic.On, powerState);
 
                             if (deviceType === 1) {
                                 if (brightness !== false) {
@@ -246,6 +248,8 @@ class TasmotaDevice extends EventEmitter {
                     for (let i = 0; i < sensorsCount; i++) {
                         const sensorName = this.sensors[i].name;
                         const sensorData = this.sensors[i].data;
+
+                        //sensors
                         const temperature = sensorData.Temperature ?? false;
                         const humidity = sensorData.Humidity ?? false;
                         const dewPoint = sensorData.DewPoint ?? false;
@@ -255,6 +259,18 @@ class TasmotaDevice extends EventEmitter {
                         const ambientLight = sensorData.Ambient ?? false;
                         const motion = sensorData === 'ON' ?? false;
 
+                        //energy
+                        const energyTotal = sensorData.Total ?? false;
+                        const energyYesterday = sensorData.Yesterday ?? false;
+                        const energyToday = sensorData.Today ?? false;
+                        const power = sensorData.Power ?? false;
+                        const apparentPower = sensorData.ApparentPower ?? false;
+                        const reactivePower = sensorData.ReactivePower ?? false;
+                        const factor = sensorData.Factor ?? false;
+                        const voltage = sensorData.Voltage ?? false;
+                        const current = sensorData.Current ?? false;
+
+                        //push to array
                         const push = sensorName !== false && sensorName !== undefined && sensorName !== null ? this.sensorsName.push(sensorName) : false;
                         const push1 = temperature !== false && temperature !== undefined && temperature !== null ? this.sensorsTemperature.push(temperature) : false;
                         const push2 = humidity !== false && humidity !== undefined && humidity !== null ? this.sensorsHumidity.push(humidity) : false;
