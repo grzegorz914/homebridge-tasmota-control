@@ -30,12 +30,6 @@ class TasmotaDevice extends EventEmitter {
         this.disableLogDeviceInfo = config.disableLogDeviceInfo || false;
         this.loadNameFromDevice = config.loadNameFromDevice || false;
 
-        //device info
-        this.manufacturer = 'Tasmota';
-        this.modelName = 'Model Name';
-        this.serialNumber = 'Serial Number';
-        this.firmwareRevision = 'Firmware Revision';
-
         //switches, outlets, lights
         this.friendlyNames = [];
         this.relaysCount = 0;
@@ -118,8 +112,8 @@ class TasmotaDevice extends EventEmitter {
 
                 //status fwr
                 const statusFWRSupported = deviceInfoKeys.includes('StatusFWR');
-                const firmwareRevision = deviceInfo.StatusFWR.Version ?? 'unknown';
-                const modelName = deviceInfo.StatusFWR.Hardware ?? '';
+                const firmwareRevision = deviceInfo.StatusFWR.Version ?? 'Unknown';
+                const modelName = deviceInfo.StatusFWR.Hardware ?? 'Unknown';
 
                 //status net
                 const addressMac = deviceInfo.StatusNET.Mac;
@@ -148,7 +142,7 @@ class TasmotaDevice extends EventEmitter {
                 //device info
                 if (!this.disableLogDeviceInfo) {
                     this.emit('devInfo', `----- ${deviceName} -----`);
-                    this.emit('devInfo', `Manufacturer: ${this.manufacturer}`);
+                    this.emit('devInfo', `Manufacturer: Tasmota`);
                     this.emit('devInfo', `Hardware: ${modelName}`);
                     this.emit('devInfo', `Serialnr: ${addressMac}`);
                     this.emit('devInfo', `Firmware: ${firmwareRevision}`);
@@ -358,10 +352,10 @@ class TasmotaDevice extends EventEmitter {
                 //Prepare information service
                 const debug1 = this.enableDebugMode ? this.emit('debug', `Prepare Information Service`) : false;
                 accessory.getService(Service.AccessoryInformation)
-                    .setCharacteristic(Characteristic.Manufacturer, this.manufacturer)
-                    .setCharacteristic(Characteristic.Model, this.modelName)
-                    .setCharacteristic(Characteristic.SerialNumber, this.serialNumber)
-                    .setCharacteristic(Characteristic.FirmwareRevision, this.firmwareRevision);
+                    .setCharacteristic(Characteristic.Manufacturer, 'Tasmota')
+                    .setCharacteristic(Characteristic.Model, this.modelName ?? 'Model Name')
+                    .setCharacteristic(Characteristic.SerialNumber, this.serialNumber ?? 'Serial Number')
+                    .setCharacteristic(Characteristic.FirmwareRevision, this.firmwareRevision ?? 'Firmware Revision');
 
                 //Prepare services 
                 const debug2 = this.enableDebugMode ? this.emit('debug', `Prepare Services`) : false;
@@ -373,8 +367,8 @@ class TasmotaDevice extends EventEmitter {
                     this.switchOutletLightServices = [];
 
                     for (let i = 0; i < relaysCount; i++) {
-                        const friendlyName = this.friendlyNames[i];
                         const deviceType = this.devicesType[i];
+                        const friendlyName = this.friendlyNames[i];
                         const serviceSwitchOutlet = [Service.Outlet, Service.Switch][this.relaysDisplayType];
                         const serviceType = [serviceSwitchOutlet, Service.Lightbulb][deviceType];
                         const serviceNameSwitchOutlet = this.relaysNamePrefix ? `${accessoryName} ${friendlyName}` : friendlyName;
