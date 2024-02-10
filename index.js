@@ -28,7 +28,12 @@ class tasmotaPlatform {
 
         //debug config
         const debug = device.enableDebugMode ? log(`Device: ${device.host} ${device.name}, did finish launching.`) : false;
-        const debug1 = device.enableDebugMode ? log(`Device: ${device.host} ${device.name}, Config: ${JSON.stringify(device, null, 2)}`) : false;
+        const config = {
+          ...device,
+          user: 'removed',
+          passwd: 'removed'
+        };
+        const debug1 = device.enableDebugMode ? log(`Device: ${device.host} ${device.name}, Config: ${JSON.stringify(config, null, 2)}`) : false;
 
         //tasmota device
         const tasmotaDevice = new TasmotaDevice(api, device);
