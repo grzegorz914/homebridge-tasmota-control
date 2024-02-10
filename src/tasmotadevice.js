@@ -53,11 +53,16 @@ class TasmotaDevice extends EventEmitter {
         this.startPrepareAccessory = true;
 
         //axios instance
-        const url = this.auth ? `http://${this.host}/cm?user=${this.user}&password=${this.passwd}&cmnd=` : `http://${this.host}/cm?cmnd=`
+        const url = `http://${this.host}/cm?cmnd=`;
         this.axiosInstance = axios.create({
             method: 'GET',
             baseURL: url,
-            timeout: 10000
+            timeout: 10000,
+            withCredentials: this.auth,
+            auth: {
+                username: this.user,
+                password: this.passwd
+            }
         });
 
         this.start();
