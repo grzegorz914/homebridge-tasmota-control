@@ -420,12 +420,11 @@ class TasmotaDevice extends EventEmitter {
                     for (let i = 0; i < relaysCount; i++) {
                         const deviceType = this.devicesType[i];
                         const friendlyName = this.friendlyNames[i];
-                        const serviceSwitchOutlet = [Service.Outlet, Service.Switch][this.relaysDisplayType];
-                        const serviceType = [serviceSwitchOutlet, Service.Lightbulb][deviceType];
                         const serviceNameSwitchOutlet = this.relaysNamePrefix ? `${accessoryName} ${friendlyName}` : friendlyName;
                         const serviceNameLightbulb = this.lightsNamePrefix ? `${accessoryName} ${friendlyName}` : friendlyName;
                         const serviceName = [serviceNameSwitchOutlet, serviceNameLightbulb][deviceType];
-                        const switchOutletLightService = new serviceType(serviceName, `Power ${i}`);
+                        const serviceSwitchOutlet = [accessory.addService(Service.Outlet, serviceName, `Power ${i}`), accessory.addService(Service.Switch, serviceName, `Power ${i}`)][this.relaysDisplayType];
+                        const switchOutletLightService = [serviceSwitchOutlet, accessory.addService(Service.Lightbulb, serviceName, `Power ${i}`)][deviceType];
                         switchOutletLightService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                         switchOutletLightService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
                         switchOutletLightService.getCharacteristic(Characteristic.On)
@@ -519,7 +518,6 @@ class TasmotaDevice extends EventEmitter {
                             };
                         };
                         this.switchOutletLightServices.push(switchOutletLightService);
-                        accessory.addService(switchOutletLightService);
                     };
                 };
 
@@ -536,7 +534,7 @@ class TasmotaDevice extends EventEmitter {
                         for (let i = 0; i < sensorsTemperatureCount; i++) {
                             const sensorName = this.sensorsName[i];
                             const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Temperature` : `${sensorName} Temperature`;
-                            const sensorTemperatureService = new Service.TemperatureSensor(serviceName, `Temperature Sensor ${i}`);
+                            const sensorTemperatureService = accessory.addService(Service.TemperatureSensor, serviceName, `Temperature Sensor ${i}`);
                             sensorTemperatureService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                             sensorTemperatureService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
                             sensorTemperatureService.getCharacteristic(Characteristic.CurrentTemperature)
@@ -546,7 +544,6 @@ class TasmotaDevice extends EventEmitter {
                                     return value;
                                 });
                             this.sensorTemperatureServices.push(sensorTemperatureService);
-                            accessory.addService(sensorTemperatureService);
                         };
                     }
 
@@ -558,7 +555,7 @@ class TasmotaDevice extends EventEmitter {
                         for (let i = 0; i < sensorsReferenceTemperatureCount; i++) {
                             const sensorName = this.sensorsName[i];
                             const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Reference Temperature` : `${sensorName} Reference Temperature`;
-                            const sensorReferenceTemperatureService = new Service.TemperatureSensor(serviceName, `Reference Temperature Sensor ${i}`);
+                            const sensorReferenceTemperatureService = accessory.addService(Service.TemperatureSensor, serviceName, `Reference Temperature Sensor ${i}`);
                             sensorReferenceTemperatureService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                             sensorReferenceTemperatureService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
                             sensorReferenceTemperatureService.getCharacteristic(Characteristic.CurrentTemperature)
@@ -568,7 +565,6 @@ class TasmotaDevice extends EventEmitter {
                                     return value;
                                 });
                             this.sensorReferenceTemperatureServices.push(sensorReferenceTemperatureService);
-                            accessory.addService(sensorReferenceTemperatureService);
                         };
                     }
 
@@ -580,7 +576,7 @@ class TasmotaDevice extends EventEmitter {
                         for (let i = 0; i < sensorsObjTemperatureCount; i++) {
                             const sensorName = this.sensorsName[i];
                             const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Obj Temperature` : `${sensorName} Obj Temperature`;
-                            const sensorObjTemperatureService = new Service.TemperatureSensor(serviceName, `Obj Temperature Sensor ${i}`);
+                            const sensorObjTemperatureService = accessory.addService(Service.TemperatureSensor, serviceName, `Obj Temperature Sensor ${i}`);
                             sensorObjTemperatureService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                             sensorObjTemperatureService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
                             sensorObjTemperatureService.getCharacteristic(Characteristic.CurrentTemperature)
@@ -590,7 +586,6 @@ class TasmotaDevice extends EventEmitter {
                                     return value;
                                 });
                             this.sensorObjTemperatureServices.push(sensorObjTemperatureService);
-                            accessory.addService(sensorObjTemperatureService);
                         };
                     }
 
@@ -602,7 +597,7 @@ class TasmotaDevice extends EventEmitter {
                         for (let i = 0; i < sensorsAmbTemperatureCount; i++) {
                             const sensorName = this.sensorsName[i];
                             const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Amb Temperature` : `${sensorName} Amb Temperature`;
-                            const sensorAmbTemperatureService = new Service.TemperatureSensor(serviceName, `Amb Temperature Sensor ${i}`);
+                            const sensorAmbTemperatureService = accessory.addService(Service.TemperatureSensor, serviceName, `Amb Temperature Sensor ${i}`);
                             sensorAmbTemperatureService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                             sensorAmbTemperatureService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
                             sensorAmbTemperatureService.getCharacteristic(Characteristic.CurrentTemperature)
@@ -612,7 +607,6 @@ class TasmotaDevice extends EventEmitter {
                                     return value;
                                 });
                             this.sensorAmbTemperatureServices.push(sensorAmbTemperatureService);
-                            accessory.addService(sensorAmbTemperatureService);
                         };
                     }
 
@@ -624,7 +618,7 @@ class TasmotaDevice extends EventEmitter {
                         for (let i = 0; i < sensorsDewPointTemperatureCount; i++) {
                             const sensorName = this.sensorsName[i];
                             const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Dew Point` : `${sensorName} Dew Point`;
-                            const sensorDewPointTemperatureService = new Service.TemperatureSensor(serviceName, `Dew Point Temperature Sensor ${i}`);
+                            const sensorDewPointTemperatureService = accessory.addService(Service.TemperatureSensor, serviceName, `Dew Point Temperature Sensor ${i}`);
                             sensorDewPointTemperatureService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                             sensorDewPointTemperatureService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
                             sensorDewPointTemperatureService.getCharacteristic(Characteristic.CurrentTemperature)
@@ -634,7 +628,6 @@ class TasmotaDevice extends EventEmitter {
                                     return value;
                                 });
                             this.sensorDewPointTemperatureServices.push(sensorDewPointTemperatureService);
-                            accessory.addService(sensorDewPointTemperatureService);
                         };
                     }
 
@@ -646,7 +639,7 @@ class TasmotaDevice extends EventEmitter {
                         for (let i = 0; i < sensorsHumidityCount; i++) {
                             const sensorName = this.sensorsName[i];
                             const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Humidity` : `${sensorName} Humidity`;
-                            const sensorHumidityService = new Service.HumiditySensor(serviceName, `Humidity Sensor ${i}`);
+                            const sensorHumidityService = accessory.addService(Service.HumiditySensor, serviceName, `Humidity Sensor ${i}`);
                             sensorHumidityService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                             sensorHumidityService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
                             sensorHumidityService.getCharacteristic(Characteristic.CurrentRelativeHumidity)
@@ -656,7 +649,6 @@ class TasmotaDevice extends EventEmitter {
                                     return value;
                                 });
                             this.sensorHumidityServices.push(sensorHumidityService);
-                            accessory.addService(sensorHumidityService);
                         };
                     }
 
@@ -672,7 +664,7 @@ class TasmotaDevice extends EventEmitter {
                         for (let i = 0; i < sensorsCarbonDioxydeCount; i++) {
                             const sensorName = this.sensorsName[i];
                             const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Carbon Dioxyde` : `${sensorName} Carbon Dioxyde`;
-                            const sensorCarbonDioxydeService = new Service.CarbonDioxideSensor(serviceName, `Carbon Dioxyde Sensor ${i}`);
+                            const sensorCarbonDioxydeService = accessory.addService(Service.CarbonDioxideSensor, serviceName, `Carbon Dioxyde Sensor ${i}`);
                             sensorCarbonDioxydeService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                             sensorCarbonDioxydeService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
                             sensorCarbonDioxydeService.getCharacteristic(Characteristic.CarbonDioxideDetected)
@@ -694,7 +686,6 @@ class TasmotaDevice extends EventEmitter {
                                     return value;
                                 });
                             this.sensorCarbonDioxydeServices.push(sensorCarbonDioxydeService);
-                            accessory.addService(sensorCarbonDioxydeService);
                         };
                     }
 
@@ -706,7 +697,7 @@ class TasmotaDevice extends EventEmitter {
                         for (let i = 0; i < sensorsAmbientLightCount; i++) {
                             const sensorName = this.sensorsName[i];
                             const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Ambient Light` : `${sensorName} Ambient Light`;
-                            const sensorAmbientLightService = new Service.LightSensor(serviceName, `Ambient Light Sensor ${i}`);
+                            const sensorAmbientLightService = accessory.addService(Service.LightSensor, serviceName, `Ambient Light Sensor ${i}`);
                             sensorAmbientLightService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                             sensorAmbientLightService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
                             sensorAmbientLightService.getCharacteristic(Characteristic.CurrentAmbientLightLevel)
@@ -716,7 +707,6 @@ class TasmotaDevice extends EventEmitter {
                                     return value;
                                 });
                             this.sensorAmbientLightServices.push(sensorAmbientLightService);
-                            accessory.addService(sensorAmbientLightService);
                         };
                     }
 
@@ -728,7 +718,7 @@ class TasmotaDevice extends EventEmitter {
                         for (let i = 0; i < sensorsMotionCount; i++) {
                             const sensorName = this.sensorsName[i];
                             const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Motion` : `${sensorName} Motion`;
-                            const sensorMotionService = new Service.MotionSensor(serviceName, `Motion Sensor ${i}`);
+                            const sensorMotionService = accessory.addService(Service.MotionSensor, serviceName, `Motion Sensor ${i}`);
                             sensorMotionService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                             sensorMotionService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
                             sensorMotionService.getCharacteristic(Characteristic.MotionDetected)
@@ -738,7 +728,6 @@ class TasmotaDevice extends EventEmitter {
                                     return state;
                                 });
                             this.sensorMotionServices.push(sensorMotionService);
-                            accessory.addService(sensorMotionService);
                         };
                     }
                 };
