@@ -423,8 +423,9 @@ class TasmotaDevice extends EventEmitter {
                         const serviceNameSwitchOutlet = this.relaysNamePrefix ? `${accessoryName} ${friendlyName}` : friendlyName;
                         const serviceNameLightbulb = this.lightsNamePrefix ? `${accessoryName} ${friendlyName}` : friendlyName;
                         const serviceName = [serviceNameSwitchOutlet, serviceNameLightbulb][deviceType];
-                        const serviceSwitchOutlet = [accessory.addService(Service.Outlet, serviceName, `Power ${i}`), accessory.addService(Service.Switch, serviceName, `Power ${i}`)][this.relaysDisplayType];
-                        const switchOutletLightService = [serviceSwitchOutlet, accessory.addService(Service.Lightbulb, serviceName, `Power ${i}`)][deviceType];
+                        const serviceSwitchOutlet = [Service.Outlet, Service.Switch][this.relaysDisplayType];
+                        const serviceType = [serviceSwitchOutlet, Service.Lightbulb][deviceType];
+                        const switchOutletLightService = accessory.addService(serviceType, serviceName, `Power ${i}`)
                         switchOutletLightService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                         switchOutletLightService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
                         switchOutletLightService.getCharacteristic(Characteristic.On)
