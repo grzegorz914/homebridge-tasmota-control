@@ -103,7 +103,7 @@ class TasmotaDevice extends EventEmitter {
 
             try {
                 const deviceInfoData = await this.axiosInstance(CONSTANS.ApiCommands.Status);
-                const deviceInfo = deviceInfoData.data;
+                const deviceInfo = deviceInfoData.data ?? {};
                 const debug = this.enableDebugMode ? this.emit('debug', `Info: ${JSON.stringify(deviceInfo, null, 2)}`) : false;
 
                 //keys
@@ -120,8 +120,9 @@ class TasmotaDevice extends EventEmitter {
 
                 //status fwr
                 const statusFWRSupported = deviceInfoKeys.includes('StatusFWR');
-                const firmwareRevision = deviceInfo.StatusFWR.Version ?? 'Unknown';
-                const modelName = deviceInfo.StatusFWR.Hardware ?? 'Unknown';
+                const statusFwr = deviceInfo.StatusFWR ?? {};
+                const firmwareRevision = statusFwr.Version ?? 'Unknown';
+                const modelName = statusFwr.Hardware ?? 'Unknown';
 
                 //status net
                 const addressMac = deviceInfo.StatusNET.Mac;
@@ -189,7 +190,7 @@ class TasmotaDevice extends EventEmitter {
                     this.saturation = [];
 
                     const powersStatusData = await this.axiosInstance(CONSTANS.ApiCommands.PowerStatus);
-                    const powersStatus = powersStatusData.data;
+                    const powersStatus = powersStatusData.data ?? {};
                     const debug = this.enableDebugMode ? this.emit('debug', `Power status: ${JSON.stringify(powersStatus, null, 2)}`) : false;
 
                     //power status keys and device type
@@ -199,7 +200,7 @@ class TasmotaDevice extends EventEmitter {
                     for (let i = 0; i < relaysCount; i++) {
                         const powerNr = i + 1;
                         const powerKey = relaysCount === 1 ? 'POWER' : `POWER${powerNr}`;
-                        const powerState = powersStatus[powerKey] === 'ON' ?? false;
+                        const powerState = powersStatus[powerKey] === 'ON';
                         const brightness = powersStatus.Dimmer ?? false;
                         const colorTemperature = powersStatus.CT ?? false;
                         const hue = powersStatus.HSBColor1 ?? false;
@@ -252,7 +253,7 @@ class TasmotaDevice extends EventEmitter {
                     this.sensorsMotion = [];
 
                     const sensorsStatusData = await this.axiosInstance(CONSTANS.ApiCommands.Status);
-                    const sensorsStatus = sensorsStatusData.data.StatusSNS;
+                    const sensorsStatus = sensorsStatusData.data.StatusSNS ?? {};
                     const debug = this.enableDebugMode ? this.emit('debug', `Sensors status: ${JSON.stringify(sensorsStatus, null, 2)}`) : false;
 
                     for (let i = 0; i < sensorsCount; i++) {
@@ -270,7 +271,7 @@ class TasmotaDevice extends EventEmitter {
                         const gas = sensorData.Gas ?? false;
                         const carbonDioxyde = sensorData.CarbonDioxyde ?? false;
                         const ambientLight = sensorData.Ambient ?? false;
-                        const motion = sensorData === 'ON' ?? false;
+                        const motion = sensorData === 'ON';
 
                         //energy
                         const energyTotal = sensorData.Total ?? false;
