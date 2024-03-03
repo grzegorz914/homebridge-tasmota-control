@@ -2,7 +2,7 @@
 const axios = require('axios');
 const EventEmitter = require('events');
 const CONSTANS = require('./constans.json');
-let Accessory, Characteristic, Service, Categories, UUID;
+let Accessory, Characteristic, Service, Categories, AccessoryUUID;
 
 class TasmotaDevice extends EventEmitter {
     constructor(api, config) {
@@ -12,7 +12,7 @@ class TasmotaDevice extends EventEmitter {
         Characteristic = api.hap.Characteristic;
         Service = api.hap.Service;
         Categories = api.hap.Categories;
-        UUID = api.hap.uuid;
+        AccessoryUUID = api.hap.uuid;
 
         //device configuration
         this.name = config.name;
@@ -397,7 +397,7 @@ class TasmotaDevice extends EventEmitter {
 
             try {
                 const accessoryName = this.deviceName;
-                const accessoryUUID = UUID.generate(this.serialNumber);
+                const accessoryUUID = AccessoryUUID.generate(this.serialNumber);
                 const accessoryCategory = Categories.OTHER;
                 const accessory = new Accessory(accessoryName, accessoryUUID, accessoryCategory);
 
