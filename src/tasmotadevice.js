@@ -1,7 +1,7 @@
 'use strict';
 const axios = require('axios');
 const EventEmitter = require('events');
-const CONSTANS = require('./constans.json');
+const CONSTANTS = require('./constants.json');
 let Accessory, Characteristic, Service, Categories, AccessoryUUID;
 
 class TasmotaDevice extends EventEmitter {
@@ -102,7 +102,7 @@ class TasmotaDevice extends EventEmitter {
             const debug = this.enableDebugMode ? this.emit('debug', `Requesting info.`) : false;
 
             try {
-                const deviceInfoData = await this.axiosInstance(CONSTANS.ApiCommands.Status);
+                const deviceInfoData = await this.axiosInstance(CONSTANTS.ApiCommands.Status);
                 const deviceInfo = deviceInfoData.data ?? {};
                 const debug = this.enableDebugMode ? this.emit('debug', `Info: ${JSON.stringify(deviceInfo, null, 2)}`) : false;
 
@@ -130,7 +130,7 @@ class TasmotaDevice extends EventEmitter {
                 //status sns
                 const statusSNSSupported = deviceInfoKeys.includes('StatusSNS') ?? false;
                 if (statusSNSSupported) {
-                    const sensorTypes = CONSTANS.SensorKeys;
+                    const sensorTypes = CONSTANTS.SensorKeys;
                     const sensor = Object.entries(deviceInfo.StatusSNS)
                         .filter(([key]) => sensorTypes.some(type => key.includes(type)))
                         .reduce((obj, [key, value]) => {
@@ -189,13 +189,13 @@ class TasmotaDevice extends EventEmitter {
                     this.hue = [];
                     this.saturation = [];
 
-                    const powersStatusData = await this.axiosInstance(CONSTANS.ApiCommands.PowerStatus);
+                    const powersStatusData = await this.axiosInstance(CONSTANTS.ApiCommands.PowerStatus);
                     const powersStatus = powersStatusData.data ?? {};
                     const debug = this.enableDebugMode ? this.emit('debug', `Power status: ${JSON.stringify(powersStatus, null, 2)}`) : false;
 
                     //power status keys and device type
                     const powerKeys = Object.keys(powersStatus);
-                    const deviceType = powerKeys.some(key => CONSTANS.LightKeys.includes(key)) ? 1 : 0; //0 - switch/outlet, 1 - light
+                    const deviceType = powerKeys.some(key => CONSTANTS.LightKeys.includes(key)) ? 1 : 0; //0 - switch/outlet, 1 - light
 
                     for (let i = 0; i < relaysCount; i++) {
                         const powerNr = i + 1;
@@ -252,7 +252,7 @@ class TasmotaDevice extends EventEmitter {
                     this.sensorsAmbientLight = [];
                     this.sensorsMotion = [];
 
-                    const sensorsStatusData = await this.axiosInstance(CONSTANS.ApiCommands.Status);
+                    const sensorsStatusData = await this.axiosInstance(CONSTANTS.ApiCommands.Status);
                     const sensorsStatus = sensorsStatusData.data.StatusSNS ?? {};
                     const debug = this.enableDebugMode ? this.emit('debug', `Sensors status: ${JSON.stringify(sensorsStatus, null, 2)}`) : false;
 
@@ -438,8 +438,8 @@ class TasmotaDevice extends EventEmitter {
                             .onSet(async (state) => {
                                 try {
                                     const relayNr = i + 1;
-                                    const powerOn = relaysCount === 1 ? CONSTANS.ApiCommands.PowerOn : `${CONSTANS.ApiCommands.Power}${relayNr}${CONSTANS.ApiCommands.On}`;
-                                    const powerOff = relaysCount === 1 ? CONSTANS.ApiCommands.PowerOff : `${CONSTANS.ApiCommands.Power}${relayNr}${CONSTANS.ApiCommands.Off}`;
+                                    const powerOn = relaysCount === 1 ? CONSTANTS.ApiCommands.PowerOn : `${CONSTANTS.ApiCommands.Power}${relayNr}${CONSTANTS.ApiCommands.On}`;
+                                    const powerOff = relaysCount === 1 ? CONSTANTS.ApiCommands.PowerOff : `${CONSTANTS.ApiCommands.Power}${relayNr}${CONSTANTS.ApiCommands.Off}`;
                                     state = state ? powerOn : powerOff;
 
                                     await this.axiosInstance(state);
@@ -458,7 +458,7 @@ class TasmotaDevice extends EventEmitter {
                                     })
                                     .onSet(async (value) => {
                                         try {
-                                            const brightness = `${CONSTANS.ApiCommands.Dimmer}${value}`; //0..100
+                                            const brightness = `${CONSTANTS.ApiCommands.Dimmer}${value}`; //0..100
                                             await this.axiosInstance(brightness);
                                             const logInfo = this.disableLogInfo ? false : this.emit('message', `set brightness: ${value} %`);
                                         } catch (error) {
@@ -476,7 +476,7 @@ class TasmotaDevice extends EventEmitter {
                                     .onSet(async (value) => {
                                         try {
                                             value = value < 153 ? 153 : value;
-                                            const colorTemperature = `${CONSTANS.ApiCommands.ColorTemperature}${value}`; //140..500
+                                            const colorTemperature = `${CONSTANTS.ApiCommands.ColorTemperature}${value}`; //140..500
                                             await this.axiosInstance(colorTemperature);
                                             const logInfo = this.disableLogInfo ? false : this.emit('message', `set color temperatur: ${value} °`);
                                         } catch (error) {
@@ -493,7 +493,7 @@ class TasmotaDevice extends EventEmitter {
                                     })
                                     .onSet(async (value) => {
                                         try {
-                                            const hue = `${CONSTANS.ApiCommands.HSBHue}${value}`; //0..360
+                                            const hue = `${CONSTANTS.ApiCommands.HSBHue}${value}`; //0..360
                                             await this.axiosInstance(hue);
                                             const logInfo = this.disableLogInfo ? false : this.emit('message', `set hue: ${value} °`);
                                         } catch (error) {
@@ -510,7 +510,7 @@ class TasmotaDevice extends EventEmitter {
                                     })
                                     .onSet(async (value) => {
                                         try {
-                                            const saturation = `${CONSTANS.ApiCommands.HSBSaturation}${value}`; //0..100
+                                            const saturation = `${CONSTANTS.ApiCommands.HSBSaturation}${value}`; //0..100
                                             await this.axiosInstance(saturation);
                                             const logInfo = this.disableLogInfo ? false : this.emit('message', `set saturation: ${value} °`);
                                         } catch (error) {

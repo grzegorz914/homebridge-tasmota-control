@@ -2,13 +2,13 @@
 const fs = require('fs');
 const path = require('path');
 const TasmotaDevice = require('./src/tasmotadevice.js');
-const CONSTANS = require('./src/constans.json');
+const CONSTANTS = require('./src/constants.json');
 
 class tasmotaPlatform {
   constructor(log, config, api) {
     // only load if configured
     if (!config || !Array.isArray(config.devices)) {
-      log(`No configuration found for ${CONSTANS.PluginName}.`);
+      log(`No configuration found for ${CONSTANTS.PluginName}.`);
       return;
     };
     this.accessories = [];
@@ -38,7 +38,7 @@ class tasmotaPlatform {
         //tasmota device
         const tasmotaDevice = new TasmotaDevice(api, device);
         tasmotaDevice.on('publishAccessory', (accessory) => {
-          api.publishExternalAccessories(CONSTANS.PluginName, [accessory]);
+          api.publishExternalAccessories(CONSTANTS.PluginName, [accessory]);
           const debug = device.enableDebugMode ? log(`Device: ${device.host} ${device.name}, published as external accessory.`) : false;
         })
           .on('devInfo', (devInfo) => {
@@ -63,5 +63,5 @@ class tasmotaPlatform {
 };
 
 module.exports = (api) => {
-  api.registerPlatform(CONSTANS.PluginName, CONSTANS.PlatformName, tasmotaPlatform, true);
+  api.registerPlatform(CONSTANTS.PluginName, CONSTANTS.PlatformName, tasmotaPlatform, true);
 };
