@@ -31,7 +31,6 @@ class TasmotaDevice extends EventEmitter {
         this.loadNameFromDevice = config.loadNameFromDevice || false;
 
         //switches, outlets, lights
-        this.friendlyNames = [];
         this.relaysCount = 0;
 
         //sensors
@@ -110,13 +109,15 @@ class TasmotaDevice extends EventEmitter {
                 const deviceInfoKeys = Object.keys(deviceInfo);
 
                 //relays
-                const deviceName = this.loadNameFromDevice ? deviceInfo.Status.DeviceName : this.name;
-                const friendlyNames = Array.isArray(deviceInfo.Status.FriendlyName) ? deviceInfo.Status.FriendlyName : [deviceInfo.Status.FriendlyName];
-                const relaysCount = friendlyNames.length ?? 0;
-                for (let i = 0; i < relaysCount; i++) {
-                    const friendlyName = friendlyNames[i] ?? `Unknown Nmae ${i}`;
-                    this.friendlyNames.push(friendlyName);
+                const friendlyNames = [];
+                const deviceName = this.loadNameFromDevice ? deviceInfo.Status.DeviceName ?? 'Unknown' : this.name;
+                const friendlyName = deviceInfo.Status.FriendlyName ?? '';
+                const relaysName = Array.isArray(friendlyName) ? friendlyName : [friendlyName];
+                for (const relayName of relaysName) {
+                    const name = relayName !== '' ? relayName : 'Unknown'
+                    friendlyNames.push(name);
                 };
+                const relaysCount = friendlyNames.length;
 
                 //status fwr
                 const statusFWRSupported = deviceInfoKeys.includes('StatusFWR');
@@ -161,6 +162,7 @@ class TasmotaDevice extends EventEmitter {
                 };
 
                 this.deviceName = deviceName;
+                this.friendlyNames = friendlyNames;
                 this.modelName = modelName;
                 this.serialNumber = addressMac;
                 this.firmwareRevision = firmwareRevision;
