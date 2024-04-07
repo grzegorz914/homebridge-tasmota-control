@@ -56,7 +56,7 @@ class TasmotaDevice extends EventEmitter {
         this.axiosInstance = axios.create({
             method: 'GET',
             baseURL: url,
-            timeout: 10000,
+            timeout: 15000,
             withCredentials: this.auth,
             auth: {
                 username: this.user,
