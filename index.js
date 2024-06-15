@@ -50,8 +50,13 @@ class tasmotaPlatform {
           .on('debug', (debug) => {
             log(`Device: ${device.host} ${device.name}, debug: ${debug}`);
           })
-          .on('error', (error) => {
-            log.error(`Device: ${device.host} ${device.name}, ${error}`);
+          .on('error', async (error) => {
+            log.error(`Device: ${device.host} ${device.name}, ${error}, trying again in 15s.`);
+
+            //start data refresh
+            await new Promise(resolve => setTimeout(resolve, 15000));
+            tasmotaDevice.impulseGenerator.stop()
+            tasmotaDevice.start();
           });
       };
     });

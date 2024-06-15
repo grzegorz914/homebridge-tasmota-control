@@ -1,6 +1,7 @@
 'use strict';
 const axios = require('axios');
 const EventEmitter = require('events');
+const ImpulseGenerator = require('./impulsegenerator.js');
 const CONSTANTS = require('./constants.json');
 let Accessory, Characteristic, Service, Categories, AccessoryUUID;
 
@@ -24,7 +25,7 @@ class TasmotaDevice extends EventEmitter {
         this.relaysDisplayType = config.relaysDisplayType || 0;
         this.lightsNamePrefix = config.lightsNamePrefix || false;
         this.sensorsNamePrefix = config.sensorsNamePrefix || false;
-        this.refreshInterval = config.refreshInterval || 5;
+        this.refreshInterval = config.refreshInterval * 1000 || 5000;
         this.enableDebugMode = config.enableDebugMode || false;
         this.disableLogInfo = config.disableLogInfo || false;
         this.disableLogDeviceInfo = config.disableLogDeviceInfo || false;
@@ -70,30 +71,36 @@ class TasmotaDevice extends EventEmitter {
     async start() {
         try {
             const serialNumber = await this.getDeviceInfo();
+            if (!serialNumber) {
+                this.emit('error', `Serial number not found.`);
+                return;
+            };
+
+            //check device state
             await this.checkDeviceState();
 
             //start prepare accessory
-            const accessory = this.startPrepareAccessory && serialNumber ? await this.prepareAccessory() : false;
+            const accessory = this.startPrepareAccessory ? await this.prepareAccessory() : false;
             const publishAccessory = this.startPrepareAccessory && accessory ? this.emit('publishAccessory', accessory) : false;
             this.startPrepareAccessory = false;
 
-            this.updateDeviceState();
+            //start update data
+            const timers = [
+                { name: 'checkDeviceState', interval: this.refreshInterval }
+            ];
+
+            this.impulseGenerator = new ImpulseGenerator(timers);
+            this.impulseGenerator.on('checkDeviceState', async () => {
+                try {
+                    await this.checkDeviceState();
+                } catch (error) {
+                    this.emit('error', `Update home error: ${error}`);
+                };
+            });
+            this.impulseGenerator.start();
         } catch (error) {
             this.emit('error', error);
-            await new Promise(resolve => setTimeout(resolve, 15000));
-            this.start();
         };
-    };
-
-    async updateDeviceState() {
-        try {
-            await this.checkDeviceState();
-        } catch (error) {
-            this.emit('error', error);
-        };
-
-        await new Promise(resolve => setTimeout(resolve, this.refreshInterval * 1000));
-        this.updateDeviceState();
     };
 
     getDeviceInfo() {
@@ -126,7 +133,7 @@ class TasmotaDevice extends EventEmitter {
                 const modelName = statusFwr.Hardware ?? 'Unknown';
 
                 //status net
-                const addressMac = deviceInfo.StatusNET.Mac;
+                const addressMac = deviceInfo.StatusNET.Mac ?? false;
 
                 //status sns
                 const statusSNSSupported = deviceInfoKeys.includes('StatusSNS') ?? false;
