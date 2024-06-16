@@ -54,8 +54,8 @@ class tasmotaPlatform {
             log.error(`Device: ${device.host} ${device.name}, ${error}, trying again in 15s.`);
 
             //start data refresh
+            tasmotaDevice.impulseGenerator.stop();
             await new Promise(resolve => setTimeout(resolve, 15000));
-            tasmotaDevice.impulseGenerator.stop()
             tasmotaDevice.start();
           });
       };
