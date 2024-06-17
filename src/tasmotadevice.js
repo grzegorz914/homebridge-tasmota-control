@@ -70,7 +70,14 @@ class TasmotaDevice extends EventEmitter {
             { name: 'checkDeviceState', interval: this.refreshInterval }
         ];
         this.impulseGenerator = new ImpulseGenerator(timers);
-        
+        this.impulseGenerator.on('checkDeviceState', async () => {
+            try {
+                await this.checkDeviceState();
+            } catch (error) {
+                this.emit('error', `Update home error: ${error}`);
+            };
+        });
+
         this.start();
     };
 
@@ -91,13 +98,6 @@ class TasmotaDevice extends EventEmitter {
             this.startPrepareAccessory = false;
 
             //start update data
-            this.impulseGenerator.on('checkDeviceState', async () => {
-                try {
-                    await this.checkDeviceState();
-                } catch (error) {
-                    this.emit('error', `Update home error: ${error}`);
-                };
-            });
             this.impulseGenerator.start();
         } catch (error) {
             this.emit('error', error);

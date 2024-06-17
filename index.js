@@ -19,7 +19,7 @@ class tasmotaPlatform {
       fs.mkdirSync(prefDir);
     };
 
-    api.on('didFinishLaunching', () => {
+    api.on('didFinishLaunching', async () => {
       for (const device of config.devices) {
         if (!device.name || !device.host) {
           log.warn(`Device Name: ${device.name ? 'OK' : device.name}, host: ${device.host ? 'OK' : device.host}, in config wrong or missing.`);
@@ -58,6 +58,7 @@ class tasmotaPlatform {
             await new Promise(resolve => setTimeout(resolve, 15000));
             tasmotaDevice.start();
           });
+        await new Promise(resolve => setTimeout(resolve, 750));
       };
     });
   };
