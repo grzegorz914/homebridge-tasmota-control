@@ -35,7 +35,6 @@ class TasmotaDevice extends EventEmitter {
         this.relaysCount = 0;
 
         //sensors
-        this.sensors = [];
         this.sensorsCount = 0;
         this.sensorsTemperatureCount = 0;
         this.sensorsReferenceTemperatureCount = 0;
@@ -109,6 +108,7 @@ class TasmotaDevice extends EventEmitter {
             const debug = this.enableDebugMode ? this.emit('debug', `Requesting info.`) : false;
 
             try {
+                const sensors = [];
                 const deviceInfoData = await this.axiosInstance(CONSTANTS.ApiCommands.Status);
                 const deviceInfo = deviceInfoData.data ?? {};
                 const debug = this.enableDebugMode ? this.emit('debug', `Info: ${JSON.stringify(deviceInfo, null, 2)}`) : false;
@@ -152,10 +152,10 @@ class TasmotaDevice extends EventEmitter {
                             'name': key,
                             'data': value
                         }
-                        this.sensors.push(obj);
+                        sensors.push(obj);
                     }
                 }
-                const sensorsCount = this.sensors.length;
+                const sensorsCount = sensors.length;
 
                 //device info
                 if (!this.disableLogDeviceInfo) {
@@ -175,6 +175,7 @@ class TasmotaDevice extends EventEmitter {
                 this.serialNumber = addressMac;
                 this.firmwareRevision = firmwareRevision;
                 this.relaysCount = relaysCount;
+                this.sensors = sensors;
                 this.sensorsCount = sensorsCount;
 
                 resolve(addressMac)
