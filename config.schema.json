@@ -37,24 +37,18 @@
               "title": "User",
               "type": "string",
               "placeholder": "username",
-              "required": true,
               "condition": {
                 "functionBody": "return model.devices[arrayIndices].auth === true;"
-              }
+              },
+              "required": true
             },
             "passwd": {
               "title": "Password",
               "type": "string",
               "placeholder": "password",
-              "required": true,
               "condition": {
                 "functionBody": "return model.devices[arrayIndices].auth === true;"
-              }
-            },
-            "relaysNamePrefix": {
-              "title": "Name Prefix",
-              "type": "boolean",
-              "description": "Here enable/disable the accessory name as a prefix for relays name.",
+              },
               "required": true
             },
             "relaysDisplayType": {
@@ -80,17 +74,26 @@
               "description": "Here select characteristic display type for relays which are exposed in the HomeKit app.",
               "required": true
             },
+            "relaysNamePrefix": {
+              "title": "Name Prefix",
+              "type": "boolean",
+              "default": false,
+              "description": "Here enable/disable the accessory name as a prefix for relays name.",
+              "required": false
+            },
             "lightsNamePrefix": {
               "title": "Name Prefix",
               "type": "boolean",
+              "default": false,
               "description": "Here enable/disable the accessory name as a prefix for light name.",
-              "required": true
+              "required": false
             },
             "sensorsNamePrefix": {
               "title": "Name Prefix",
               "type": "boolean",
+              "default": false,
               "description": "Here enable/disable the accessory name as a prefix for sensors name.",
-              "required": true
+              "required": false
             },
             "loadNameFromDevice": {
               "title": "Load Name From Device",

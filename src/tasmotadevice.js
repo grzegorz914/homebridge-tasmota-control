@@ -18,11 +18,11 @@ class TasmotaDevice extends EventEmitter {
         //device configuration
         this.name = config.name;
         this.host = config.host;
-        this.user = config.user;
-        this.passwd = config.passwd;
         this.auth = config.auth || false;
-        this.relaysNamePrefix = config.relaysNamePrefix || false;
+        this.user = config.user || '';
+        this.passwd = config.passwd || '';
         this.relaysDisplayType = config.relaysDisplayType || 0;
+        this.relaysNamePrefix = config.relaysNamePrefix || false;
         this.lightsNamePrefix = config.lightsNamePrefix || false;
         this.sensorsNamePrefix = config.sensorsNamePrefix || false;
         this.refreshInterval = config.refreshInterval * 1000 || 5000;
