@@ -65,7 +65,7 @@ class TasmotaDevice extends EventEmitter {
         });
 
         //impulse generator
-        this.impulseGenerator = new ImpulseGenerator(timers);
+        this.impulseGenerator = new ImpulseGenerator();
         this.impulseGenerator.on('checkDeviceState', async () => {
             try {
                 await this.checkDeviceState();
