@@ -65,9 +65,6 @@ class TasmotaDevice extends EventEmitter {
         });
 
         //impulse generator
-        const timers = [
-            { name: 'checkDeviceState', interval: this.refreshInterval }
-        ];
         this.impulseGenerator = new ImpulseGenerator(timers);
         this.impulseGenerator.on('checkDeviceState', async () => {
             try {
@@ -82,6 +79,9 @@ class TasmotaDevice extends EventEmitter {
 
     async start() {
         try {
+            //create timers array
+            this.timers = [];
+
             const serialNumber = await this.getDeviceInfo();
             if (!serialNumber) {
                 this.emit('error', `Serial number not found.`);
@@ -97,7 +97,8 @@ class TasmotaDevice extends EventEmitter {
             this.startPrepareAccessory = false;
 
             //start update data
-            this.impulseGenerator.start();
+            this.timers.push({ timerName: 'checkDeviceState', sampling: this.refreshInterval });
+            this.impulseGenerator.start(this.timers);
         } catch (error) {
             this.emit('error', error);
         };
