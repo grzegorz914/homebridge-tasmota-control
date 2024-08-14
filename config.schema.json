@@ -46,6 +46,7 @@
               "title": "Password",
               "type": "string",
               "placeholder": "password",
+              "format": "password",
               "condition": {
                 "functionBody": "return model.devices[arrayIndices].auth === true;"
               },
@@ -185,7 +186,10 @@
                   "items": [
                     "devices[].auth",
                     "devices[].user",
-                    "devices[].passwd"
+                    {
+                      "key": "devices[].passwd",
+                      "type": "password"
+                    }
                   ]
                 },
                 {
