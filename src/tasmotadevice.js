@@ -72,7 +72,7 @@ class TasmotaDevice extends EventEmitter {
             } catch (error) {
                 this.emit('error', `Update home error: ${error}`);
             };
-        });
+        }).on('state', () => { });
 
         this.start();
     };
@@ -81,7 +81,7 @@ class TasmotaDevice extends EventEmitter {
         try {
             const serialNumber = await this.getDeviceInfo();
             if (!serialNumber) {
-                this.emit('error', `Serial number not found.`);
+                this.emit('warn', `Serial number not found.`);
                 return;
             };
 
@@ -175,7 +175,7 @@ class TasmotaDevice extends EventEmitter {
 
             return addressMac;
         } catch (error) {
-            this.emit('error', `Check info error: ${error}, trying to reconnect in 15s.`);
+            throw new Error(`Check info error: ${error}, trying to reconnect in 15s.`);
         };
     };
 
@@ -388,7 +388,7 @@ class TasmotaDevice extends EventEmitter {
 
             return true;
         } catch (error) {
-            this.emit('error', `Check state error: ${error}, trying again.`);
+            throw new Error(`Check state error: ${error}, trying again.`);
         };
     };
 
@@ -736,7 +736,7 @@ class TasmotaDevice extends EventEmitter {
 
             return accessory;
         } catch (error) {
-            this.emit('error', error)
+            throw new Error(error)
         };
     }
 };

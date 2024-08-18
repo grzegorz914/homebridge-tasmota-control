@@ -27,28 +27,31 @@ class tasmotaPlatform {
         }
 
         //debug config
-        const debug = device.enableDebugMode ? log(`Device: ${device.host} ${device.name}, did finish launching.`) : false;
+        const debug = device.enableDebugMode ? log.info(`Device: ${device.host} ${device.name}, did finish launching.`) : false;
         const config = {
           ...device,
           user: 'removed',
           passwd: 'removed'
         };
-        const debug1 = device.enableDebugMode ? log(`Device: ${device.host} ${device.name}, Config: ${JSON.stringify(config, null, 2)}`) : false;
+        const debug1 = device.enableDebugMode ? log.info(`Device: ${device.host} ${device.name}, Config: ${JSON.stringify(config, null, 2)}`) : false;
 
         //tasmota device
         const tasmotaDevice = new TasmotaDevice(api, device);
         tasmotaDevice.on('publishAccessory', (accessory) => {
           api.publishExternalAccessories(CONSTANTS.PluginName, [accessory]);
-          const debug = device.enableDebugMode ? log(`Device: ${device.host} ${device.name}, published as external accessory.`) : false;
+          log.success(`Device: ${device.host} ${device.name}, published as external accessory.`);
         })
           .on('devInfo', (devInfo) => {
-            log(devInfo);
+            log.info(devInfo);
           })
           .on('message', (message) => {
-            log(`Device: ${device.host} ${device.name}, ${message}`);
+            log.info(`Device: ${device.host} ${device.name}, ${message}`);
           })
           .on('debug', (debug) => {
-            log(`Device: ${device.host} ${device.name}, debug: ${debug}`);
+            log.info(`Device: ${device.host} ${device.name}, debug: ${debug}`);
+          })
+          .on('warn', (warn) => {
+            log.warn(`Device: ${device.host} ${device.name}: ${warn}`);
           })
           .on('error', async (error) => {
             log.error(`Device: ${device.host} ${device.name}, ${error}, trying again in 15s.`);
