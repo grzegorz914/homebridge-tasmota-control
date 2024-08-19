@@ -445,7 +445,7 @@ class TasmotaDevice extends EventEmitter {
                                 await this.axiosInstance(state);
                                 const logInfo = this.disableLogInfo ? false : this.emit('message', `${friendlyName}, set state: ${state ? 'ON' : 'OFF'}`);
                             } catch (error) {
-                                this.emit('error', `${friendlyName}, set state error: ${error}`);
+                                this.emit('warn', `${friendlyName}, set state error: ${error}`);
                             }
                         });
                     if (deviceType === 1) {
@@ -462,7 +462,7 @@ class TasmotaDevice extends EventEmitter {
                                         await this.axiosInstance(brightness);
                                         const logInfo = this.disableLogInfo ? false : this.emit('message', `set brightness: ${value} %`);
                                     } catch (error) {
-                                        this.emit('error', `set brightness error: ${error}`);
+                                        this.emit('warn', `set brightness error: ${error}`);
                                     }
                                 });
                         };
@@ -480,7 +480,7 @@ class TasmotaDevice extends EventEmitter {
                                         await this.axiosInstance(colorTemperature);
                                         const logInfo = this.disableLogInfo ? false : this.emit('message', `set color temperatur: ${value} °`);
                                     } catch (error) {
-                                        this.emit('error', `set color temperatur error: ${error}`);
+                                        this.emit('warn', `set color temperatur error: ${error}`);
                                     }
                                 });
                         };
@@ -497,7 +497,7 @@ class TasmotaDevice extends EventEmitter {
                                         await this.axiosInstance(hue);
                                         const logInfo = this.disableLogInfo ? false : this.emit('message', `set hue: ${value} °`);
                                     } catch (error) {
-                                        this.emit('error', `set hue error: ${error}`);
+                                        this.emit('warn', `set hue error: ${error}`);
                                     }
                                 });
                         };
@@ -514,7 +514,7 @@ class TasmotaDevice extends EventEmitter {
                                         await this.axiosInstance(saturation);
                                         const logInfo = this.disableLogInfo ? false : this.emit('message', `set saturation: ${value} °`);
                                     } catch (error) {
-                                        this.emit('error', `set saturation error: ${error}`);
+                                        this.emit('warn', `set saturation error: ${error}`);
                                     }
                                 });
                         };
