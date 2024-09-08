@@ -390,7 +390,7 @@ class TasmotaDevice extends EventEmitter {
         this.emit('devInfo', `----- ${this.deviceName} -----`);
         this.emit('devInfo', `Manufacturer: Tasmota`);
         this.emit('devInfo', `Hardware: ${this.modelName}`);
-        this.emit('devInfo', `Serialnr: ${this.addressMac}`);
+        this.emit('devInfo', `Serialnr: ${this.serialNumber}`);
         this.emit('devInfo', `Firmware: ${this.firmwareRevision}`);
         const log = this.relaysCount > 0 ? this.emit('devInfo', `Relays: ${this.relaysCount}`) : false;
         const log1 = this.sensorsCount > 0 ? this.emit('devInfo', `Sensors: ${this.sensorsCount}`) : false;
