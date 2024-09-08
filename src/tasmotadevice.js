@@ -70,7 +70,7 @@ class TasmotaDevice extends EventEmitter {
             try {
                 await this.checkDeviceState();
             } catch (error) {
-                this.emit('error', `Update home error: ${error}`);
+                this.emit('error', `Impulse generator check state error: ${error.message || error}}, check again in 15s.`);
             };
         }).on('state', () => { });
 
@@ -79,11 +79,17 @@ class TasmotaDevice extends EventEmitter {
 
     async start() {
         try {
-            const serialNumber = await this.getDeviceInfo();
-            if (!serialNumber) {
+            const addressMac = await this.getDeviceInfo();
+            if (!addressMac) {
                 this.emit('warn', `Serial number not found.`);
                 return;
             };
+
+            //connect to deice success
+            this.emit('success', `Connect Success.`)
+
+            //check device info 
+            const devInfo = !this.disableLogDeviceInfo ? this.deviceInfo() : false;
 
             //check device state 
             await this.checkDeviceState();
@@ -94,7 +100,7 @@ class TasmotaDevice extends EventEmitter {
             this.startPrepareAccessory = false;
 
             //start update data
-            this.impulseGenerator.start([{ name: 'checkDeviceState', sampling: this.refreshInterval }]);
+            await this.impulseGenerator.start([{ name: 'checkDeviceState', sampling: this.refreshInterval }]);
         } catch (error) {
             this.emit('error', error);
         };
@@ -151,18 +157,6 @@ class TasmotaDevice extends EventEmitter {
                 }
             }
             const sensorsCount = sensors.length;
-
-            //device info
-            if (!this.disableLogDeviceInfo) {
-                this.emit('devInfo', `----- ${deviceName} -----`);
-                this.emit('devInfo', `Manufacturer: Tasmota`);
-                this.emit('devInfo', `Hardware: ${modelName}`);
-                this.emit('devInfo', `Serialnr: ${addressMac}`);
-                this.emit('devInfo', `Firmware: ${firmwareRevision}`);
-                const log = relaysCount > 0 ? this.emit('devInfo', `Relays: ${relaysCount}`) : false;
-                const log1 = sensorsCount > 0 ? this.emit('devInfo', `Sensors: ${sensorsCount}`) : false;
-                this.emit('devInfo', `----------------------------------`);
-            };
 
             this.deviceName = deviceName;
             this.friendlyNames = friendlyNames;
@@ -390,6 +384,17 @@ class TasmotaDevice extends EventEmitter {
         } catch (error) {
             throw new Error(`Check state error: ${error}, trying again.`);
         };
+    };
+
+    deviceInfo() {
+        this.emit('devInfo', `----- ${this.deviceName} -----`);
+        this.emit('devInfo', `Manufacturer: Tasmota`);
+        this.emit('devInfo', `Hardware: ${this.modelName}`);
+        this.emit('devInfo', `Serialnr: ${this.addressMac}`);
+        this.emit('devInfo', `Firmware: ${this.firmwareRevision}`);
+        const log = this.relaysCount > 0 ? this.emit('devInfo', `Relays: ${this.relaysCount}`) : false;
+        const log1 = this.sensorsCount > 0 ? this.emit('devInfo', `Sensors: ${this.sensorsCount}`) : false;
+        this.emit('devInfo', `----------------------------------`);
     };
 
     //Prepare accessory

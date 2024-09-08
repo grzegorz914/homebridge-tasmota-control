@@ -44,6 +44,9 @@ class tasmotaPlatform {
           .on('devInfo', (devInfo) => {
             log.info(devInfo);
           })
+          .on('success', (message) => {
+            log.success(message);
+          })
           .on('message', (message) => {
             log.info(`Device: ${device.host} ${device.name}, ${message}`);
           })
