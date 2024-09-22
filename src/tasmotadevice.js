@@ -25,7 +25,6 @@ class TasmotaDevice extends EventEmitter {
         this.relaysNamePrefix = config.relaysNamePrefix || false;
         this.lightsNamePrefix = config.lightsNamePrefix || false;
         this.sensorsNamePrefix = config.sensorsNamePrefix || false;
-        this.refreshInterval = config.refreshInterval * 1000 || 5000;
         this.enableDebugMode = config.enableDebugMode || false;
         this.disableLogInfo = config.disableLogInfo || false;
         this.disableLogDeviceInfo = config.disableLogDeviceInfo || false;
@@ -56,7 +55,7 @@ class TasmotaDevice extends EventEmitter {
         this.axiosInstance = axios.create({
             method: 'GET',
             baseURL: url,
-            timeout: 15000,
+            timeout: 20000,
             withCredentials: this.auth,
             auth: {
                 username: this.user,
@@ -70,11 +69,9 @@ class TasmotaDevice extends EventEmitter {
             try {
                 await this.checkDeviceState();
             } catch (error) {
-                this.emit('error', `Impulse generator check state error: ${error.message || error}}, check again in 15s.`);
+                this.emit('error', `Impulse generator error: ${error}`);
             };
         }).on('state', () => { });
-
-        this.start();
     };
 
     async start() {
@@ -85,24 +82,27 @@ class TasmotaDevice extends EventEmitter {
                 return;
             };
 
+            //check device state 
+            await this.checkDeviceState();
+
             //connect to deice success
             this.emit('success', `Connect Success.`)
 
             //check device info 
             const devInfo = !this.disableLogDeviceInfo ? this.deviceInfo() : false;
 
-            //check device state 
-            await this.checkDeviceState();
-
             //start prepare accessory
-            const accessory = this.startPrepareAccessory ? await this.prepareAccessory() : false;
-            const publishAccessory = this.startPrepareAccessory && accessory ? this.emit('publishAccessory', accessory) : false;
+            if (!this.startPrepareAccessory) {
+                return;
+            }
+
+            const accessory = await this.prepareAccessory();
+            const publishAccessory = this.emit('publishAccessory', accessory);
             this.startPrepareAccessory = false;
 
-            //start update data
-            await this.impulseGenerator.start([{ name: 'checkDeviceState', sampling: this.refreshInterval }]);
+            return;
         } catch (error) {
-            this.emit('error', error);
+            throw new Error(`Start error: ${error}`);
         };
     };
 
@@ -169,7 +169,7 @@ class TasmotaDevice extends EventEmitter {
 
             return addressMac;
         } catch (error) {
-            throw new Error(`Check info error: ${error}, trying to reconnect in 15s.`);
+            throw new Error(`Check info error: ${error.message || error}`);
         };
     };
 
@@ -382,7 +382,7 @@ class TasmotaDevice extends EventEmitter {
 
             return true;
         } catch (error) {
-            throw new Error(`Check state error: ${error}, trying again.`);
+            throw new Error(`Check state error: ${error.message || error}`);
         };
     };
 
@@ -741,7 +741,7 @@ class TasmotaDevice extends EventEmitter {
 
             return accessory;
         } catch (error) {
-            throw new Error(error)
+            throw new Error(`Prepare accessory error: ${error.message || error}`)
         };
     }
 };

@@ -15,9 +15,12 @@ class tasmotaPlatform {
 
     //check if prefs directory exist
     const prefDir = path.join(api.user.storagePath(), 'tasmota');
-    if (!fs.existsSync(prefDir)) {
-      fs.mkdirSync(prefDir);
-    };
+    try {
+      fs.mkdirSync(prefDir, { recursive: true });
+    } catch (error) {
+      log.error(`Prepare directory error: ${error.message ?? error}`);
+      return;
+    }
 
     api.on('didFinishLaunching', async () => {
       for (const device of config.devices) {
@@ -34,37 +37,45 @@ class tasmotaPlatform {
           passwd: 'removed'
         };
         const debug1 = device.enableDebugMode ? log.info(`Device: ${device.host} ${device.name}, Config: ${JSON.stringify(config, null, 2)}`) : false;
+        const refreshInterval = device.refreshInterval * 1000 || 5000;
 
         //tasmota device
-        const tasmotaDevice = new TasmotaDevice(api, device);
-        tasmotaDevice.on('publishAccessory', (accessory) => {
-          api.publishExternalAccessories(CONSTANTS.PluginName, [accessory]);
-          log.success(`Device: ${device.host} ${device.name}, published as external accessory.`);
-        })
-          .on('devInfo', (devInfo) => {
-            log.info(devInfo);
+        try {
+          this.tasmotaDevice = new TasmotaDevice(api, device);
+          this.tasmotaDevice.on('publishAccessory', (accessory) => {
+            api.publishExternalAccessories(CONSTANTS.PluginName, [accessory]);
+            log.success(`Device: ${device.host} ${device.name}, published as external accessory.`);
           })
-          .on('success', (message) => {
-            log.success(`Device: ${device.host} ${device.name}, ${message}`);
-          })
-          .on('message', (message) => {
-            log.info(`Device: ${device.host} ${device.name}, ${message}`);
-          })
-          .on('debug', (debug) => {
-            log.info(`Device: ${device.host} ${device.name}, debug: ${debug}`);
-          })
-          .on('warn', (warn) => {
-            log.warn(`Device: ${device.host} ${device.name}: ${warn}`);
-          })
-          .on('error', async (error) => {
-            log.error(`Device: ${device.host} ${device.name}, ${error}, trying again in 15s.`);
+            .on('devInfo', (devInfo) => {
+              log.info(devInfo);
+            })
+            .on('success', (message) => {
+              log.success(`Device: ${device.host} ${device.name}, ${message}`);
+            })
+            .on('message', (message) => {
+              log.info(`Device: ${device.host} ${device.name}, ${message}`);
+            })
+            .on('debug', (debug) => {
+              log.info(`Device: ${device.host} ${device.name}, debug: ${debug}`);
+            })
+            .on('warn', (warn) => {
+              log.warn(`Device: ${device.host} ${device.name}: ${warn}`);
+            })
+            .on('error', async (error) => {
+              log.error(`Device: ${device.host} ${device.name}, ${error}`);
+            });
+          await this.tasmotaDevice.start();
 
-            //start data refresh
-            tasmotaDevice.impulseGenerator.stop();
-            await new Promise(resolve => setTimeout(resolve, 15000));
-            tasmotaDevice.start();
-          });
-        await new Promise(resolve => setTimeout(resolve, 750));
+          //start update data
+          await this.tasmotaDevice.impulseGenerator.start([{ name: 'checkDeviceState', sampling: refreshInterval }]);
+        } catch (error) {
+          log.error(`Device: ${device.host} ${device.name}, did finish launch error: ${error}, check again in 15s.`);
+
+          //start data refresh
+          await new Promise(resolve => setTimeout(resolve, 15000));
+          await this.tasmotaDevice.start();
+          await this.tasmotaDevice.impulseGenerator.start([{ name: 'checkDeviceState', sampling: refreshInterval }]);
+        }
       };
     });
   };
