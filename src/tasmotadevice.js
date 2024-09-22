@@ -109,13 +109,9 @@ class TasmotaDevice extends EventEmitter {
     async getDeviceInfo() {
         const debug = this.enableDebugMode ? this.emit('debug', `Requesting info.`) : false;
         try {
-            const sensors = [];
             const deviceInfoData = await this.axiosInstance(CONSTANTS.ApiCommands.Status);
             const deviceInfo = deviceInfoData.data ?? {};
             const debug = this.enableDebugMode ? this.emit('debug', `Info: ${JSON.stringify(deviceInfo, null, 2)}`) : false;
-
-            //keys
-            const deviceInfoKeys = Object.keys(deviceInfo);
 
             //relays
             const friendlyNames = [];
@@ -126,10 +122,8 @@ class TasmotaDevice extends EventEmitter {
                 const name = relayName !== '' ? relayName : 'Unknown'
                 friendlyNames.push(name);
             };
-            const relaysCount = friendlyNames.length;
 
             //status fwr
-            const statusFWRSupported = deviceInfoKeys.includes('StatusFWR');
             const statusFwr = deviceInfo.StatusFWR ?? {};
             const firmwareRevision = statusFwr.Version ?? 'Unknown';
             const modelName = statusFwr.Hardware ?? 'Unknown';
@@ -137,35 +131,12 @@ class TasmotaDevice extends EventEmitter {
             //status net
             const addressMac = deviceInfo.StatusNET.Mac ?? false;
 
-            //status sns
-            const statusSNSSupported = deviceInfoKeys.includes('StatusSNS') ?? false;
-            if (statusSNSSupported) {
-                const sensorTypes = CONSTANTS.SensorKeys;
-                const sensor = Object.entries(deviceInfo.StatusSNS)
-                    .filter(([key]) => sensorTypes.some(type => key.includes(type)))
-                    .reduce((obj, [key, value]) => {
-                        obj[key] = value;
-                        return obj;
-                    }, {});
-
-                for (const [key, value] of Object.entries(sensor)) {
-                    const obj = {
-                        'name': key,
-                        'data': value
-                    }
-                    sensors.push(obj);
-                }
-            }
-            const sensorsCount = sensors.length;
-
             this.deviceName = deviceName;
             this.friendlyNames = friendlyNames;
             this.modelName = modelName;
             this.serialNumber = addressMac;
             this.firmwareRevision = firmwareRevision;
-            this.relaysCount = relaysCount;
-            this.sensors = sensors;
-            this.sensorsCount = sensorsCount;
+            this.relaysCount = friendlyNames.length;
 
             return addressMac;
         } catch (error) {
@@ -174,7 +145,7 @@ class TasmotaDevice extends EventEmitter {
     };
 
     async checkDeviceState() {
-        const debug = this.enableDebugMode ? this.emit('debug', `Requesting status.`, this.host, this.name) : false;
+        const debug = this.enableDebugMode ? this.emit('debug', `Requesting status.`) : false;
         try {
             //switches, outlets, lights
             const relaysCount = this.relaysCount;
@@ -234,8 +205,16 @@ class TasmotaDevice extends EventEmitter {
             };
 
             //sensors
-            const sensorsCount = this.sensorsCount;
-            if (sensorsCount > 0) {
+            const sensorsStatusData = await this.axiosInstance(CONSTANTS.ApiCommands.Status);
+            const sensorsStatus = sensorsStatusData.data ?? {};
+            const debug = this.enableDebugMode ? this.emit('debug', `Sensors status: ${JSON.stringify(sensorsStatus, null, 2)}`) : false;
+
+            //keys
+            const sensorsStatusKeys = Object.keys(sensorsStatus);
+
+            //status sns
+            const statusSNSSupported = sensorsStatusKeys.includes('StatusSNS') ?? false;
+            if (statusSNSSupported) {
                 this.sensorsName = [];
                 this.sensorsTemperature = [];
                 this.sensorsReferenceTemperature = [];
@@ -249,13 +228,17 @@ class TasmotaDevice extends EventEmitter {
                 this.sensorsAmbientLight = [];
                 this.sensorsMotion = [];
 
-                const sensorsStatusData = await this.axiosInstance(CONSTANTS.ApiCommands.Status);
-                const sensorsStatus = sensorsStatusData.data.StatusSNS ?? {};
-                const debug = this.enableDebugMode ? this.emit('debug', `Sensors status: ${JSON.stringify(sensorsStatus, null, 2)}`) : false;
+                const sensorTypes = CONSTANTS.SensorKeys;
+                const sensor = Object.entries(sensorsStatus.StatusSNS)
+                    .filter(([key]) => sensorTypes.some(type => key.includes(type)))
+                    .reduce((obj, [key, value]) => {
+                        obj[key] = value;
+                        return obj;
+                    }, {});
 
-                for (let i = 0; i < sensorsCount; i++) {
-                    const sensorName = this.sensors[i].name ?? `Sensor ${i}`;
-                    const sensorData = this.sensors[i].data;
+                for (const [key, value] of Object.entries(sensor)) {
+                    const sensorName = key ?? `Sensor`;
+                    const sensorData = value;
 
                     //sensors
                     const temperature = sensorData.Temperature ?? false;
@@ -271,15 +254,18 @@ class TasmotaDevice extends EventEmitter {
                     const motion = sensorData === 'ON';
 
                     //energy
-                    const energyTotal = sensorData.Total ?? false;
-                    const energyYesterday = sensorData.Yesterday ?? false;
-                    const energyToday = sensorData.Today ?? false;
-                    const power = sensorData.Power ?? false;
-                    const apparentPower = sensorData.ApparentPower ?? false;
-                    const reactivePower = sensorData.ReactivePower ?? false;
-                    const factor = sensorData.Factor ?? false;
-                    const voltage = sensorData.Voltage ?? false;
-                    const current = sensorData.Current ?? false;
+                    const energyTotalStartTime = sensorData.TotalStartTime ?? '';
+                    const energyTotal = sensorData.Total ?? 0;
+                    const energyPeriod = sensorData.Period ?? 0;
+                    const energyYesterday = sensorData.Yesterday ?? 0;
+                    const energyToday = sensorData.Today ?? 0;
+                    const power = sensorData.Power ?? 0;
+                    const apparentPower = sensorData.ApparentPower ?? 0;
+                    const reactivePower = sensorData.ReactivePower ?? 0;
+                    const factor = sensorData.Factor ?? 0;
+                    const voltage = sensorData.Voltage ?? 0;
+                    const current = sensorData.Current ?? 0;
+                    const load = sensorData.Load ?? 0;
 
                     //push to array
                     this.sensorsName.push(sensorName);
@@ -296,6 +282,9 @@ class TasmotaDevice extends EventEmitter {
                     const push11 = motion ? this.sensorsMotion.push(motion) : false;
                 };
 
+                this.time = sensorsStatus.Time ?? '';
+                this.tempUnit = sensorsStatus.TempUnit ?? 'C';
+                this.pressureUnit = sensorsStatus.PressureUnit ?? 'hPa';
                 this.sensorsTemperatureCount = this.sensorsTemperature.length;
                 this.sensorsReferenceTemperatureCount = this.sensorsReferenceTemperature.length;
                 this.sensorsObjTemperatureCount = this.sensorsObjTemperature.length;
@@ -307,8 +296,7 @@ class TasmotaDevice extends EventEmitter {
                 this.sensorsCarbonDioxydeCount = this.sensorsCarbonDioxyde.length;
                 this.sensorsAmbientLightCount = this.sensorsAmbientLight.length;
                 this.sensorsMotionCount = this.sensorsMotion.length;
-                this.tempUnit = sensorsStatus.TempUnit ?? 'C';
-                this.pressureUnit = sensorsStatus.PressureUnit ?? 'hPa';
+                this.sensorsCount = this.sensorsName.length;
 
 
                 //update characteristics
