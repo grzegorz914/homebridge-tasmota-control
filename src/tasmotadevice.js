@@ -23,17 +23,20 @@ class TasmotaDevice extends EventEmitter {
         this.auth = config.auth || false;
         this.user = config.user || '';
         this.passwd = config.passwd || '';
+        this.heatDryFanMode = config.miElHvac.heatDryFanMode || 1; //NONE, HEAT, DRY, FAN
+        this.coolDryFanMode = config.miElHvac.coolDryFanMode || 1; //NONE, COOL, DRY, FAN
+        this.autoDryFanMode = config.miElHvac.autoDryFanMode || 1; //NONE, COOL, DRY, FAN
+        this.temperatureSensor = config.miElHvac.temperatureSensor || false;
+        this.temperatureSensorOutdoor = config.miElHvac.temperatureSensorOutdoor || false;
         this.relaysDisplayType = config.relaysDisplayType || 0;
         this.relaysNamePrefix = config.relaysNamePrefix || false;
         this.lightsNamePrefix = config.lightsNamePrefix || false;
         this.sensorsNamePrefix = config.sensorsNamePrefix || false;
-        this.heatDryFanMode = config.heatDryFanMode || 1; //NONE, HEAT, DRY, FAN
-        this.coolDryFanMode = config.coolDryFanMode || 1; //NONE, COOL, DRY, FAN
-        this.autoDryFanMode = config.autoDryFanMode || 1; //NONE, AUTO, DRY, FAN
         this.enableDebugMode = config.enableDebugMode || false;
         this.disableLogInfo = config.disableLogInfo || false;
         this.disableLogDeviceInfo = config.disableLogDeviceInfo || false;
         this.loadNameFromDevice = config.loadNameFromDevice || false;
+        this.refreshInterval = config.refreshInterval * 1000 || 5000;
         this.defaultHeatingSetTemperatureFile = defaultHeatingSetTemperatureFile;
         this.defaultCoolingSetTemperatureFile = defaultCoolingSetTemperatureFile;
 
@@ -68,7 +71,7 @@ class TasmotaDevice extends EventEmitter {
         this.axiosInstance = axios.create({
             method: 'GET',
             baseURL: url,
-            timeout: 20000,
+            timeout: 12000,
             withCredentials: this.auth,
             auth: {
                 username: this.user,
@@ -113,6 +116,8 @@ class TasmotaDevice extends EventEmitter {
             const publishAccessory = this.emit('publishAccessory', accessory);
             this.startPrepareAccessory = false;
 
+            //start update data
+            await this.impulseGenerator.start([{ name: 'checkDeviceState', sampling: this.refreshInterval }]);
             return;
         } catch (error) {
             throw new Error(`Start error: ${error}`);
@@ -194,16 +199,17 @@ class TasmotaDevice extends EventEmitter {
                     const temperatureUnit = statusSNS.TempUnit === 'C' ? '°C' : 'F';
 
                     //mielhvac
-                    const miElHvacStatus = statusSNS.MiElHVAC ?? {};
-                    const power = miElHvacStatus.Power === 'ON' ? 1 : 0;
-                    const roomTemperature = miElHvacStatus.Temperature ?? 0;
-                    const setTemperature = miElHvacStatus.SetTemperature ?? 0;
-                    const operationMode = miElHvacStatus.Mode ?? 'Unknown';
-                    const fanSpeed = miElHvacStatus.FanSpeed ?? 'Unknown';
-                    const vaneVerticalDirection = miElHvacStatus.SwingV ?? 'Unknown';
-                    const vaneHorizontalDirection = miElHvacStatus.SwingH ?? 'Unknown';
-                    const operation = miElHvacStatus.Operation == 'ON' ?? false;
-                    const compressor = miElHvacStatus.Compressor == 'ON' ?? false;
+                    const miElHvac = statusSNS.MiElHVAC ?? {};
+                    const power = miElHvac.Power === 'ON' ? 1 : 0;
+                    const roomTemperature = miElHvac.Temperature ?? 0;
+                    const outdoorTemperature = null;
+                    const setTemperature = miElHvac.SetTemperature ?? 0;
+                    const operationMode = miElHvac.Mode ?? 'Unknown';
+                    const fanSpeed = miElHvac.FanSpeed ?? 'Unknown';
+                    const vaneVerticalDirection = miElHvac.SwingV ?? 'Unknown';
+                    const vaneHorizontalDirection = miElHvac.SwingH ?? 'Unknown';
+                    const operation = miElHvac.Operation == 'ON' ?? false;
+                    const compressor = miElHvac.Compressor == 'ON' ?? false;
                     const swingMode = vaneVerticalDirection == 'swing' && vaneHorizontalDirection === 'swing' ? 1 : 0;
                     const defaultCoolingSetTemperature = parseFloat(await this.readData(this.defaultCoolingSetTemperatureFile));
                     const defaultHeatingSetTemperature = parseFloat(await this.readData(this.defaultHeatingSetTemperatureFile));
@@ -215,12 +221,13 @@ class TasmotaDevice extends EventEmitter {
                     const hasAutomaticFanSpeed = true;
                     const numberOfFanSpeeds = 5;
                     const lockPhysicalControl = 0;
-                    const useFahrenheit = temperatureUnit === 'F' ?? false
-                    const temperatureIncrement = 0.5;
+                    const useFahrenheit = temperatureUnit === 'F' ?? false;
+                    const temperatureIncrement = useFahrenheit ? 1 : 0.5;
 
                     this.accessory = {
                         power: power,
                         roomTemperature: roomTemperature,
+                        outdoorTemperature: outdoorTemperature,
                         setTemperature: setTemperature,
                         operationMode: operationMode,
                         vaneVerticalDirection: vaneVerticalDirection,
@@ -333,6 +340,16 @@ class TasmotaDevice extends EventEmitter {
                         const updateRS = modelSupportsFanSpeed ? this.miElHvacService.updateCharacteristic(Characteristic.RotationSpeed, this.accessory.fanSpeed) : false;
                     };
 
+                    if (this.roomTemperatureSensorService) {
+                        this.roomTemperatureSensorService
+                            .updateCharacteristic(Characteristic.CurrentTemperature, roomTemperature)
+                    };
+
+                    if (this.outdoorTemperatureSensorService) {
+                        this.outdoorTemperatureSensorService
+                            .updateCharacteristic(Characteristic.CurrentTemperature, outdoorTemperature)
+                    };
+
                     //log current state
                     if (!this.disableLogInfo) {
                         this.emit('message', `Power: ${power ? 'ON' : 'OFF'}`);
@@ -340,6 +357,7 @@ class TasmotaDevice extends EventEmitter {
                         this.emit('message', `Current operation mode: ${CONSTANTS.AirConditioner.CurrentOperationMode[this.accessory.currentOperationMode]}`);
                         this.emit('message', `Target temperature: ${setTemperature}${temperatureUnit}`);
                         this.emit('message', `Current temperature: ${roomTemperature}${temperatureUnit}`);
+                        const info = outdoorTemperature !== null ? this.emit('message', `Outdoor temperature: ${outdoorTemperature}${temperatureUnit}`) : false;
                         const info4 = modelSupportsFanSpeed ? this.emit('message', `Fan speed: ${CONSTANTS.AirConditioner.FanSpeed[fanSpeedMap[fanSpeed]]}`) : false;
                         const info5 = vaneHorizontalDirection !== 'Unknown' ? this.emit('message', `Vane horizontal: ${CONSTANTS.AirConditioner.HorizontalVane[vaneHorizontalDirection] ?? vaneHorizontalDirection}`) : false;
                         const info6 = vaneVerticalDirection !== 'Unknown' ? this.emit('message', `Vane vertical: ${CONSTANTS.AirConditioner.VerticalVane[vaneVerticalDirection] ?? vaneVerticalDirection}`) : false;
@@ -830,6 +848,43 @@ class TasmotaDevice extends EventEmitter {
                             };
                         });
                     accessory.addService(this.miElHvacService);
+
+                    //temperature sensor services
+                    if (this.temperatureSensor && this.accessory.roomTemperature !== null) {
+                        const debug = this.enableDebugMode ? this.emit('debug', `Prepare room temperature sensor service`) : false;
+                        this.roomTemperatureSensorService = new Service.TemperatureSensor(`${serviceName} Room`, `Room Temperature Sensor ${deviceId}`);
+                        this.roomTemperatureSensorService.addOptionalCharacteristic(Characteristic.ConfiguredName);
+                        this.roomTemperatureSensorService.setCharacteristic(Characteristic.ConfiguredName, `${accessoryName} Room`);
+                        this.roomTemperatureSensorService.getCharacteristic(Characteristic.CurrentTemperature)
+                            .setProps({
+                                minValue: -35,
+                                maxValue: 150,
+                                minStep: 0.5
+                            })
+                            .onGet(async () => {
+                                const state = this.accessory.roomTemperature;
+                                return state;
+                            })
+                        accessory.addService(this.roomTemperatureSensorService);
+                    };
+
+                    if (this.temperatureSensorOutdoor && hasOutdoorTemperature && this.accessory.outdoorTemperature !== null) {
+                        const debug = this.enableDebugMode ? this.emit('debug', `Prepare outdoor temperature sensor service`) : false;
+                        this.outdoorTemperatureSensorService = new Service.TemperatureSensor(`${serviceName} Outdoor`, `Outdoor Temperature Sensor ${deviceId}`);
+                        this.outdoorTemperatureSensorService.addOptionalCharacteristic(Characteristic.ConfiguredName);
+                        this.outdoorTemperatureSensorService.setCharacteristic(Characteristic.ConfiguredName, `${accessoryName} Outdoor`);
+                        this.outdoorTemperatureSensorService.getCharacteristic(Characteristic.CurrentTemperature)
+                            .setProps({
+                                minValue: -35,
+                                maxValue: 150,
+                                minStep: 0.5
+                            })
+                            .onGet(async () => {
+                                const state = this.accessory.outdoorTemperature;
+                                return state;
+                            })
+                        accessory.addService(this.outdoorTemperatureSensorService);
+                    };
                     break;
                 case false:
                     //switches, outlets, lights

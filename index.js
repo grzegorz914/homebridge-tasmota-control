@@ -37,7 +37,6 @@ class tasmotaPlatform {
           passwd: 'removed'
         };
         const debug1 = device.enableDebugMode ? log.info(`Device: ${device.host} ${device.name}, Config: ${JSON.stringify(config, null, 2)}`) : false;
-        const refreshInterval = device.refreshInterval * 1000 || 5000;
 
         //check files exists, if not then create it
         const postFix = device.host.split('.').join('');
@@ -87,17 +86,14 @@ class tasmotaPlatform {
             .on('error', async (error) => {
               log.error(`Device: ${device.host} ${device.name}, ${error}`);
             });
-          await this.tasmotaDevice.start();
 
-          //start update data
-          await this.tasmotaDevice.impulseGenerator.start([{ name: 'checkDeviceState', sampling: refreshInterval }]);
+          await this.tasmotaDevice.start();
         } catch (error) {
           log.error(`Device: ${device.host} ${device.name}, did finish launch error: ${error}, check again in 15s.`);
 
           //start data refresh
           await new Promise(resolve => setTimeout(resolve, 15000));
           await this.tasmotaDevice.start();
-          await this.tasmotaDevice.impulseGenerator.start([{ name: 'checkDeviceState', sampling: refreshInterval }]);
         }
       };
     });

@@ -61,14 +61,16 @@ Homebridge plugin for Tasmota flashed devices.
 | `auth` | If enabled, authorizatins credentials will be used for login. |
 | `user` | Here set the authorization *Username*. |
 | `passwd` | Here set the authorization *Password*. |
+| `miElHvac.heatDryFanMode` | Here select the operatiing mode for `Heat`, only for Mitsubishio AC. |
+| `miElHvac.coolDryFanMode` | Here select the operatiing mode for `Cool`, only for Mitsubishio AC. |
+| `miElHvac.autoDryFanMode` | Here select the operatiing mode for `Auto`, only for Mitsubishio AC. |
+| `miElHvac.temperatureSensor` | This enable extra `Room` temperature sensors to use with automations in HomeKit app. |
+| `miElHvac.temperatureSensorOutdoor` | This enable extra `Outdoor` temperature sensors to use with automations in HomeKit app. |
 | `relaysNamePrefix` | Here enable/disable the accessory name as a prefix for relays name. |
 | `relaysDisplayType` | Here select characteristic display type for relays which are exposed in the HomeKit app. |
 | `lightsNamePrefix` | Here enable/disable the accessory name as a prefix for lights name. |
 | `sensorsNamePrefix` | Here enable/disable the accessory name as a prefix for sensors name. |
 | `loadNameFromDevice` | If enabled, the accessory name will be loaded direct from device. |
-| `heatDryFanMode` | Here select the operatiing mode for `Heat`, only for Mitsubishio AC. |
-| `coolDryFanMode` | Here select the operatiing mode for `Cool`, only for Mitsubishio AC. |
-| `autoDryFanMode` | Here select the operatiing mode for `Auto`, only for Mitsubishio AC. |
 | `refreshInterval` | Here set the data refresh time in (sec). |
 | `enableDebugMode` | This enable debug log in homebridge console. |
 | `disableLogInfo` | This disable log info, all values and state will not be displayed in Homebridge log console. |

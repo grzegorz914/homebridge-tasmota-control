@@ -52,6 +52,131 @@
               },
               "required": true
             },
+            "miElHvac": {
+              "title": "RESTFul",
+              "type": "object",
+              "properties": {
+                "heatDryFanMode": {
+                  "title": "Heat",
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 3,
+                  "default": 1,
+                  "oneOf": [
+                    {
+                      "title": "None/Disabled",
+                      "enum": [
+                        0
+                      ]
+                    },
+                    {
+                      "title": "Heat",
+                      "enum": [
+                        1
+                      ]
+                    },
+                    {
+                      "title": "Dry",
+                      "enum": [
+                        2
+                      ]
+                    },
+                    {
+                      "title": "Fan",
+                      "enum": [
+                        3
+                      ]
+                    }
+                  ],
+                  "description": "Select the operating mode for Heat, if this mode is not supported, it will be disabled.",
+                  "required": true
+                },
+                "coolDryFanMode": {
+                  "title": "Cool",
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 3,
+                  "default": 1,
+                  "oneOf": [
+                    {
+                      "title": "None/Disabled",
+                      "enum": [
+                        0
+                      ]
+                    },
+                    {
+                      "title": "Cool",
+                      "enum": [
+                        1
+                      ]
+                    },
+                    {
+                      "title": "Dry",
+                      "enum": [
+                        2
+                      ]
+                    },
+                    {
+                      "title": "Fan",
+                      "enum": [
+                        3
+                      ]
+                    }
+                  ],
+                  "description": "Select the operating mode for Cool, if this mode is not supported, it will be disabled.",
+                  "required": true
+                },
+                "autoDryFanMode": {
+                  "title": "Auto",
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 3,
+                  "default": 1,
+                  "oneOf": [
+                    {
+                      "title": "None/Disabled",
+                      "enum": [
+                        0
+                      ]
+                    },
+                    {
+                      "title": "Auto",
+                      "enum": [
+                        1
+                      ]
+                    },
+                    {
+                      "title": "Dry",
+                      "enum": [
+                        2
+                      ]
+                    },
+                    {
+                      "title": "Fan",
+                      "enum": [
+                        3
+                      ]
+                    }
+                  ],
+                  "description": "Select the operating mode for Auto, if this mode is not supported, it will be disabled.",
+                  "required": true
+                },
+                "temperatureSensor": {
+                  "title": "Room",
+                  "type": "boolean",
+                  "default": false,
+                  "description": "This enable extra room temperature sensor to use with automations in HomeKit app.",
+                  "required": false
+                },
+                "temperatureSensorOutdoor": {
+                  "title": "Outdoor",
+                  "type": "boolean",
+                  "default": false,
+                  "description": "This enable extra outdoor temperature sensor to use with automations in HomeKit app.",
+                  "required": false
+                }
+              }
+            },
             "relaysDisplayType": {
               "title": "Display Type",
               "type": "integer",
@@ -95,111 +220,6 @@
               "default": false,
               "description": "Here enable/disable the accessory name as a prefix for sensors name.",
               "required": false
-            },
-            "heatDryFanMode": {
-              "title": "Heat",
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 3,
-              "default": 1,
-              "oneOf": [
-                {
-                  "title": "None/Disabled",
-                  "enum": [
-                    0
-                  ]
-                },
-                {
-                  "title": "Heat",
-                  "enum": [
-                    1
-                  ]
-                },
-                {
-                  "title": "Dry",
-                  "enum": [
-                    2
-                  ]
-                },
-                {
-                  "title": "Fan",
-                  "enum": [
-                    3
-                  ]
-                }
-              ],
-              "description": "Select the operating mode for Heat, if this mode is not supported, it will be disabled.",
-              "required": true
-            },
-            "coolDryFanMode": {
-              "title": "Cool",
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 3,
-              "default": 1,
-              "oneOf": [
-                {
-                  "title": "None/Disabled",
-                  "enum": [
-                    0
-                  ]
-                },
-                {
-                  "title": "Cool",
-                  "enum": [
-                    1
-                  ]
-                },
-                {
-                  "title": "Dry",
-                  "enum": [
-                    2
-                  ]
-                },
-                {
-                  "title": "Fan",
-                  "enum": [
-                    3
-                  ]
-                }
-              ],
-              "description": "Select the operating mode for Cool, if this mode is not supported, it will be disabled.",
-              "required": true
-            },
-            "autoDryFanMode": {
-              "title": "Auto",
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 3,
-              "default": 1,
-              "oneOf": [
-                {
-                  "title": "None/Disabled",
-                  "enum": [
-                    0
-                  ]
-                },
-                {
-                  "title": "Auto",
-                  "enum": [
-                    1
-                  ]
-                },
-                {
-                  "title": "Dry",
-                  "enum": [
-                    2
-                  ]
-                },
-                {
-                  "title": "Fan",
-                  "enum": [
-                    3
-                  ]
-                }
-              ],
-              "description": "Select the operating mode for Auto, if this mode is not supported, it will be disabled.",
-              "required": true
             },
             "loadNameFromDevice": {
               "title": "Load Name From Device",
@@ -286,12 +306,23 @@
                   ]
                 },
                 {
-                  "key": "devices[]",
+                  "key": "devices[].miElHvac",
                   "title": "Mitsubishi AC",
                   "items": [
-                    "devices[].heatDryFanMode",
-                    "devices[].coolDryFanMode",
-                    "devices[].autoDryFanMode"
+                    "devices[].miElHvac.heatDryFanMode",
+                    "devices[].miElHvac.coolDryFanMode",
+                    "devices[].miElHvac.autoDryFanMode",
+                    {
+                      "key": "devices[].miElHvac",
+                      "type": "section",
+                      "title": "Temperature Sensors",
+                      "expandable": true,
+                      "expanded": false,
+                      "items": [
+                        "devices[].miElHvac.temperatureSensor",
+                        "devices[].miElHvac.temperatureSensorOutdoor"
+                      ]
+                    }
                   ]
                 },
                 {
