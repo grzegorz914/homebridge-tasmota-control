@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Changes
 
-- add room and outdoor temperature sensors services
+- add room and outdoor temperature sensors services for MiElHVAC
 - config.schema update
 - redme update
 - cleanup
