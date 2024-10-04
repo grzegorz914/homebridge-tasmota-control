@@ -33,7 +33,6 @@ Homebridge plugin for Tasmota flashed devices.
 
 * Supported HVAC:  
   * Mitsubishi AC - `Heater/Cooler`
-
 * Supported relay devices:
   * Light - `Power ON/OFF`, `Dimmer`, `Color Temperature`, `Hue`, `Saturation`
   * Outlet - `Power ON/OFF`
