@@ -29,7 +29,7 @@ Homebridge plugin for Tasmota flashed devices.
 
 * Plugin work with Tasmota v6.0.0 and abowe.
 * Precompiled ESP firmware for `MiElHVAC` are in `firmware` folder.
-* If You need firmware for specific `ESP` device do to [Firmware for MiElHVAC](https://github.com/grzegorz914/homebridge-tasmota-control/issues/18) and meke request.
+* If You need firmware for specific `ESP` device go to [Firmware for MiElHVAC](https://github.com/grzegorz914/homebridge-tasmota-control/issues/18) and meke request.
 
 * Supported relay devices:
   * Light - `Power ON/OFF`, `Dimmer`, `Color Temperature`, `Hue`, `Saturation`
