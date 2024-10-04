@@ -62,7 +62,7 @@ class tasmotaPlatform {
 
         //tasmota device
         try {
-          const miElHvac = device.miElHvac;
+          const miElHvac = device.miElHvac ?? {};
           this.tasmotaDevice = new TasmotaDevice(api, device, miElHvac, defaultHeatingSetTemperatureFile, defaultCoolingSetTemperatureFile);
           this.tasmotaDevice.on('publishAccessory', (accessory) => {
             api.publishExternalAccessories(CONSTANTS.PluginName, [accessory]);
