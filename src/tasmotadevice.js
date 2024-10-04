@@ -8,7 +8,7 @@ const CONSTANTS = require('./constants.json');
 let Accessory, Characteristic, Service, Categories, AccessoryUUID;
 
 class TasmotaDevice extends EventEmitter {
-    constructor(api, config, defaultHeatingSetTemperatureFile, defaultCoolingSetTemperatureFile) {
+    constructor(api, config, miElHvac, defaultHeatingSetTemperatureFile, defaultCoolingSetTemperatureFile) {
         super();
 
         Accessory = api.platformAccessory;
@@ -23,11 +23,6 @@ class TasmotaDevice extends EventEmitter {
         this.auth = config.auth || false;
         this.user = config.user || '';
         this.passwd = config.passwd || '';
-        this.heatDryFanMode = config.miElHvac.heatDryFanMode || 1; //NONE, HEAT, DRY, FAN
-        this.coolDryFanMode = config.miElHvac.coolDryFanMode || 1; //NONE, COOL, DRY, FAN
-        this.autoDryFanMode = config.miElHvac.autoDryFanMode || 1; //NONE, COOL, DRY, FAN
-        this.temperatureSensor = config.miElHvac.temperatureSensor || false;
-        this.temperatureSensorOutdoor = config.miElHvac.temperatureSensorOutdoor || false;
         this.relaysDisplayType = config.relaysDisplayType || 0;
         this.relaysNamePrefix = config.relaysNamePrefix || false;
         this.lightsNamePrefix = config.lightsNamePrefix || false;
@@ -37,6 +32,13 @@ class TasmotaDevice extends EventEmitter {
         this.disableLogDeviceInfo = config.disableLogDeviceInfo || false;
         this.loadNameFromDevice = config.loadNameFromDevice || false;
         this.refreshInterval = config.refreshInterval * 1000 || 5000;
+
+        //mitsubishi ac
+        this.heatDryFanMode = miElHvac.heatDryFanMode || 1; //NONE, HEAT, DRY, FAN
+        this.coolDryFanMode = miElHvac.coolDryFanMode || 1; //NONE, COOL, DRY, FAN
+        this.autoDryFanMode = miElHvac.autoDryFanMode || 1; //NONE, COOL, DRY, FAN
+        this.temperatureSensor = miElHvac.temperatureSensor || false;
+        this.temperatureSensorOutdoor = miElHvac.temperatureSensorOutdoor || false;
         this.defaultHeatingSetTemperatureFile = defaultHeatingSetTemperatureFile;
         this.defaultCoolingSetTemperatureFile = defaultCoolingSetTemperatureFile;
 

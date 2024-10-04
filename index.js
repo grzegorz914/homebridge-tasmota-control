@@ -42,8 +42,7 @@ class tasmotaPlatform {
         const postFix = device.host.split('.').join('');
         const defaultHeatingSetTemperatureFile = `${prefDir}/defaultHeatingSetTemperature_${postFix}`;
         const defaultCoolingSetTemperatureFile = `${prefDir}/defaultCoolingSetTemperature_${postFix}`;
-        const swingVFile = `${prefDir}/swingV_${postFix}`;
-        const swingHFile = `${prefDir}/swingH_${postFix}`;
+
         try {
           const files = [
             defaultHeatingSetTemperatureFile,
@@ -63,7 +62,8 @@ class tasmotaPlatform {
 
         //tasmota device
         try {
-          this.tasmotaDevice = new TasmotaDevice(api, device, defaultHeatingSetTemperatureFile, defaultCoolingSetTemperatureFile);
+          const miElHvac = device.miElHvac;
+          this.tasmotaDevice = new TasmotaDevice(api, device, miElHvac, defaultHeatingSetTemperatureFile, defaultCoolingSetTemperatureFile);
           this.tasmotaDevice.on('publishAccessory', (accessory) => {
             api.publishExternalAccessories(CONSTANTS.PluginName, [accessory]);
             log.success(`Device: ${device.host} ${device.name}, published as external accessory.`);
