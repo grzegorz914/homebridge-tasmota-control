@@ -96,6 +96,111 @@
               "description": "Here enable/disable the accessory name as a prefix for sensors name.",
               "required": false
             },
+            "heatDryFanMode": {
+              "title": "Heat",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 3,
+              "default": 1,
+              "oneOf": [
+                {
+                  "title": "None/Disabled",
+                  "enum": [
+                    0
+                  ]
+                },
+                {
+                  "title": "Heat",
+                  "enum": [
+                    1
+                  ]
+                },
+                {
+                  "title": "Dry",
+                  "enum": [
+                    2
+                  ]
+                },
+                {
+                  "title": "Fan",
+                  "enum": [
+                    3
+                  ]
+                }
+              ],
+              "description": "Select the operating mode for Heat, if this mode is not supported, it will be disabled.",
+              "required": true
+            },
+            "coolDryFanMode": {
+              "title": "Cool",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 3,
+              "default": 1,
+              "oneOf": [
+                {
+                  "title": "None/Disabled",
+                  "enum": [
+                    0
+                  ]
+                },
+                {
+                  "title": "Cool",
+                  "enum": [
+                    1
+                  ]
+                },
+                {
+                  "title": "Dry",
+                  "enum": [
+                    2
+                  ]
+                },
+                {
+                  "title": "Fan",
+                  "enum": [
+                    3
+                  ]
+                }
+              ],
+              "description": "Select the operating mode for Cool, if this mode is not supported, it will be disabled.",
+              "required": true
+            },
+            "autoDryFanMode": {
+              "title": "Auto",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 3,
+              "default": 1,
+              "oneOf": [
+                {
+                  "title": "None/Disabled",
+                  "enum": [
+                    0
+                  ]
+                },
+                {
+                  "title": "Auto",
+                  "enum": [
+                    1
+                  ]
+                },
+                {
+                  "title": "Dry",
+                  "enum": [
+                    2
+                  ]
+                },
+                {
+                  "title": "Fan",
+                  "enum": [
+                    3
+                  ]
+                }
+              ],
+              "description": "Select the operating mode for Auto, if this mode is not supported, it will be disabled.",
+              "required": true
+            },
             "loadNameFromDevice": {
               "title": "Load Name From Device",
               "type": "boolean",
@@ -178,6 +283,15 @@
                   "title": "Sensors",
                   "items": [
                     "devices[].sensorsNamePrefix"
+                  ]
+                },
+                {
+                  "key": "devices[]",
+                  "title": "Mitsubishi AC",
+                  "items": [
+                    "devices[].heatDryFanMode",
+                    "devices[].coolDryFanMode",
+                    "devices[].autoDryFanMode"
                   ]
                 },
                 {

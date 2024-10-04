@@ -28,6 +28,9 @@ Homebridge plugin for Tasmota flashed devices.
 ## About The Plugin
 
 * Plugin work with Tasmota v6.0.0 and abowe.
+* Precompiled firmware for control MiElHVAC are in `firmware` folder.
+* If You want firmware for specific device let me know i will prepare it.
+
 * Supported relay devices:
   * Light - `Power ON/OFF`, `Dimmer`, `Color Temperature`, `Hue`, `Saturation`
   * Outlet - `Power ON/OFF`
@@ -38,6 +41,8 @@ Homebridge plugin for Tasmota flashed devices.
   * Carbon Dioxyde
   * Ambient Light
   * Motion
+* Supported HVAC:  
+  * Mitsubishi AC - `Heater/Cooler`
 
 ### Configuration
 
@@ -61,6 +66,9 @@ Homebridge plugin for Tasmota flashed devices.
 | `lightsNamePrefix` | Here enable/disable the accessory name as a prefix for lights name. |
 | `sensorsNamePrefix` | Here enable/disable the accessory name as a prefix for sensors name. |
 | `loadNameFromDevice` | If enabled, the accessory name will be loaded direct from device. |
+| `heatDryFanMode` | Here select the operatiing mode for `Heat`, only for Mitsubishio AC. |
+| `coolDryFanMode` | Here select the operatiing mode for `Cool`, only for Mitsubishio AC. |
+| `autoDryFanMode` | Here select the operatiing mode for `Auto`, only for Mitsubishio AC. |
 | `refreshInterval` | Here set the data refresh time in (sec). |
 | `enableDebugMode` | This enable debug log in homebridge console. |
 | `disableLogInfo` | This disable log info, all values and state will not be displayed in Homebridge log console. |

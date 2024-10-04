@@ -19,7 +19,7 @@
       "platform": "tasmotaControl",
       "devices": [
         {
-          "name": "Outlet",
+          "name": "Name",
           "host": "192.168.1.5",
           "auth": false,
           "user": "user",
@@ -29,6 +29,9 @@
           "lightsNamePrefix": false,
           "sensorssNamePrefix": false,
           "loadNameFromDevice": false,
+          "heatDryFanMode": 1,
+          "coolDryFanMode": 1,
+          "autoDryFanMode": 1,
           "refreshInterval": 5,
           "disableLogInfo": false,
           "disableLogDeviceInfo": false,

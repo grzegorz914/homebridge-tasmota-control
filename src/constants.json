@@ -2,7 +2,7 @@
     "PlatformName": "tasmotaControl",
     "PluginName": "homebridge-tasmota-control",
     "ApiCommands": {
-        "Status": "Status 0",
+        "Status": "Status%200",
         "PowerStatus": "Power0",
         "Power": "Power",
         "PowerOn": "Power%20on",
@@ -20,7 +20,45 @@
         "HSBColor": "HSBColor",
         "HSBHue": "HSBColor1",
         "HSBSaturation": "HSBColor2",
-        "HSBBrightness": "HSBColor3"
+        "HVACSetMode": {
+            "Heat": "HVACSetMode%20heat",
+            "Dry": "HVACSetMode%20dry",
+            "Cool": "HVACSetMode%20cool",
+            "Fan": "HVACSetMode%20fan_only",
+            "Auto": "HVACSetMode%20auto"
+        },
+        "HVACSetFanSpeed": {
+            "0": "HVACSetFanSpeed%20auto",
+            "1": "HVACSetFanSpeed%20quit",
+            "2": "HVACSetFanSpeed%201",
+            "3": "HVACSetFanSpeed%202",
+            "4": "HVACSetFanSpeed%203",
+            "5": "HVACSetFanSpeed%204"
+        },
+        "HVACSetTemp": "HVACSetTemp%20",
+        "HVACRemoteTemp": "HVACRemoteTemp%20",
+        "HVACSetSwingV": {
+            "Auto": "HVACSetSwingV%20auto",
+            "1": "HVACSetSwingV%201",
+            "2": "HVACSetSwingV%202",
+            "3": "HVACSetSwingV%203",
+            "4": "HVACSetSwingV%204",
+            "5": "HVACSetSwingV%205",
+            "Swing": "HVACSetSwingV%20swing"
+        },
+        "HVACSetSwingH": {
+            "Left": "HVACSetMode%20left",
+            "left_middle": "HVACSetMode%20left_middle",
+            "Center": "HVACSetMode%20center",
+            "Right_middle": "HVACSetMode%20right_middle",
+            "Right": "HVACSetMode%20right",
+            "Split": "HVACSetMode%20split",
+            "Swing": "HVACSetMode%20swing"
+        },
+        "HVACSetLockControlOn": "HVACSetLockControl%20on",
+        "HVACSetLockControlOff": "HVACSetLockControl%20off",
+        "HVACSetDisplayUnitC": "HVACSetDisplayUnit%20c",
+        "HVACSetDisplayUnitF": "HVACSetDisplayUnit%20f"
     },
     "LightKeys": [
         "Dimmer",
@@ -95,7 +133,8 @@
         "TC74",
         "VEML7700",
         "PIR",
-        "ENERGY"
+        "ENERGY",
+        "MiElHVAC"
     ],
     "SensorPropertiesKeys": [
         "Temperature",
@@ -109,5 +148,55 @@
         "Illuminance",
         "Speed",
         "Dir"
-    ]
+    ],
+    "AirConditioner": {
+        "DriveMode": [
+            "AUTO",
+            "HEAT",
+            "COOL",
+            "DRY",
+            "FAN",
+            "ISEE HEAT",
+            "ISEE DRY",
+            "ISEE COOL"
+        ],
+        "VerticalVane": {
+            "auto": "AUTO",
+            "1": "1",
+            "2": "2",
+            "3": "3",
+            "4": "4",
+            "5": "5",
+            "swing": "SWING"
+        },
+        "HorizontalVane": {
+            "auto": "AUTO",
+            "left_middle": "LEFT",
+            "left": "LEFT MIDDLE",
+            "center": "CENTER",
+            "right_middle": "RIGHT MIDDLE",
+            "right": "RIGHT",
+            "split": "SPLIT",
+            "swing": "AUTO"
+        },
+        "AirDirection": [
+            "AUTO",
+            "SWING"
+        ],
+        "FanSpeed": [
+            "AUTO",
+            "QUIET",
+            "WEAK",
+            "4",
+            "STRONG",
+            "VERY STRONG",
+            "OFF"
+        ],
+        "CurrentOperationMode": [
+            "INACTIVE",
+            "IDLE",
+            "HEATING",
+            "COOLING"
+        ]
+    }
 }
