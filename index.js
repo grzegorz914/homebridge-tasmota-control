@@ -63,8 +63,8 @@ class tasmotaPlatform {
         //tasmota device
         try {
           const miElHvac = device.miElHvac ?? {};
-          this.tasmotaDevice = new TasmotaDevice(api, device, miElHvac, defaultHeatingSetTemperatureFile, defaultCoolingSetTemperatureFile);
-          this.tasmotaDevice.on('publishAccessory', (accessory) => {
+          const tasmotaDevice = new TasmotaDevice(api, device, miElHvac, defaultHeatingSetTemperatureFile, defaultCoolingSetTemperatureFile);
+          tasmotaDevice.on('publishAccessory', (accessory) => {
             api.publishExternalAccessories(CONSTANTS.PluginName, [accessory]);
             log.success(`Device: ${device.host} ${device.name}, published as external accessory.`);
           })
@@ -87,13 +87,9 @@ class tasmotaPlatform {
               log.error(`Device: ${device.host} ${device.name}, ${error}`);
             });
 
-          await this.tasmotaDevice.start();
+          await tasmotaDevice.start();
         } catch (error) {
-          log.error(`Device: ${device.host} ${device.name}, did finish launch error: ${error}, check again in 15s.`);
-
-          //start data refresh
-          await new Promise(resolve => setTimeout(resolve, 15000));
-          await this.tasmotaDevice.start();
+          log.error(`Device: ${device.host} ${device.name}, did finish launch error: ${error}.`);
         }
       };
     });

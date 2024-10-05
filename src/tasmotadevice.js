@@ -175,29 +175,25 @@ class TasmotaDevice extends EventEmitter {
     async checkDeviceState() {
         const debug = this.enableDebugMode ? this.emit('debug', `Requesting status.`) : false;
         try {
+            //power status
+            const powersStatusData = await this.axiosInstance(CONSTANTS.ApiCommands.PowerStatus);
+            const powersStatus = powersStatusData.data ?? {};
+            const debug = this.enableDebugMode ? this.emit('debug', `Power status: ${JSON.stringify(powersStatus, null, 2)}`) : false;
 
-            //status
-            const statusData = await this.axiosInstance(CONSTANTS.ApiCommands.Status);
-            const status = statusData.data ?? {};
-            const debug1 = this.enableDebugMode ? this.emit('debug', `Sensors status: ${JSON.stringify(status, null, 2)}`) : false;
-
-            //status sns
-            const statusKeys = Object.keys(status);
-            const statusSNSSupported = statusKeys.includes('StatusSNS') ?? false;
+            //sensor status
+            const sensorStatusData = await this.axiosInstance(CONSTANTS.ApiCommands.Status);
+            const sensorStatus = sensorStatusData.data ?? {};
+            const debug1 = this.enableDebugMode ? this.emit('debug', `Sensors status: ${JSON.stringify(sensorStatus, null, 2)}`) : false;
 
             //mitsubishi hvac
             switch (this.miElHvac) {
                 case true:
                     //power
-                    const powersStatusData = await this.axiosInstance(CONSTANTS.ApiCommands.PowerStatus);
-                    const powersStatus = powersStatusData.data ?? {};
-                    const debug = this.enableDebugMode ? this.emit('debug', `Power status: ${JSON.stringify(powersStatus, null, 2)}`) : false;
-
-                    //power
-                    const power1 = powersStatus.POWER == 'ON' ?? false;
+                    const power1 = powersStatus.POWER == 'ON' ? 1 : 0;
 
                     //status sns
-                    const statusSNS = status.StatusSNS ?? {};
+                    const statusSNS = sensorStatus.StatusSNS ?? {};
+                    const time = statusSNS.Time ?? '';
                     const temperatureUnit = statusSNS.TempUnit === 'C' ? '°C' : 'F';
 
                     //mielhvac
@@ -227,6 +223,7 @@ class TasmotaDevice extends EventEmitter {
                     const temperatureIncrement = useFahrenheit ? 1 : 0.5;
 
                     this.accessory = {
+                        time: time,
                         power: power,
                         roomTemperature: roomTemperature,
                         outdoorTemperature: outdoorTemperature,
@@ -379,10 +376,6 @@ class TasmotaDevice extends EventEmitter {
                         this.hue = [];
                         this.saturation = [];
 
-                        const powersStatusData = await this.axiosInstance(CONSTANTS.ApiCommands.PowerStatus);
-                        const powersStatus = powersStatusData.data ?? {};
-                        const debug = this.enableDebugMode ? this.emit('debug', `Power status: ${JSON.stringify(powersStatus, null, 2)}`) : false;
-
                         //power status keys and device type
                         const powerKeys = Object.keys(powersStatus);
                         const deviceType = powerKeys.some(key => CONSTANTS.LightKeys.includes(key)) ? 1 : 0; //0 - switch/outlet, 1 - light
@@ -427,6 +420,8 @@ class TasmotaDevice extends EventEmitter {
                     };
 
                     //status sns
+                    const sensorStatusKeys = Object.keys(sensorStatus);
+                    const statusSNSSupported = sensorStatusKeys.includes('StatusSNS') ?? false;
                     if (statusSNSSupported) {
                         this.sensorsName = [];
                         this.sensorsTemperature = [];
@@ -442,7 +437,7 @@ class TasmotaDevice extends EventEmitter {
                         this.sensorsMotion = [];
 
                         const sensorTypes = CONSTANTS.SensorKeys;
-                        const sensor = Object.entries(status.StatusSNS)
+                        const sensor = Object.entries(sensorStatus.StatusSNS)
                             .filter(([key]) => sensorTypes.some(type => key.includes(type)))
                             .reduce((obj, [key, value]) => {
                                 obj[key] = value;
@@ -495,9 +490,9 @@ class TasmotaDevice extends EventEmitter {
                             const push11 = motion ? this.sensorsMotion.push(motion) : false;
                         };
 
-                        this.time = status.Time ?? '';
-                        this.tempUnit = status.TempUnit ?? 'C';
-                        this.pressureUnit = status.PressureUnit ?? 'hPa';
+                        this.time = sensorStatus.Time ?? '';
+                        this.tempUnit = sensorStatus.TempUnit === 'C' ? '°C' : 'F';
+                        this.pressureUnit = sensorStatus.PressureUnit ?? 'hPa';
                         this.sensorsTemperatureCount = this.sensorsTemperature.length;
                         this.sensorsReferenceTemperatureCount = this.sensorsReferenceTemperature.length;
                         this.sensorsObjTemperatureCount = this.sensorsObjTemperature.length;
@@ -627,7 +622,7 @@ class TasmotaDevice extends EventEmitter {
         try {
             const accessoryName = this.deviceName;
             const accessoryUUID = AccessoryUUID.generate(this.serialNumber);
-            const accessoryCategory = Categories.OTHER;
+            const accessoryCategory = this.miElHvac ? Categories.AIR_CONDITIONER : this.relaysDisplayType == 0 ? Categories.OUTLET : this.relaysDisplayType == 1 ? Categories.SWITCH : Categories.OTHER
             const accessory = new Accessory(accessoryName, accessoryUUID, accessoryCategory);
 
             //Prepare information service
