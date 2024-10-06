@@ -79,7 +79,6 @@ Homebridge plugin for Tasmota flashed devices.
 | `miElHvac.buttonsSensors.mode` | Here select button function mode. |
 | `miElHvac.buttonsSensors.displayType` | Here select display type in HomeKit, `0 - None/Disabled`, `1 - Outlet`, `2 - Switch`, `3 - Motion Sensor`, `4 - Occupancy Sensor`, `5 - Contact Sensor`. |
 | `miElHvac.buttonsSensors.namePrefix` | Here enable/disable the accessory name as a prefix for button/sensor name. |
-| `atwDevices` | Array of ATA devices created automatically after login to MELCloud from plugin config UI. |
 | `relaysNamePrefix` | Here enable/disable the accessory name as a prefix for relays name. |
 | `relaysDisplayType` | Here select characteristic display type for relays which are exposed in the HomeKit app. |
 | `lightsNamePrefix` | Here enable/disable the accessory name as a prefix for lights name. |
