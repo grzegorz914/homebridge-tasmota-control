@@ -39,6 +39,10 @@ class TasmotaDevice extends EventEmitter {
         this.autoDryFanMode = miElHvac.autoDryFanMode || 1; //NONE, COOL, DRY, FAN
         this.temperatureSensor = miElHvac.temperatureSensor || false;
         this.temperatureSensorOutdoor = miElHvac.temperatureSensorOutdoor || false;
+        this.presets = miElHvac.presets || [];
+        this.buttons = miElHvac.buttonsSensors || [];
+
+        //files
         this.defaultHeatingSetTemperatureFile = defaultHeatingSetTemperatureFile;
         this.defaultCoolingSetTemperatureFile = defaultCoolingSetTemperatureFile;
 
@@ -58,6 +62,49 @@ class TasmotaDevice extends EventEmitter {
         this.sensorsCarbonDioxydeCount = 0;
         this.sensorsAmbientLightCount = 0;
         this.sensorsMotionCount = 0;
+
+        //presets configured
+        this.presetsConfigured = [];
+        for (const preset of this.presets) {
+            const presetName = preset.name ?? false;
+            const presetDisplayType = preset.displayType ?? 0;
+            const presetNamePrefix = preset.namePrefix ?? false;
+            if (presetName && presetDisplayType > 0) {
+                const presetyServiceType = ['', Service.Outlet, Service.Switch, Service.MotionSensor, Service.OccupancySensor, Service.ContactSensor][presetDisplayType];
+                const presetCharacteristicType = ['', Characteristic.On, Characteristic.On, Characteristic.MotionDetected, Characteristic.OccupancyDetected, Characteristic.ContactSensorState][presetDisplayType];
+                preset.namePrefix = presetNamePrefix;
+                preset.serviceType = presetyServiceType;
+                preset.characteristicType = presetCharacteristicType;
+                preset.state = false;
+                preset.previousSettings = {};
+                this.presetsConfigured.push(preset);
+            } else {
+                const log = presetDisplayType === 0 ? false : this.emit('warn', `Preset Name: ${preset ? preset : 'Missing'}.`);
+            };
+        }
+        this.presetsConfiguredCount = this.presetsConfigured.length || 0;
+
+        //buttons configured
+        this.buttonsConfigured = [];
+        for (const button of this.buttons) {
+            const buttonName = button.name ?? false;
+            const buttonMode = button.mode ?? -1;
+            const buttonDisplayType = button.displayType ?? 0;
+            const buttonNamePrefix = button.namePrefix ?? false;
+            if (buttonName && buttonMode >= 0 && buttonDisplayType > 0) {
+                const buttonServiceType = ['', Service.Outlet, Service.Switch, Service.MotionSensor, Service.OccupancySensor, Service.ContactSensor][buttonDisplayType];
+                const buttonCharacteristicType = ['', Characteristic.On, Characteristic.On, Characteristic.MotionDetected, Characteristic.OccupancyDetected, Characteristic.ContactSensorState][buttonDisplayType];
+                button.namePrefix = buttonNamePrefix;
+                button.serviceType = buttonServiceType;
+                button.characteristicType = buttonCharacteristicType;
+                button.state = false;
+                button.previousValue = null;
+                this.buttonsConfigured.push(button);
+            } else {
+                const log = buttonDisplayType === 0 ? false : this.emit('warn', `Button Name: ${buttonName ? buttonName : 'Missing'}, Mode: ${buttonMode ? buttonMode : 'Missing'}.`);
+            };
+        }
+        this.buttonsConfiguredCount = this.buttonsConfigured.length || 0;
 
         //variable
         this.startPrepareAccessory = true;
@@ -176,9 +223,9 @@ class TasmotaDevice extends EventEmitter {
         const debug = this.enableDebugMode ? this.emit('debug', `Requesting status.`) : false;
         try {
             //power status
-            const powersStatusData = await this.axiosInstance(CONSTANTS.ApiCommands.PowerStatus);
-            const powersStatus = powersStatusData.data ?? {};
-            const debug = this.enableDebugMode ? this.emit('debug', `Power status: ${JSON.stringify(powersStatus, null, 2)}`) : false;
+            const powerStatusData = await this.axiosInstance(CONSTANTS.ApiCommands.PowerStatus);
+            const powerStatus = powerStatusData.data ?? {};
+            const debug = this.enableDebugMode ? this.emit('debug', `Power status: ${JSON.stringify(powerStatus, null, 2)}`) : false;
 
             //sensor status
             const sensorStatusData = await this.axiosInstance(CONSTANTS.ApiCommands.Status);
@@ -189,7 +236,7 @@ class TasmotaDevice extends EventEmitter {
             switch (this.miElHvac) {
                 case true:
                     //power
-                    const power1 = powersStatus.POWER == 'ON' ? 1 : 0;
+                    const power1 = powerStatus.POWER == 'ON' ? 1 : 0;
 
                     //status sns
                     const statusSNS = sensorStatus.StatusSNS ?? {};
@@ -206,6 +253,7 @@ class TasmotaDevice extends EventEmitter {
                     const fanSpeed = miElHvac.FanSpeed ?? 'Unknown';
                     const vaneVerticalDirection = miElHvac.SwingV ?? 'Unknown';
                     const vaneHorizontalDirection = miElHvac.SwingH ?? 'Unknown';
+                    const airDirection = miElHvac.AirDirection ?? 'Unknown';
                     const operation = miElHvac.Operation == 'ON' ?? false;
                     const compressor = miElHvac.Compressor == 'ON' ?? false;
                     const swingMode = vaneVerticalDirection == 'swing' && vaneHorizontalDirection === 'swing' ? 1 : 0;
@@ -222,6 +270,12 @@ class TasmotaDevice extends EventEmitter {
                     const useFahrenheit = temperatureUnit === 'F' ?? false;
                     const temperatureIncrement = useFahrenheit ? 1 : 0.5;
 
+                    const hideDryModeControl = false;
+                    const hideVaneControls = false;
+                    const prohibitPower = false;
+                    const prohibitOperationMode = false;
+                    const prohibitSetTemperature = false;
+
                     this.accessory = {
                         time: time,
                         power: power,
@@ -231,9 +285,10 @@ class TasmotaDevice extends EventEmitter {
                         operationMode: operationMode,
                         vaneVerticalDirection: vaneVerticalDirection,
                         vaneHorizontalDirection: vaneHorizontalDirection,
+                        airDirection: airDirection,
+                        swingMode: swingMode,
                         operation: operation,
                         compressor: compressor,
-                        swingMode: swingMode,
                         defaultCoolingSetTemperature: defaultCoolingSetTemperature,
                         defaultHeatingSetTemperature: defaultHeatingSetTemperature,
                         modelSupportsHeat: modelSupportsHeat,
@@ -246,7 +301,12 @@ class TasmotaDevice extends EventEmitter {
                         lockPhysicalControl: lockPhysicalControl,
                         temperatureUnit: temperatureUnit,
                         useFahrenheit: useFahrenheit,
-                        temperatureIncrement: temperatureIncrement
+                        temperatureIncrement: temperatureIncrement,
+                        hideDryModeControl: hideDryModeControl,
+                        hideVaneControls: hideVaneControls,
+                        prohibitPower: prohibitPower,
+                        prohibitOperationMode: prohibitOperationMode,
+                        prohibitSetTemperature: prohibitSetTemperature
                     };
 
 
@@ -297,7 +357,7 @@ class TasmotaDevice extends EventEmitter {
                     //fan speed mode
                     const fanSpeedMap = {
                         'auto': 0,
-                        'quit': 1,
+                        'quiet': 1,
                         '1': 2,
                         '2': 3,
                         '3': 4,
@@ -349,20 +409,168 @@ class TasmotaDevice extends EventEmitter {
                             .updateCharacteristic(Characteristic.CurrentTemperature, outdoorTemperature)
                     };
 
+                    //update presets state
+                    if (this.presetsConfigured.length > 0) {
+                        for (let i = 0; i < this.presetsConfigured.length; i++) {
+                            const preset = this.presetsConfigured[i];
+
+                            preset.state = power ? (preset.mode === operationMode
+                                && (preset.setTemp).toFixed(1) === parseFloat(setTemperature).toFixed(1)
+                                && preset.fanSpeed === fanSpeed
+                                && preset.swingV === vaneVerticalDirection
+                                && preset.swingH === vaneHorizontalDirection) : false;
+
+                            if (this.presetsServices) {
+                                const characteristicType = preset.characteristicType;
+                                this.presetsServices[i]
+                                    .updateCharacteristic(characteristicType, preset.state)
+                            };
+                        };
+                    };
+
+                    //update buttons state
+                    if (this.buttonsConfiguredCount > 0) {
+                        for (let i = 0; i < this.buttonsConfiguredCount; i++) {
+                            const button = this.buttonsConfigured[i];
+                            const mode = button.mode;
+                            switch (mode) {
+                                case 0: //POWER ON,OFF
+                                    button.state = power === 1;
+                                    break;
+                                case 1: //OPERATING MODE HEAT
+                                    button.state = power ? (operationMode === 'heat' || operationMode === 'heat_isee') : false;
+                                    break;
+                                case 2: //OPERATING MODE DRY
+                                    button.state = power ? (operationMode === 'dry' || operationMode === 'dry_isee') : false;
+                                    break
+                                case 3: //OPERATING MODE COOL
+                                    button.state = power ? (operationMode === 'cool' || operationMode === 'cool_isee') : false;
+                                    break;
+                                case 4: //OPERATING MODE FAN
+                                    button.state = power ? (operationMode === 'fan') : false;
+                                    break;
+                                case 5: //OPERATING MODE AUTO
+                                    button.state = power ? (operationMode === 'auto') : false;
+                                    break;
+                                case 6: //OPERATING MODE PURIFY
+                                    button.state = power ? (operationMode === 'purify') : false;
+                                    break;
+                                case 7: //OPERATING MODE DRY CONTROL HIDE
+                                    button.state = power ? (hideDryModeControl === true) : false;
+                                    break;
+                                case 10: //VANE H LEFT
+                                    button.state = power ? (vaneHorizontalDirection === 'left') : false;
+                                    break;
+                                case 11: //VANE H LEFT MIDDLE
+                                    button.state = power ? (vaneHorizontalDirection === 'left_middle') : false;
+                                    break;
+                                case 12: //VANE H CENTER
+                                    button.state = power ? (vaneHorizontalDirection === 'center') : false;
+                                    break;
+                                case 13: //VANE H RIGHT MIDDLE
+                                    button.state = power ? (vaneHorizontalDirection === 'right_middle') : false;
+                                    break;
+                                case 14: //VANE H RIGHT
+                                    button.state = power ? (vaneHorizontalDirection === 'right') : false;
+                                    break;
+                                case 15: //VANE H SPLIT
+                                    button.state = power ? (vaneHorizontalDirection === 'split') : false;
+                                    break;
+                                case 16: //VANE H SWING
+                                    button.state = power ? (vaneHorizontalDirection === 'swing') : false;
+                                    break;
+                                case 20: //VANE V AUTO
+                                    button.state = power ? (vaneVerticalDirection === 'auto') : false;
+                                    break;
+                                case 21: //VANE V UP
+                                    button.state = power ? (vaneVerticalDirection === '1') : false;
+                                    break;
+                                case 22: //VANE V UP MIDDLE
+                                    button.state = power ? (vaneVerticalDirection === '2') : false;
+                                    break;
+                                case 23: //VANE V CENTER
+                                    button.state = power ? (vaneVerticalDirection === '3') : false;
+                                    break;
+                                case 24: //VANE V DOWN MIDDLE
+                                    button.state = power ? (vaneVerticalDirection === '4') : false;
+                                    break;
+                                case 25: //VANE V DOWN
+                                    button.state = power ? (vaneVerticalDirection === '5') : false;
+                                    break;
+                                case 26: //VANE V SWING
+                                    button.state = power ? (vaneVerticalDirection === 'swing') : false;
+                                    break;
+                                case 27: //VANE H/V CONTROLS HIDE
+                                    button.state = power ? (hideVaneControls === true) : false;
+                                    break;
+                                case 30: //FAN SPEED MODE AUTO
+                                    button.state = power ? (fanSpeed === 'auto') : false;
+                                    break;
+                                case 31: //FAN SPEED MODE 1
+                                    button.state = power ? (fanSpeed === 'quiet') : false;
+                                    break;
+                                case 32: //FAN SPEED MODE 2
+                                    button.state = power ? (fanSpeed === '1') : false;
+                                    break;
+                                case 33: //FAN SPEED MODE 3
+                                    button.state = power ? (fanSpeed === '2') : false;
+                                    break;
+                                case 34: //FAN SPEED MODE 4
+                                    button.state = power ? (fanSpeed === '3') : false;
+                                    break;
+                                case 35: //FAN SPEED  MODE 5
+                                    button.state = power ? (fanSpeed === '4') : false;
+                                    break;
+                                case 40: //AIR DIRECTION EVEN
+                                    button.state = power ? (vaneHorizontalDirection === 'isee' && airDirection === 'even') : false;
+                                    break;
+                                case 41: //AIR DIRECTION INDIRECT
+                                    button.state = power ? (vaneHorizontalDirection === 'isee' && airDirection === 'indirect') : false;
+                                    break;
+                                case 42: //AIR DIRECTION DIRECT
+                                    button.state = power ? (vaneHorizontalDirection === 'isee' && airDirection === 'direct') : false;
+                                    break;
+                                case 50: //PHYSICAL LOCK CONTROLS ALL
+                                    button.state = (lockPhysicalControl === 1);
+                                    break;
+                                case 51: //PHYSICAL LOCK CONTROLS POWER
+                                    button.state = (prohibitPower === true);
+                                    break;
+                                case 52: //PHYSICAL LOCK CONTROLS MODE
+                                    button.state = (prohibitOperationMode === true);
+                                    break;
+                                case 53: //PHYSICAL LOCK CONTROLS TEMP
+                                    button.state = (prohibitSetTemperature === true);
+                                    break;
+                                default: //Unknown button
+                                    this.emit('message', `Unknown button mode: ${mode} detected.`);
+                                    break;
+                            };
+
+                            //update services
+                            if (this.buttonsServices) {
+                                const characteristicType = button.characteristicType;
+                                this.buttonsServices[i]
+                                    .updateCharacteristic(characteristicType, button.state)
+                            };
+                        };
+                    };
+
                     //log current state
                     if (!this.disableLogInfo) {
                         this.emit('message', `Power: ${power ? 'ON' : 'OFF'}`);
-                        this.emit('message', `Target operation mode: ${CONSTANTS.AirConditioner.DriveMode[this.accessory.targetOperationMode]}`);
-                        this.emit('message', `Current operation mode: ${CONSTANTS.AirConditioner.CurrentOperationMode[this.accessory.currentOperationMode]}`);
-                        this.emit('message', `Target temperature: ${setTemperature}${temperatureUnit}`);
-                        this.emit('message', `Current temperature: ${roomTemperature}${temperatureUnit}`);
-                        const info = outdoorTemperature !== null ? this.emit('message', `Outdoor temperature: ${outdoorTemperature}${temperatureUnit}`) : false;
-                        const info4 = modelSupportsFanSpeed ? this.emit('message', `Fan speed: ${CONSTANTS.AirConditioner.FanSpeed[fanSpeedMap[fanSpeed]]}`) : false;
-                        const info5 = vaneHorizontalDirection !== 'Unknown' ? this.emit('message', `Vane horizontal: ${CONSTANTS.AirConditioner.HorizontalVane[vaneHorizontalDirection] ?? vaneHorizontalDirection}`) : false;
-                        const info6 = vaneVerticalDirection !== 'Unknown' ? this.emit('message', `Vane vertical: ${CONSTANTS.AirConditioner.VerticalVane[vaneVerticalDirection] ?? vaneVerticalDirection}`) : false;
-                        const info7 = this.emit('message', `Air direction: ${CONSTANTS.AirConditioner.AirDirection[swingMode]}`);
-                        this.emit('message', `Temperature display unit: ${temperatureUnit}`);
-                        this.emit('message', `Lock physical controls: ${lockPhysicalControl ? 'LOCKED' : 'UNLOCKED'}`);
+                        const info = power ? this.emit('message', `Target operation mode: ${CONSTANTS.AirConditioner.OperationMode[this.accessory.targetOperationMode]}`) : false;
+                        const info1 = power ? this.emit('message', `Current operation mode: ${CONSTANTS.AirConditioner.CurrentOperationMode[this.accessory.currentOperationMode]}`) : false;
+                        const info2 = power ? this.emit('message', `Target temperature: ${setTemperature}${temperatureUnit}`) : false;
+                        const info3 = power ? this.emit('message', `Current temperature: ${roomTemperature}${temperatureUnit}`) : false;
+                        const info4 = power && outdoorTemperature !== null ? this.emit('message', `Outdoor temperature: ${outdoorTemperature}${temperatureUnit}`) : false;
+                        const info5 = power && modelSupportsFanSpeed ? this.emit('message', `Fan speed: ${CONSTANTS.AirConditioner.FanSpeed[fanSpeedMap[fanSpeed]]}`) : false;
+                        const info6 = power && vaneHorizontalDirection !== 'Unknown' ? this.emit('message', `Vane horizontal: ${CONSTANTS.AirConditioner.HorizontalVane[vaneHorizontalDirection] ?? vaneHorizontalDirection}`) : false;
+                        const info7 = power && vaneVerticalDirection !== 'Unknown' ? this.emit('message', `Vane vertical: ${CONSTANTS.AirConditioner.VerticalVane[vaneVerticalDirection] ?? vaneVerticalDirection}`) : false;
+                        const info8 = power ? this.emit('message', `Swing mode: ${CONSTANTS.AirConditioner.SwingMode[swingMode]}`) : false;
+                        const info9 = power && vaneHorizontalDirection === 'isee' && airDirection !== 'Unknown' ? this.emit('message', `Air direction: ${CONSTANTS.AirConditioner.AirDirection[airDirection]}`) : false;
+                        const info10 = power ? this.emit('message', `Temperature display unit: ${temperatureUnit}`) : false;
+                        const info11 = power ? this.emit('message', `Lock physical controls: ${lockPhysicalControl ? 'LOCKED' : 'UNLOCKED'}`) : false;
                     };
                     break;
                 case false:
@@ -377,17 +585,17 @@ class TasmotaDevice extends EventEmitter {
                         this.saturation = [];
 
                         //power status keys and device type
-                        const powerKeys = Object.keys(powersStatus);
+                        const powerKeys = Object.keys(powerStatus);
                         const deviceType = powerKeys.some(key => CONSTANTS.LightKeys.includes(key)) ? 1 : 0; //0 - switch/outlet, 1 - light
 
                         for (let i = 0; i < relaysCount; i++) {
                             const powerNr = i + 1;
                             const powerKey = relaysCount === 1 ? 'POWER' : `POWER${powerNr}`;
-                            const powerState = powersStatus[powerKey] === 'ON';
-                            const brightness = powersStatus.Dimmer ?? false;
-                            const colorTemperature = powersStatus.CT ?? false;
-                            const hue = powersStatus.HSBColor1 ?? false;
-                            const saturation = powersStatus.HSBColor2 ?? false;
+                            const powerState = powerStatus[powerKey] === 'ON';
+                            const brightness = powerStatus.Dimmer ?? false;
+                            const colorTemperature = powerStatus.CT ?? false;
+                            const hue = powerStatus.HSBColor1 ?? false;
+                            const saturation = powerStatus.HSBColor2 ?? false;
 
                             this.devicesType.push(deviceType);
                             this.powersStete.push(powerState);
@@ -639,9 +847,9 @@ class TasmotaDevice extends EventEmitter {
             switch (this.miElHvac) {
                 case true:
                     const debug = this.enableDebugMode ? this.emit('debug', `Prepare mitsubishi hvac service`) : false;
-                    const autoDryFanMode = [CONSTANTS.ApiCommands.HVACSetMode.Auto, CONSTANTS.ApiCommands.HVACSetMode.Auto, CONSTANTS.ApiCommands.HVACSetMode.Dry, CONSTANTS.ApiCommands.HVACSetMode.Fan][this.autoDryFanMode]; //NONE, AUTO, DRY, FAN
-                    const heatDryFanMode = [CONSTANTS.ApiCommands.HVACSetMode.Heat, CONSTANTS.ApiCommands.HVACSetMode.Heat, CONSTANTS.ApiCommands.HVACSetMode.Dry, CONSTANTS.ApiCommands.HVACSetMode.Fan][this.heatDryFanMode]; //NONE, HEAT, DRY, FAN
-                    const coolDryFanMode = [CONSTANTS.ApiCommands.HVACSetMode.Cool, CONSTANTS.ApiCommands.HVACSetMode.Cool, CONSTANTS.ApiCommands.HVACSetMode.Dry, CONSTANTS.ApiCommands.HVACSetMode.Fan][this.coolDryFanMode]; //NONE, COOL, DRY, FAN
+                    const autoDryFanMode = [CONSTANTS.ApiCommands.HVACSetMode.auto, CONSTANTS.ApiCommands.HVACSetMode.auto, CONSTANTS.ApiCommands.HVACSetMode.dry, CONSTANTS.ApiCommands.HVACSetMode.fan][this.autoDryFanMode]; //NONE, AUTO, DRY, FAN
+                    const heatDryFanMode = [CONSTANTS.ApiCommands.HVACSetMode.heat, CONSTANTS.ApiCommands.HVACSetMode.heat, CONSTANTS.ApiCommands.HVACSetMode.dry, CONSTANTS.ApiCommands.HVACSetMode.fan][this.heatDryFanMode]; //NONE, HEAT, DRY, FAN
+                    const coolDryFanMode = [CONSTANTS.ApiCommands.HVACSetMode.cool, CONSTANTS.ApiCommands.HVACSetMode.cool, CONSTANTS.ApiCommands.HVACSetMode.dry, CONSTANTS.ApiCommands.HVACSetMode.fan][this.coolDryFanMode]; //NONE, COOL, DRY, FAN
 
                     //services
                     this.miElHvacService = new Service.HeaterCooler(accessoryName, `HeaterCooler ${this.serialNumber}`);
@@ -688,7 +896,7 @@ class TasmotaDevice extends EventEmitter {
                                         break;
                                 };
 
-                                const info = this.disableLogInfo ? false : this.emit('message', `Set operation mode: ${CONSTANTS.AirConditioner.DriveMode[value]}`);
+                                const info = this.disableLogInfo ? false : this.emit('message', `Set operation mode: ${CONSTANTS.AirConditioner.OperationMode[value]}`);
                             } catch (error) {
                                 this.emit('warn', `Set operation mode error: ${error}`);
                             };
@@ -732,7 +940,9 @@ class TasmotaDevice extends EventEmitter {
                                             break;
                                     };
 
-                                    await this.axiosInstance(CONSTANTS.ApiCommands.HVACSetFanSpeed[fanSpeed]);
+                                    //fan speed mode
+                                    const fanSpeedMap = ['auto', 'quiet', '1', '2', '3', '4'][fanSpeed];
+                                    await this.axiosInstance(CONSTANTS.ApiCommands.HVACSetFanSpeed[fanSpeedMap]);
                                     const info = this.disableLogInfo ? false : this.emit('message', `Set fan speed mode: ${CONSTANTS.AirConditioner.FanSpeed[fanSpeedModeText]}`);
                                 } catch (error) {
                                     this.emit('warn', `Set fan speed mode error: ${error}`);
@@ -755,14 +965,14 @@ class TasmotaDevice extends EventEmitter {
                                         case 1:
                                             //set vane v
                                             this.previousStateSwingV = this.accessory.vaneVerticalDirection;
-                                            await this.axiosInstance(CONSTANTS.ApiCommands.HVACSetSwingV.Swing);
+                                            await this.axiosInstance(CONSTANTS.ApiCommands.HVACSetSwingV.swing);
 
                                             //set vane h
                                             this.previousStateSwingH = this.accessory.vaneHorizontalDirection;
-                                            await this.axiosInstance(CONSTANTS.ApiCommands.HVACSetSwingH.Swing);
+                                            await this.axiosInstance(CONSTANTS.ApiCommands.HVACSetSwingH.swing);
                                             break;
                                     }
-                                    const info = this.disableLogInfo ? false : this.emit('message', `Set air direction mode: ${CONSTANTS.AirConditioner.AirDirection[value]}`);
+                                    const info = this.disableLogInfo ? false : this.emit('message', `Set air direction mode: ${CONSTANTS.AirConditioner.SwingMode[value]}`);
                                 } catch (error) {
                                     this.emit('warn', `Set vane swing mode error: ${error}`);
                                 };
@@ -825,7 +1035,8 @@ class TasmotaDevice extends EventEmitter {
                         })
                         .onSet(async (value) => {
                             try {
-                                //await this.axiosInstance(CONSTANTS.ApiCommands.HVACSetLockControl);
+                                const lock = [CONSTANTS.ApiCommands.HVACSetLockControl.off, CONSTANTS.ApiCommands.HVACSetLockControl.on][value];
+                                //await this.axiosInstance(lock);
                                 const info = this.disableLogInfo ? false : this.emit('message', `Set local physical controls: ${value ? 'LOCK' : 'UNLOCK'}`);
                             } catch (error) {
                                 this.emit('warn', `Set lock physical controls error: ${error}`);
@@ -838,7 +1049,8 @@ class TasmotaDevice extends EventEmitter {
                         })
                         .onSet(async (value) => {
                             try {
-                                // await this.axiosInstance(CONSTANTS.ApiCommands.HVACSetTemp);
+                                const unit = [CONSTANTS.ApiCommands.HVACSetDisplayUnit.c, CONSTANTS.ApiCommands.HVACSetDisplayUnit.f][value];
+                                //await this.axiosInstance(unit);
                                 const info = this.disableLogInfo ? false : this.emit('message', `Set temperature display unit: ${CONSTANTS.TemperatureDisplayUnits[value]}`);
                             } catch (error) {
                                 this.emit('warn', `Set temperature display unit error: ${error}`);
@@ -881,6 +1093,252 @@ class TasmotaDevice extends EventEmitter {
                                 return state;
                             })
                         accessory.addService(this.outdoorTemperatureSensorService);
+                    };
+
+                    //presets services
+                    if (this.presetsConfiguredCount > 0) {
+                        const debug = this.enableDebugMode ? this.emit('debug', `Prepare presets services`) : false;
+                        this.presetsServices = [];
+
+                        for (let i = 0; i < this.presetsConfiguredCount; i++) {
+                            const preset = this.presetsConfigured[i];
+
+                            //get preset name
+                            const presetName = preset.name;
+
+                            //get preset name prefix
+                            const presetNamePrefix = preset.namePrefix;
+
+                            const serviceName = presetNamePrefix ? `${accessoryName} ${presetName}` : presetName;
+                            const serviceType = preset.serviceType;
+                            const characteristicType = preset.characteristicType;
+                            const presetService = new serviceType(serviceName, `Preset ${i}`);
+                            presetService.addOptionalCharacteristic(Characteristic.ConfiguredName);
+                            presetService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
+                            presetService.getCharacteristic(characteristicType)
+                                .onGet(async () => {
+                                    const state = preset.state;
+                                    return state;
+                                })
+                                .onSet(async (state) => {
+                                    try {
+                                        let data = '';
+                                        switch (state) {
+                                            case true:
+                                                const setPower = !this.accessory.power ? await this.axiosInstance(CONSTANTS.ApiCommands.PowerOn) : false;
+                                                data = CONSTANTS.ApiCommands.HVACSetMode[preset.mode];
+                                                await this.axiosInstance(data);
+                                                data = `${CONSTANTS.ApiCommands.HVACSetTemp}${preset.setTemp}`;
+                                                await this.axiosInstance(data);
+                                                data = CONSTANTS.ApiCommands.HVACSetFanSpeed[preset.fanSpeed];
+                                                await this.axiosInstance(data);
+                                                data = CONSTANTS.ApiCommands.HVACSetSwingV[preset.swingV];
+                                                await this.axiosInstance(data);
+                                                data = CONSTANTS.ApiCommands.HVACSetSwingH[preset.swingH];
+                                                await this.axiosInstance(data);
+                                                break;
+                                            case false:
+                                                break;
+                                        };
+
+                                        const info = this.disableLogInfo || !state ? false : this.emit('message', `Set: ${presetName}`);
+                                        await new Promise(resolve => setTimeout(resolve, 250));
+                                    } catch (error) {
+                                        this.emit('warn', `Set preset error: ${error}`);
+                                    };
+                                });
+                            this.presetsServices.push(presetService);
+                            accessory.addService(presetService);
+                        };
+                    };
+
+                    //buttons services
+                    if (this.buttonsConfiguredCount > 0) {
+                        const debug = this.enableDebugMode ? this.emit('debug', `Prepare buttons/sensors services`) : false;
+                        this.buttonsServices = [];
+
+                        for (let i = 0; i < this.buttonsConfiguredCount; i++) {
+                            const button = this.buttonsConfigured[i];
+
+                            //get button mode
+                            const mode = button.mode;
+
+                            //get button name
+                            const buttonName = button.name;
+
+                            //get button name prefix
+                            const buttonNamePrefix = button.namePrefix;
+
+                            const serviceName = buttonNamePrefix ? `${accessoryName} ${buttonName}` : buttonName;
+                            const serviceType = button.serviceType;
+                            const characteristicType = button.characteristicType;
+                            const buttonService = new serviceType(serviceName, `Button ${i}`);
+                            buttonService.addOptionalCharacteristic(Characteristic.ConfiguredName);
+                            buttonService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
+                            buttonService.getCharacteristic(characteristicType)
+                                .onGet(async () => {
+                                    const state = button.state;
+                                    return state;
+                                })
+                                .onSet(async (state) => {
+                                    try {
+                                        let data = '';
+                                        switch (mode) {
+                                            case 0: //POWER ON,OFF
+                                                data = state ? CONSTANTS.ApiCommands.PowerOn : CONSTANTS.ApiCommands.PowerOff;
+                                                break;
+                                            case 1: //OPERATING MODE HEAT
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetMode[this.accessory.operationMode] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetMode.heat : button.previousValue;
+                                                break;
+                                            case 2: //OPERATING MODE DRY
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetMode[this.accessory.operationMode] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetMode.dry : button.previousValue;
+                                                break
+                                            case 3: //OPERATING MODE COOL
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetMode[this.accessory.operationMode] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetMode.cool : button.previousValue;
+                                                break;
+                                            case 4: //OPERATING MODE FAN
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetMode[this.accessory.operationMode] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetMode.fan : button.previousValue;
+                                                break;
+                                            case 5: //OPERATING MODE AUTO
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetMode[this.accessory.operationMode] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetMode.auto : button.previousValue;
+                                                break;
+                                            case 6: //OPERATING MODE PURIFY
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetMode[this.accessory.operationMode] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetMode.purify : button.previousValue;
+                                                break;
+                                            case 7: //OPERATING MODE DRY CONTROL HIDE
+                                                this.accessory.hideDryModeControl = state;
+                                                break;
+                                            case 10: //VANE H LEFT
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetSwingH.left : button.previousValue;
+                                                break;
+                                            case 11: //VANE H LEFT MIDDLE
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetSwingH.left_middle : button.previousValue;
+                                                break;
+                                            case 12: //VANE H CENTER
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetSwingH.center : button.previousValue;
+                                                break;
+                                            case 13: //VANE H RIGHT MIDDLE
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetSwingH.right_middle : button.previousValue;
+                                                break;
+                                            case 14: //VANE H RIGHT
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetSwingH.right : button.previousValue;
+                                                break;
+                                            case 15: //VANE H SPLIT
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetSwingH.split : button.previousValue;
+                                                break;
+                                            case 16: //VANE H SWING
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetSwingH.swing : button.previousValue;
+                                                break;
+                                            case 20: //VANE V AUTO
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetSwingV[this.accessory.vaneVerticalDirection] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetSwingV.auto : button.previousValue;
+                                                break;
+                                            case 21: //VANE V UP
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetSwingV[this.accessory.vaneVerticalDirection] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetSwingV['1'] : button.previousValue;
+                                                break;
+                                            case 22: //VANE V UP MIDDLE
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetSwingV[this.accessory.vaneVerticalDirection] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetSwingV['2'] : button.previousValue;
+                                                break;
+                                            case 23: //VANE V CENTER
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetSwingV[this.accessory.vaneVerticalDirection] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetSwingV['3'] : button.previousValue;
+                                                break;
+                                            case 24: //VANE V DOWN MIDDLE
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetSwingV[this.accessory.vaneVerticalDirection] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetSwingV['4'] : button.previousValue;
+                                                break;
+                                            case 25: //VANE V DOWN
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetSwingV[this.accessory.vaneVerticalDirection] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetSwingV['5'] : button.previousValue;
+                                                break;
+                                            case 26: //VANE V SWING
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetSwingV[this.accessory.vaneVerticalDirection] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetSwingV.swing : button.previousValue;
+                                                break;
+                                            case 27: //VANE H/V CONTROLS HIDE
+                                                this.accessory.hideVaneControls = state;
+                                                break;
+                                            case 30: //FAN SPEED AUTO
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed[this.accessory.fanSpeed] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed['0'] : button.previousValue;
+                                                break;
+                                            case 31: //FAN SPEED QUIET
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed[this.accessory.fanSpeed] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed['1'] : button.previousValue;
+                                                break;
+                                            case 32: //FAN SPEED 1
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed[this.accessory.fanSpeed] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed['2'] : button.previousValue;
+                                                break;
+                                            case 33: //FAN SPEED 2
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed[this.accessory.fanSpeed] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed['3'] : button.previousValue;
+                                                break;
+                                            case 34: //FAN 3
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed[this.accessory.fanSpeed] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed['4'] : button.previousValue;
+                                                break;
+                                            case 35: //FAN SPEED 4
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed[this.accessory.fanSpeed] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed['5'] : button.previousValue;
+                                                break;
+                                            case 40: //AIR DIRECTION EVEN
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetAirDirection[this.accessory.airDirection] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetAirDirection.even : button.previousValue;
+                                                break;
+                                            case 41: //AIR DIRECTION INDIRECT
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetAirDirection[this.accessory.airDirection] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetAirDirection.indirect : button.previousValue;
+                                                break;
+                                            case 42: //AIR DIRECTION DIRECT
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetAirDirection[this.accessory.airDirection] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetAirDirection.direct : button.previousValue;
+                                                break;
+                                            case 50: //PHYSICAL LOCK CONTROLS
+                                                this.accessory.parseFloatrohibitSetTemperature = state;
+                                                this.accessory.prohibitOperationMode = state;
+                                                this.accessory.prohibitPower = state;
+                                                break;
+                                            case 51: //PHYSICAL LOCK CONTROLS POWER
+                                                this.accessory.prohibitPower = state;
+                                                break;
+                                            case 52: //PHYSICAL LOCK CONTROLS MODE
+                                                this.accessory.prohibitOperationMode = state;
+                                                break;
+                                            case 53: //PHYSICAL LOCK CONTROLS TEMP
+                                                this.accessory.prohibitSetTemperature = state;
+                                                break;
+                                            default:
+                                                this.emit('message', `Unknown button mode: ${mode}`);
+                                                return
+                                        };
+
+                                        const setPower = !this.accessory.power && state && mode > 0 ? await this.axiosInstance(CONSTANTS.ApiCommands.PowerOn) : false;
+                                        await this.axiosInstance(data);
+                                        const info = this.disableLogInfo ? false : mode > 0 ? this.emit('message', `${state ? `Set: ${buttonName}` : `Unset: ${buttonName}, Set: ${button.previousValue}`}`) : `Set: ${buttonName}`;
+                                        await new Promise(resolve => setTimeout(resolve, 250));
+                                    } catch (error) {
+                                        this.emit('warn', `Set button error: ${error}`);
+                                    };
+                                });
+                            this.buttonsServices.push(buttonService);
+                            accessory.addService(buttonService);
+                        };
                     };
                     break;
                 case false:

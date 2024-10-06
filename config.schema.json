@@ -174,6 +174,564 @@
                   "default": false,
                   "description": "This enable extra outdoor temperature sensor to use with automations in HomeKit app.",
                   "required": false
+                },
+                "presets": {
+                  "title": "Presets",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "title": "Name",
+                        "type": "string",
+                        "placeholder": "Preset name",
+                        "description": "Your own name displayed in Homebridge/HomeKit app.",
+                        "required": true
+                      },
+                      "mode": {
+                        "title": "Operation Mode",
+                        "type": "string",
+                        "oneOf": [
+                          {
+                            "title": "HEAT",
+                            "enum": [
+                              "heat"
+                            ]
+                          },
+                          {
+                            "title": "DRY",
+                            "enum": [
+                              "dry"
+                            ]
+                          },
+                          {
+                            "title": "COOL",
+                            "enum": [
+                              "cool"
+                            ]
+                          },
+                          {
+                            "title": "FAN",
+                            "enum": [
+                              "fan_only"
+                            ]
+                          },
+                          {
+                            "title": "AUTO",
+                            "enum": [
+                              "auto"
+                            ]
+                          }
+                        ],
+                        "description": "Select the operation mode.",
+                        "required": true
+                      },
+                      "setTemp": {
+                        "title": "Target Temperature",
+                        "type": "number",
+                        "minimum": 10,
+                        "maximum": 31,
+                        "multipleOf": 0.5,
+                        "default": 21,
+                        "description": "Here set the target temperature.",
+                        "required": true
+                      },
+                      "fanSpeed": {
+                        "title": "Fan Speed",
+                        "type": "string",
+                        "oneOf": [
+                          {
+                            "title": "AUTO",
+                            "enum": [
+                              "auto"
+                            ]
+                          },
+                          {
+                            "title": "QUIET",
+                            "enum": [
+                              "quiet"
+                            ]
+                          },
+                          {
+                            "title": "1",
+                            "enum": [
+                              "1"
+                            ]
+                          },
+                          {
+                            "title": "2",
+                            "enum": [
+                              "2"
+                            ]
+                          },
+                          {
+                            "title": "3",
+                            "enum": [
+                              "3"
+                            ]
+                          },
+                          {
+                            "title": "4",
+                            "enum": [
+                              "4"
+                            ]
+                          }
+                        ],
+                        "description": "Select the fan speed.",
+                        "required": true
+                      },
+                      "swingV": {
+                        "title": "Vane Vertical Direction",
+                        "type": "string",
+                        "oneOf": [
+                          {
+                            "title": "UP",
+                            "enum": [
+                              "1"
+                            ]
+                          },
+                          {
+                            "title": "UP MIDDLE",
+                            "enum": [
+                              "2"
+                            ]
+                          },
+                          {
+                            "title": "CENTER",
+                            "enum": [
+                              "3"
+                            ]
+                          },
+                          {
+                            "title": "DOWN MIDDLE",
+                            "enum": [
+                              "4"
+                            ]
+                          },
+                          {
+                            "title": "DOWN",
+                            "enum": [
+                              "5"
+                            ]
+                          },
+                          {
+                            "title": "AUTO",
+                            "enum": [
+                              "auto"
+                            ]
+                          },
+                          {
+                            "title": "SWING",
+                            "enum": [
+                              "swing"
+                            ]
+                          }
+                        ],
+                        "description": "Select the vane vertical direction.",
+                        "required": true
+                      },
+                      "swingH": {
+                        "title": "Vane Horizontal Direction",
+                        "type": "string",
+                        "oneOf": [
+                          {
+                            "title": "LEFT",
+                            "enum": [
+                              "left"
+                            ]
+                          },
+                          {
+                            "title": "LEFT MIDDLE",
+                            "enum": [
+                              "left_middle"
+                            ]
+                          },
+                          {
+                            "title": "CENTER",
+                            "enum": [
+                              "center"
+                            ]
+                          },
+                          {
+                            "title": "RIGHT MIDDLE",
+                            "enum": [
+                              "right_middle"
+                            ]
+                          },
+                          {
+                            "title": "RIGHT",
+                            "enum": [
+                              "right"
+                            ]
+                          },
+                          {
+                            "title": "SPLIT",
+                            "enum": [
+                              "split"
+                            ]
+                          },
+                          {
+                            "title": "SWING",
+                            "enum": [
+                              "swing"
+                            ]
+                          }
+                        ],
+                        "description": "Select the vane horizontal direction.",
+                        "required": true
+                      },
+                      "displayType": {
+                        "title": "Type",
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 5,
+                        "default": 0,
+                        "oneOf": [
+                          {
+                            "title": "None/Disabled",
+                            "enum": [
+                              0
+                            ]
+                          },
+                          {
+                            "title": "Outlet",
+                            "enum": [
+                              1
+                            ]
+                          },
+                          {
+                            "title": "Switch",
+                            "enum": [
+                              2
+                            ]
+                          },
+                          {
+                            "title": "Motion Sensor",
+                            "enum": [
+                              3
+                            ]
+                          },
+                          {
+                            "title": "Occupancy Sensor",
+                            "enum": [
+                              4
+                            ]
+                          },
+                          {
+                            "title": "Contact Sensor",
+                            "enum": [
+                              5
+                            ]
+                          }
+                        ],
+                        "description": "Select the characteristic type to be displayed in HomeKit app.",
+                        "required": true
+                      },
+                      "namePrefix": {
+                        "title": "Prefix",
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Enable/disable the accessory name as a prefix for button/sensor name.",
+                        "required": false
+                      }
+                    }
+                  }
+                },
+                "buttonsSensors": {
+                  "title": "Button / Sensor",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "title": "Name",
+                        "type": "string",
+                        "placeholder": "Button name",
+                        "description": "Your own name displayed in Homebridge/HomeKit app.",
+                        "required": true
+                      },
+                      "mode": {
+                        "title": "Mode",
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 53,
+                        "description": "Function, VH - Vane Horizontal, VV - Vane Vertical.",
+                        "oneOf": [
+                          {
+                            "title": "POWER ON/OFF",
+                            "enum": [
+                              0
+                            ]
+                          },
+                          {
+                            "title": "MODE HEAT",
+                            "enum": [
+                              1
+                            ]
+                          },
+                          {
+                            "title": "MODE DRY",
+                            "enum": [
+                              2
+                            ]
+                          },
+                          {
+                            "title": "MODE COOL",
+                            "enum": [
+                              3
+                            ]
+                          },
+                          {
+                            "title": "MODE FAN",
+                            "enum": [
+                              4
+                            ]
+                          },
+                          {
+                            "title": "MODE AUTO",
+                            "enum": [
+                              5
+                            ]
+                          },
+                          {
+                            "title": "MODE PURIFY",
+                            "enum": [
+                              6
+                            ]
+                          },
+                          {
+                            "title": "MODE DRY CONTROL HIDE",
+                            "enum": [
+                              7
+                            ]
+                          },
+                          {
+                            "title": "VH LEFT",
+                            "enum": [
+                              10
+                            ]
+                          },
+                          {
+                            "title": "VH LEFT MIDDLE",
+                            "enum": [
+                              11
+                            ]
+                          },
+                          {
+                            "title": "VH CENTER",
+                            "enum": [
+                              12
+                            ]
+                          },
+                          {
+                            "title": "VH RIGHT MIDDLE",
+                            "enum": [
+                              13
+                            ]
+                          },
+                          {
+                            "title": "VH RIGHT",
+                            "enum": [
+                              14
+                            ]
+                          },
+                          {
+                            "title": "VH SPLIT",
+                            "enum": [
+                              15
+                            ]
+                          },
+                          {
+                            "title": "VH SWING",
+                            "enum": [
+                              16
+                            ]
+                          },
+                          {
+                            "title": "VV AUTO",
+                            "enum": [
+                              20
+                            ]
+                          },
+                          {
+                            "title": "VV UP",
+                            "enum": [
+                              21
+                            ]
+                          },
+                          {
+                            "title": "VV UP MIDDLE",
+                            "enum": [
+                              22
+                            ]
+                          },
+                          {
+                            "title": "VV CENTER",
+                            "enum": [
+                              23
+                            ]
+                          },
+                          {
+                            "title": "VV DOWN MIDDLE",
+                            "enum": [
+                              24
+                            ]
+                          },
+                          {
+                            "title": "VV DOWN",
+                            "enum": [
+                              25
+                            ]
+                          },
+                          {
+                            "title": "VV SWING",
+                            "enum": [
+                              26
+                            ]
+                          },
+                          {
+                            "title": "VH/VV CONTROLS HIDE",
+                            "enum": [
+                              27
+                            ]
+                          },
+                          {
+                            "title": "FAN AUTO",
+                            "enum": [
+                              30
+                            ]
+                          },
+                          {
+                            "title": "FAN QUIET",
+                            "enum": [
+                              31
+                            ]
+                          },
+                          {
+                            "title": "FAN SPEED 1",
+                            "enum": [
+                              32
+                            ]
+                          },
+                          {
+                            "title": "FAN SPEED 2",
+                            "enum": [
+                              33
+                            ]
+                          },
+                          {
+                            "title": "FAN SPEED 3",
+                            "enum": [
+                              34
+                            ]
+                          },
+                          {
+                            "title": "FAN SPEED 4",
+                            "enum": [
+                              35
+                            ]
+                          },
+                          {
+                            "title": "AIR DIRECTION EVEN",
+                            "enum": [
+                              40
+                            ]
+                          },
+                          {
+                            "title": "AIR DIRECTION INDIRECT",
+                            "enum": [
+                              41
+                            ]
+                          },
+                          {
+                            "title": "AIR DIRECTION DIRECT",
+                            "enum": [
+                              42
+                            ]
+                          },
+                          {
+                            "title": "LOCK CONTROL All",
+                            "enum": [
+                              50
+                            ]
+                          },
+                          {
+                            "title": "LOCK CONTROL POWER",
+                            "enum": [
+                              51
+                            ]
+                          },
+                          {
+                            "title": "LOCK CONTROL MODE",
+                            "enum": [
+                              52
+                            ]
+                          },
+                          {
+                            "title": "LOCK CONTROL TEMPERATURE",
+                            "enum": [
+                              53
+                            ]
+                          }
+                        ],
+                        "required": true
+                      },
+                      "displayType": {
+                        "title": "Type",
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 5,
+                        "default": 0,
+                        "oneOf": [
+                          {
+                            "title": "None/Disabled",
+                            "enum": [
+                              0
+                            ]
+                          },
+                          {
+                            "title": "Outlet",
+                            "enum": [
+                              1
+                            ]
+                          },
+                          {
+                            "title": "Switch",
+                            "enum": [
+                              2
+                            ]
+                          },
+                          {
+                            "title": "Motion Sensor",
+                            "enum": [
+                              3
+                            ]
+                          },
+                          {
+                            "title": "Occupancy Sensor",
+                            "enum": [
+                              4
+                            ]
+                          },
+                          {
+                            "title": "Contact Sensor",
+                            "enum": [
+                              5
+                            ]
+                          }
+                        ],
+                        "description": "Select the characteristic type to be displayed in HomeKit app.",
+                        "required": true
+                      },
+                      "namePrefix": {
+                        "title": "Prefix",
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Enable/disable the accessory name as a prefix for button/sensor name.",
+                        "required": false
+                      }
+                    }
+                  }
                 }
               }
             },
@@ -230,10 +788,10 @@
             },
             "refreshInterval": {
               "title": "Refresh Interval (sec)",
-              "type": "integer",
-              "default": 5,
-              "minimum": 0,
+              "type": "number",
+              "minimum": 0.5,
               "maximum": 60,
+              "multipleOf": 0.5,
               "description": "Here set the data refresh time in (sec).",
               "required": true
             },
@@ -321,6 +879,50 @@
                       "items": [
                         "devices[].miElHvac.temperatureSensor",
                         "devices[].miElHvac.temperatureSensorOutdoor"
+                      ]
+                    },
+                    {
+                      "key": "devices[].miElHvac",
+                      "type": "section",
+                      "title": "Presets",
+                      "expandable": true,
+                      "expanded": false,
+                      "items": [
+                        {
+                          "key": "devices[].miElHvac.presets",
+                          "type": "tabarray",
+                          "title": "{{ value.name  || 'preset'}}",
+                          "items": [
+                            "devices[].miElHvac.presets[].name",
+                            "devices[].miElHvac.presets[].mode",
+                            "devices[].miElHvac.presets[].setTemp",
+                            "devices[].miElHvac.presets[].fanSpeed",
+                            "devices[].miElHvac.presets[].swingV",
+                            "devices[].miElHvac.presets[].swingH",
+                            "devices[].miElHvac.presets[].displayType",
+                            "devices[].miElHvac.presets[].namePrefix"
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "key": "devices[].miElHvac",
+                      "type": "section",
+                      "title": "Buttons / Sensors",
+                      "expandable": true,
+                      "expanded": false,
+                      "items": [
+                        {
+                          "key": "devices[].miElHvac.buttonsSensors",
+                          "type": "tabarray",
+                          "title": "{{ value.name || 'button/sensor' }}",
+                          "items": [
+                            "devices[].miElHvac.buttonsSensors[].name",
+                            "devices[].miElHvac.buttonsSensors[].mode",
+                            "devices[].miElHvac.buttonsSensors[].displayType",
+                            "devices[].miElHvac.buttonsSensors[].namePrefix"
+                          ]
+                        }
                       ]
                     }
                   ]

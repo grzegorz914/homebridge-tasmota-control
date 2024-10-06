@@ -21,44 +21,54 @@
         "HSBHue": "HSBColor1",
         "HSBSaturation": "HSBColor2",
         "HVACSetMode": {
-            "Heat": "HVACSetMode%20heat",
-            "Dry": "HVACSetMode%20dry",
-            "Cool": "HVACSetMode%20cool",
-            "Fan": "HVACSetMode%20fan_only",
-            "Auto": "HVACSetMode%20auto"
+            "heat": "HVACSetMode%20heat",
+            "dry": "HVACSetMode%20dry",
+            "cool": "HVACSetMode%20cool",
+            "fan_only": "HVACSetMode%20fan_only",
+            "auto": "HVACSetMode%20auto",
+            "purify": "HVACSetMode%20purify"
         },
         "HVACSetFanSpeed": {
-            "0": "HVACSetFanSpeed%20auto",
-            "1": "HVACSetFanSpeed%20quit",
-            "2": "HVACSetFanSpeed%201",
-            "3": "HVACSetFanSpeed%202",
-            "4": "HVACSetFanSpeed%203",
-            "5": "HVACSetFanSpeed%204"
+            "auto": "HVACSetFanSpeed%20auto",
+            "quiet": "HVACSetFanSpeed%20quiet",
+            "1": "HVACSetFanSpeed%201",
+            "2": "HVACSetFanSpeed%202",
+            "3": "HVACSetFanSpeed%203",
+            "4": "HVACSetFanSpeed%204"
         },
         "HVACSetTemp": "HVACSetTemp%20",
         "HVACRemoteTemp": "HVACRemoteTemp%20",
         "HVACSetSwingV": {
-            "Auto": "HVACSetSwingV%20auto",
+            "auto": "HVACSetSwingV%20auto",
             "1": "HVACSetSwingV%201",
             "2": "HVACSetSwingV%202",
             "3": "HVACSetSwingV%203",
             "4": "HVACSetSwingV%204",
             "5": "HVACSetSwingV%205",
-            "Swing": "HVACSetSwingV%20swing"
+            "swing": "HVACSetSwingV%20swing"
         },
         "HVACSetSwingH": {
-            "Left": "HVACSetMode%20left",
-            "left_middle": "HVACSetMode%20left_middle",
-            "Center": "HVACSetMode%20center",
-            "Right_middle": "HVACSetMode%20right_middle",
-            "Right": "HVACSetMode%20right",
-            "Split": "HVACSetMode%20split",
-            "Swing": "HVACSetMode%20swing"
+            "left": "HVACSetSwingH%20left",
+            "left_middle": "HVACSetSwingH%20left_middle",
+            "center": "HVACSetSwingH%20center",
+            "right_middle": "HVACSetSwingH%20right_middle",
+            "right": "HVACSetSwingH%20right",
+            "split": "HVACSetSwingH%20split",
+            "swing": "HVACSetSwingH%20swing"
         },
-        "HVACSetLockControlOn": "HVACSetLockControl%20on",
-        "HVACSetLockControlOff": "HVACSetLockControl%20off",
-        "HVACSetDisplayUnitC": "HVACSetDisplayUnit%20c",
-        "HVACSetDisplayUnitF": "HVACSetDisplayUnit%20f"
+        "HVACSetAirDirection": {
+            "even": "HVACSetAirDirection%20even",
+            "indirect": "HVACSetAirDirection%20indirect",
+            "direct": "HVACSetAirDirection%20direct"
+        },
+        "HVACSetLockControl": {
+            "on": "HVACSetLockControl%20on",
+            "off": "HVACSetLockControl%20off"
+        },
+        "HVACSetDisplayUnit": {
+            "c": "HVACSetDisplayUnit%20c",
+            "f": "HVACSetDisplayUnit%20f"
+        }
     },
     "LightKeys": [
         "Dimmer",
@@ -150,7 +160,7 @@
         "Dir"
     ],
     "AirConditioner": {
-        "DriveMode": [
+        "OperationMode": [
             "AUTO",
             "HEAT",
             "COOL",
@@ -170,16 +180,21 @@
             "swing": "SWING"
         },
         "HorizontalVane": {
-            "auto": "AUTO",
+            "isee": "ISEE",
             "left_middle": "LEFT",
             "left": "LEFT MIDDLE",
             "center": "CENTER",
             "right_middle": "RIGHT MIDDLE",
             "right": "RIGHT",
             "split": "SPLIT",
-            "swing": "AUTO"
+            "swing": "SWING"
         },
-        "AirDirection": [
+        "AirDirection": {
+            "even": "EVEN",
+            "indirect": "INDIRECT",
+            "direct": "DIRECT"
+        },
+        "SwingMode": [
             "AUTO",
             "SWING"
         ],

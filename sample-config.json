@@ -29,7 +29,27 @@
             "coolDryFanMode": 1,
             "autoDryFanMode": 1,
             "temperatureSensor": false,
-            "temperatureSensorOutdoor": false
+            "temperatureSensorOutdoor": false,
+            "presets": [
+              {
+                "name": "Name",
+                "mode": "auto",
+                "setTemp": 20,
+                "fanSpeed": "auto",
+                "swingV": "swing",
+                "swingH": "split",
+                "displayType": 0,
+                "namePrefix": false
+              }
+            ],
+            "buttonsSensors": [
+              {
+                "name": "Name",
+                "mode": 0,
+                "displayType": 0,
+                "namePrefix": false
+              }
+            ]
           },
           "relaysNamePrefix": false,
           "relaysDisplayType": 0,

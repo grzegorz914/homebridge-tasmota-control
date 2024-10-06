@@ -66,6 +66,20 @@ Homebridge plugin for Tasmota flashed devices.
 | `miElHvac.autoDryFanMode` | Here select the operatiing mode for `Auto`, only for Mitsubishio AC. |
 | `miElHvac.temperatureSensor` | This enable extra `Room` temperature sensors to use with automations in HomeKit app. |
 | `miElHvac.temperatureSensorOutdoor` | This enable extra `Outdoor` temperature sensors to use with automations in HomeKit app. |
+| `miElHvac.presets` | Array of presets sensors. |
+| `miElHvac.presets.name` | Here You can schange the `Preset Name` which is exposed to the `Homebridge/HomeKit`. |
+| `miElHvac.presets.mode` | Here set the operation mode . |
+| `miElHvac.presets.setTemp` | Here set the target temperature. |
+| `miElHvac.presets.fanSpeed` | Here set the fan speed. |
+| `miElHvac.presets.swingV` | Here set the vane vertical direction. |
+| `miElHvac.presets.swingH` | Here set the vane horizontal direction. |
+| `miElHvac.presets.displayType` | Here select display type in HomeKit, `0 - None/Disabled`, `1 - Outlet`, `2 - Switch`, `3 - Motion Sensor`, `4 - Occupancy Sensor`, `5 - Contact Sensor`. |
+| `miElHvac.buttonsSensors` | Array of buttons sensors. |
+| `miElHvac.buttonsSensors.name` | Here set `Button Name` which You want expose to the `Homebridge/HomeKit`. |
+| `miElHvac.buttonsSensors.mode` | Here select button function mode. |
+| `miElHvac.buttonsSensors.displayType` | Here select display type in HomeKit, `0 - None/Disabled`, `1 - Outlet`, `2 - Switch`, `3 - Motion Sensor`, `4 - Occupancy Sensor`, `5 - Contact Sensor`. |
+| `miElHvac.buttonsSensors.namePrefix` | Here enable/disable the accessory name as a prefix for button/sensor name. |
+| `atwDevices` | Array of ATA devices created automatically after login to MELCloud from plugin config UI. |
 | `relaysNamePrefix` | Here enable/disable the accessory name as a prefix for relays name. |
 | `relaysDisplayType` | Here select characteristic display type for relays which are exposed in the HomeKit app. |
 | `lightsNamePrefix` | Here enable/disable the accessory name as a prefix for lights name. |
