@@ -28,15 +28,47 @@ Homebridge plugin for Tasmota flashed devices.
 ## About The Plugin
 
 * Plugin work with Tasmota v6.0.0 and abowe.
+
+* Support Mitsubishi HVAC:
 * Precompiled ESP firmware for `MiElHVAC` are in `firmware` folder.
 * If You need firmware for specific `ESP` please go to [Firmware for MiElHVAC](https://github.com/grzegorz914/homebridge-tasmota-control/issues/18) and meke request.
+  * Heater Cooler:
+    * Power `ON/OFF`.
+    * Operating mode `AUTO/HEAT/COOL`.
+    * Temperature `HEATING/COOLING/AUTO`.
+    * Fan speed `OFF/QUIET/1/2/3/4/AUTO`.
+    * Swing mode `AUTO/SWING`.
+    * Physical lock controls `LOCK/UNLOCK`.
+    * Temperature display unit `°F/°C`.
+  * Buttons:
+    * For direct device control.
+      * Power `ON/OFF`.
+      * Operating mode `HEAT/DRY/COOL/FAN/AUTO`.
+      * Fan speed `OFF/QUIET/1/2/3/4/AUTO`.
+      * Vane H `LEFT/LEFT MIDDLE/CENTER/RIGHT MIDDLE/RIGHT/SPLIT/SWING`.
+      * Vane V `AUTO/UP/UP MIDDLE/CENTER/DOWN MIDDLE/DOWN/SWING`.
+      * Air direction `INDIRECT/DIRECT/EVEN`.
+      * Prohibit `POWER/MODE/TEMPERATURE/ALL`.
+      * Physical lock controls `LOCK/UNLOCK`.
+      * Presets `SET/UNSET`.
+  * Sensors:
+    * For automation and notifications.
+      * Power `ON/OFF`.
+      * Operating mode `HEAT/DRY/COOL/FAN/AUTO`.
+      * Fan speed `OFF/QUIET/1/2/3/4/AUTO`.
+      * Vane H `AUTO/1/2/3/4/5/SPLIT/SWING`.
+      * Vane V `AUTO/1/2/3/4/5/SWING`.
+      * Air direction `INDIRECT/DIRECT/EVEN`.
+      * Physical lock controls `LOCK/UNLOCK`.
+      * Presets `ACTIV/UNACTIV`.
+      * Room temperature.
+      * Outdoor temperature.
 
-* Supported HVAC:  
-  * Mitsubishi AC - `Heater/Cooler`
 * Supported relay devices:
   * Light - `Power ON/OFF`, `Dimmer`, `Color Temperature`, `Hue`, `Saturation`
   * Outlet - `Power ON/OFF`
   * Switch - `Power ON/OFF`
+  
 * Supported Sensors:
   * Temperature - `Temperature`, `Dew Point`, `Reference`, `Obj`, `Amb`
   * Humidity

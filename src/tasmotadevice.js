@@ -253,12 +253,14 @@ class TasmotaDevice extends EventEmitter {
                     const fanSpeed = miElHvac.FanSpeed ?? 'Unknown';
                     const vaneVerticalDirection = miElHvac.SwingV ?? 'Unknown';
                     const vaneHorizontalDirection = miElHvac.SwingH ?? 'Unknown';
+                    const prohibit = miElHvac.Prohibit ?? 'Unknown';
                     const airDirection = miElHvac.AirDirection ?? 'Unknown';
                     const operation = miElHvac.Operation == 'ON' ?? false;
                     const compressor = miElHvac.Compressor == 'ON' ?? false;
                     const swingMode = vaneVerticalDirection == 'swing' && vaneHorizontalDirection === 'swing' ? 1 : 0;
                     const defaultCoolingSetTemperature = parseFloat(await this.readData(this.defaultCoolingSetTemperatureFile));
                     const defaultHeatingSetTemperature = parseFloat(await this.readData(this.defaultHeatingSetTemperatureFile));
+
                     const modelSupportsHeat = true;
                     const modelSupportsDry = true;
                     const modelSupportsCool = true;
@@ -266,15 +268,15 @@ class TasmotaDevice extends EventEmitter {
                     const modelSupportsFanSpeed = true;
                     const hasAutomaticFanSpeed = true;
                     const numberOfFanSpeeds = 5;
-                    const lockPhysicalControl = 0;
+                    const lockPhysicalControl = prohibit === 'all' ?? false;
                     const useFahrenheit = temperatureUnit === 'F' ?? false;
                     const temperatureIncrement = useFahrenheit ? 1 : 0.5;
 
                     const hideDryModeControl = false;
                     const hideVaneControls = false;
-                    const prohibitPower = false;
-                    const prohibitOperationMode = false;
-                    const prohibitSetTemperature = false;
+                    const prohibitPower = prohibit === 'power' ?? false;
+                    const prohibitOperationMode = prohibit === 'mode' ?? false;
+                    const prohibitSetTemperature = prohibit === 'temp' ?? false;
 
                     this.accessory = {
                         time: time,
@@ -285,6 +287,7 @@ class TasmotaDevice extends EventEmitter {
                         operationMode: operationMode,
                         vaneVerticalDirection: vaneVerticalDirection,
                         vaneHorizontalDirection: vaneHorizontalDirection,
+                        prohibit: prohibit,
                         airDirection: airDirection,
                         swingMode: swingMode,
                         operation: operation,
@@ -298,7 +301,7 @@ class TasmotaDevice extends EventEmitter {
                         modelSupportsFanSpeed: modelSupportsFanSpeed,
                         hasAutomaticFanSpeed: hasAutomaticFanSpeed,
                         numberOfFanSpeeds: numberOfFanSpeeds,
-                        lockPhysicalControl: lockPhysicalControl,
+                        lockPhysicalControl: prohibit === 'all' ? 1 : 0,
                         temperatureUnit: temperatureUnit,
                         useFahrenheit: useFahrenheit,
                         temperatureIncrement: temperatureIncrement,
@@ -414,7 +417,12 @@ class TasmotaDevice extends EventEmitter {
                         for (let i = 0; i < this.presetsConfigured.length; i++) {
                             const preset = this.presetsConfigured[i];
 
-                            preset.state = power ? (preset.mode === operationMode
+                            let iseeMode = operationMode;
+                            iseeMode = (operationMode === 'heat' || operationMode === 'heat_isee') ? 'heat' : iseeMode;
+                            iseeMode = (operationMode === 'dry' || operationMode === 'dry_isee') ? 'dry' : iseeMode;
+                            iseeMode = (operationMode === 'cool' || operationMode === 'cool_isee') ? 'cool' : iseeMode;
+
+                            preset.state = power ? (preset.mode === iseeMode
                                 && (preset.setTemp).toFixed(1) === parseFloat(setTemperature).toFixed(1)
                                 && preset.fanSpeed === fanSpeed
                                 && preset.swingV === vaneVerticalDirection
@@ -534,7 +542,7 @@ class TasmotaDevice extends EventEmitter {
                                     button.state = (lockPhysicalControl === 1);
                                     break;
                                 case 51: //PHYSICAL LOCK CONTROLS POWER
-                                    button.state = (prohibitPower === true);
+                                    button.state = (prohibitPower === 'true');
                                     break;
                                 case 52: //PHYSICAL LOCK CONTROLS MODE
                                     button.state = (prohibitOperationMode === true);
@@ -569,8 +577,8 @@ class TasmotaDevice extends EventEmitter {
                         const info7 = power && vaneVerticalDirection !== 'Unknown' ? this.emit('message', `Vane vertical: ${CONSTANTS.AirConditioner.VerticalVane[vaneVerticalDirection] ?? vaneVerticalDirection}`) : false;
                         const info8 = power ? this.emit('message', `Swing mode: ${CONSTANTS.AirConditioner.SwingMode[swingMode]}`) : false;
                         const info9 = power && vaneHorizontalDirection === 'isee' && airDirection !== 'Unknown' ? this.emit('message', `Air direction: ${CONSTANTS.AirConditioner.AirDirection[airDirection]}`) : false;
+                        const info11 = power ? this.emit('message', `Prohibit: ${CONSTANTS.AirConditioner.Prohibit[prohibit]}`) : false;
                         const info10 = power ? this.emit('message', `Temperature display unit: ${temperatureUnit}`) : false;
-                        const info11 = power ? this.emit('message', `Lock physical controls: ${lockPhysicalControl ? 'LOCKED' : 'UNLOCKED'}`) : false;
                     };
                     break;
                 case false:
@@ -1035,8 +1043,8 @@ class TasmotaDevice extends EventEmitter {
                         })
                         .onSet(async (value) => {
                             try {
-                                const lock = [CONSTANTS.ApiCommands.HVACSetLockControl.off, CONSTANTS.ApiCommands.HVACSetLockControl.on][value];
-                                //await this.axiosInstance(lock);
+                                const lock = [CONSTANTS.ApiCommands.HVACSetProhibit.off, CONSTANTS.ApiCommands.HVACSetProhibit.all][value];
+                                await this.axiosInstance(lock);
                                 const info = this.disableLogInfo ? false : this.emit('message', `Set local physical controls: ${value ? 'LOCK' : 'UNLOCK'}`);
                             } catch (error) {
                                 this.emit('warn', `Set lock physical controls error: ${error}`);
@@ -1310,25 +1318,27 @@ class TasmotaDevice extends EventEmitter {
                                                 data = state ? CONSTANTS.ApiCommands.HVACSetAirDirection.direct : button.previousValue;
                                                 break;
                                             case 50: //PHYSICAL LOCK CONTROLS
-                                                this.accessory.parseFloatrohibitSetTemperature = state;
-                                                this.accessory.prohibitOperationMode = state;
-                                                this.accessory.prohibitPower = state;
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetProhibit[this.accessory.prohibit] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetProhibit.all : button.previousValue;
                                                 break;
                                             case 51: //PHYSICAL LOCK CONTROLS POWER
-                                                this.accessory.prohibitPower = state;
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetProhibit[this.accessory.prohibit] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetProhibit.power : button.previousValue;
                                                 break;
                                             case 52: //PHYSICAL LOCK CONTROLS MODE
-                                                this.accessory.prohibitOperationMode = state;
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetProhibit[this.accessory.prohibit] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetProhibit.mode : button.previousValue;
                                                 break;
                                             case 53: //PHYSICAL LOCK CONTROLS TEMP
-                                                this.accessory.prohibitSetTemperature = state;
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetProhibit[this.accessory.prohibit] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetProhibit.temp : button.previousValue;
                                                 break;
                                             default:
                                                 this.emit('message', `Unknown button mode: ${mode}`);
                                                 return
                                         };
 
-                                        const setPower = !this.accessory.power && state && mode > 0 ? await this.axiosInstance(CONSTANTS.ApiCommands.PowerOn) : false;
+                                        const setPower = !this.accessory.power && state && (mode > 0 && mode < 50) ? await this.axiosInstance(CONSTANTS.ApiCommands.PowerOn) : false;
                                         await this.axiosInstance(data);
                                         const info = this.disableLogInfo ? false : mode > 0 ? this.emit('message', `${state ? `Set: ${buttonName}` : `Unset: ${buttonName}, Set: ${button.previousValue}`}`) : `Set: ${buttonName}`;
                                         await new Promise(resolve => setTimeout(resolve, 250));

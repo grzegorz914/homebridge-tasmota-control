@@ -285,39 +285,39 @@
                         "type": "string",
                         "oneOf": [
                           {
+                            "title": "AUTO",
+                            "enum": [
+                              "auto"
+                            ]
+                          },
+                          {
                             "title": "UP",
                             "enum": [
-                              "1"
+                              "up"
                             ]
                           },
                           {
                             "title": "UP MIDDLE",
                             "enum": [
-                              "2"
+                              "up_middle"
                             ]
                           },
                           {
                             "title": "CENTER",
                             "enum": [
-                              "3"
+                              "center"
                             ]
                           },
                           {
                             "title": "DOWN MIDDLE",
                             "enum": [
-                              "4"
+                              "down_middle"
                             ]
                           },
                           {
                             "title": "DOWN",
                             "enum": [
-                              "5"
-                            ]
-                          },
-                          {
-                            "title": "AUTO",
-                            "enum": [
-                              "auto"
+                              "down"
                             ]
                           },
                           {
@@ -455,7 +455,7 @@
                         "type": "integer",
                         "minimum": 0,
                         "maximum": 53,
-                        "description": "Function, VH - Vane Horizontal, VV - Vane Vertical.",
+                        "description": "Here select function.",
                         "oneOf": [
                           {
                             "title": "POWER ON/OFF",
@@ -506,91 +506,91 @@
                             ]
                           },
                           {
-                            "title": "VH LEFT",
+                            "title": "Vane H LEFT",
                             "enum": [
                               10
                             ]
                           },
                           {
-                            "title": "VH LEFT MIDDLE",
+                            "title": "Vane H LEFT MIDDLE",
                             "enum": [
                               11
                             ]
                           },
                           {
-                            "title": "VH CENTER",
+                            "title": "Vane H CENTER",
                             "enum": [
                               12
                             ]
                           },
                           {
-                            "title": "VH RIGHT MIDDLE",
+                            "title": "Vane H RIGHT MIDDLE",
                             "enum": [
                               13
                             ]
                           },
                           {
-                            "title": "VH RIGHT",
+                            "title": "Vane H RIGHT",
                             "enum": [
                               14
                             ]
                           },
                           {
-                            "title": "VH SPLIT",
+                            "title": "Vane H SPLIT",
                             "enum": [
                               15
                             ]
                           },
                           {
-                            "title": "VH SWING",
+                            "title": "Vane H SWING",
                             "enum": [
                               16
                             ]
                           },
                           {
-                            "title": "VV AUTO",
+                            "title": "Vane V AUTO",
                             "enum": [
                               20
                             ]
                           },
                           {
-                            "title": "VV UP",
+                            "title": "Vane V UP",
                             "enum": [
                               21
                             ]
                           },
                           {
-                            "title": "VV UP MIDDLE",
+                            "title": "Vane V UP MIDDLE",
                             "enum": [
                               22
                             ]
                           },
                           {
-                            "title": "VV CENTER",
+                            "title": "Vane V CENTER",
                             "enum": [
                               23
                             ]
                           },
                           {
-                            "title": "VV DOWN MIDDLE",
+                            "title": "Vane V DOWN MIDDLE",
                             "enum": [
                               24
                             ]
                           },
                           {
-                            "title": "VV DOWN",
+                            "title": "Vane V DOWN",
                             "enum": [
                               25
                             ]
                           },
                           {
-                            "title": "VV SWING",
+                            "title": "Vane V SWING",
                             "enum": [
                               26
                             ]
                           },
                           {
-                            "title": "VH/VV CONTROLS HIDE",
+                            "title": "Vane H / Vane V CONTROLS HIDE",
                             "enum": [
                               27
                             ]

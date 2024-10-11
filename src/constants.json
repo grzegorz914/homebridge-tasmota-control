@@ -61,9 +61,15 @@
             "indirect": "HVACSetAirDirection%20indirect",
             "direct": "HVACSetAirDirection%20direct"
         },
-        "HVACSetLockControl": {
-            "on": "HVACSetLockControl%20on",
-            "off": "HVACSetLockControl%20off"
+        "HVACSetProhibit": {
+            "off": "HVACSetProhibit%20off",
+            "power": "HVACSetProhibit%20power",
+            "mode": "HVACSetProhibit%20mode",
+            "mode_power": "HVACSetProhibit%20mode_power",
+            "temp": "HVACSetProhibit%20temp",
+            "temp_power": "HVACSetProhibit%20temp_power",
+            "temp_mode": "HVACSetProhibit%20temp_mode",
+            "all": "HVACSetProhibit%20all"
         },
         "HVACSetDisplayUnit": {
             "c": "HVACSetDisplayUnit%20c",
@@ -172,11 +178,11 @@
         ],
         "VerticalVane": {
             "auto": "AUTO",
-            "1": "1",
-            "2": "2",
-            "3": "3",
-            "4": "4",
-            "5": "5",
+            "up": "UP",
+            "up_middle": "UP MIDDLE",
+            "center": "CENTER",
+            "down_middle": "DOWN MIDDLE",
+            "down": "DOWN",
             "swing": "SWING"
         },
         "HorizontalVane": {
@@ -188,6 +194,16 @@
             "right": "RIGHT",
             "split": "SPLIT",
             "swing": "SWING"
+        },
+        "Prohibit": {
+            "off": "OFF",
+            "power": "POWER",
+            "mode": "MODE",
+            "power_mode": "POWER AND MODE",
+            "temp": "TEMPERATURE",
+            "temp_power": "TEMP AND POWER",
+            "temp_mode": "TEMP AND MODE",
+            "all": "ALL"
         },
         "AirDirection": {
             "even": "EVEN",
