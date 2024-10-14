@@ -3,7 +3,7 @@
   "pluginType": "platform",
   "singular": true,
   "fixArrays": true,
-  "headerDisplay": "This plugin works with Tasmota Firmware flashed devices. Devices are exposed to HomeKit as separate accessories and each needs to be manually paired.",
+  "headerDisplay": "This plugin works with ESP devices flashed with Tasmota Firmware. Devices are exposed to HomeKit as separate accessories and each needs to be manually paired.",
   "footerDisplay": "For documentation please see [GitHub repository](https://github.com/grzegorz914/homebridge-tasmota-control).",
   "schema": {
     "type": "object",
@@ -458,7 +458,7 @@
                         "description": "Here select function.",
                         "oneOf": [
                           {
-                            "title": "POWER ON/OFF",
+                            "title": "POWER",
                             "enum": [
                               0
                             ]
@@ -494,57 +494,63 @@
                             ]
                           },
                           {
-                            "title": "MODE PURIFY",
+                            "title": "MODE PURIFY (not implemented)",
                             "enum": [
                               6
                             ]
                           },
                           {
-                            "title": "MODE DRY CONTROL HIDE",
+                            "title": "MODE DRY CONTROL HIDE (not implemented)",
                             "enum": [
                               7
                             ]
                           },
                           {
-                            "title": "Vane H LEFT",
+                            "title": "Vane H AUTO",
                             "enum": [
                               10
                             ]
                           },
                           {
-                            "title": "Vane H LEFT MIDDLE",
+                            "title": "Vane H LEFT",
                             "enum": [
                               11
                             ]
                           },
                           {
-                            "title": "Vane H CENTER",
+                            "title": "Vane H LEFT MIDDLE",
                             "enum": [
                               12
                             ]
                           },
                           {
-                            "title": "Vane H RIGHT MIDDLE",
+                            "title": "Vane H CENTER",
                             "enum": [
                               13
                             ]
                           },
                           {
-                            "title": "Vane H RIGHT",
+                            "title": "Vane H RIGHT MIDDLE",
                             "enum": [
                               14
                             ]
                           },
                           {
-                            "title": "Vane H SPLIT",
+                            "title": "Vane H RIGHT",
                             "enum": [
                               15
                             ]
                           },
                           {
-                            "title": "Vane H SWING",
+                            "title": "Vane H SPLIT",
                             "enum": [
                               16
+                            ]
+                          },
+                          {
+                            "title": "Vane H SWING",
+                            "enum": [
+                              17
                             ]
                           },
                           {
@@ -590,7 +596,7 @@
                             ]
                           },
                           {
-                            "title": "Vane H / Vane V CONTROLS HIDE",
+                            "title": "Vane H / V CONTROLS HIDE (not implemented)",
                             "enum": [
                               27
                             ]
@@ -632,43 +638,43 @@
                             ]
                           },
                           {
-                            "title": "AIR DIRECTION EVEN",
+                            "title": "AIR DIRECTION EVEN (only as sensor now)",
                             "enum": [
                               40
                             ]
                           },
                           {
-                            "title": "AIR DIRECTION INDIRECT",
+                            "title": "AIR DIRECTION INDIRECT (only as sensor now)",
                             "enum": [
                               41
                             ]
                           },
                           {
-                            "title": "AIR DIRECTION DIRECT",
+                            "title": "AIR DIRECTION DIRECT (only as sensor now)",
                             "enum": [
                               42
                             ]
                           },
                           {
-                            "title": "LOCK CONTROL All",
+                            "title": "LOCK CONTROL All (only as sensor now)",
                             "enum": [
                               50
                             ]
                           },
                           {
-                            "title": "LOCK CONTROL POWER",
+                            "title": "LOCK CONTROL POWER (only as sensor now)",
                             "enum": [
                               51
                             ]
                           },
                           {
-                            "title": "LOCK CONTROL MODE",
+                            "title": "LOCK CONTROL MODE (only as sensor now)",
                             "enum": [
                               52
                             ]
                           },
                           {
-                            "title": "LOCK CONTROL TEMPERATURE",
+                            "title": "LOCK CONTROL TEMPERATURE (only as sensor now)",
                             "enum": [
                               53
                             ]

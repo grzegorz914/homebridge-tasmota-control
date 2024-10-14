@@ -245,19 +245,20 @@ class TasmotaDevice extends EventEmitter {
 
                     //mielhvac
                     const miElHvac = statusSNS.MiElHVAC ?? {};
-                    const power = miElHvac.Power === 'ON' ? 1 : 0;
-                    const roomTemperature = miElHvac.Temperature ?? 0;
-                    const outdoorTemperature = null;
-                    const setTemperature = miElHvac.SetTemperature ?? 0;
+                    const power = miElHvac.Power === 'on' ? 1 : 0;
+                    const roomTemperature = miElHvac.Temperature ?? null;
+                    const outdoorTemperature = miElHvac.OutdoorTemperature ?? null;
+                    const setTemperature = miElHvac.SetTemperature;
                     const operationMode = miElHvac.Mode ?? 'Unknown';
                     const fanSpeed = miElHvac.FanSpeed ?? 'Unknown';
                     const vaneVerticalDirection = miElHvac.SwingV ?? 'Unknown';
                     const vaneHorizontalDirection = miElHvac.SwingH ?? 'Unknown';
                     const prohibit = miElHvac.Prohibit ?? 'Unknown';
                     const airDirection = miElHvac.AirDirection ?? 'Unknown';
-                    const operation = miElHvac.Operation == 'ON' ?? false;
-                    const compressor = miElHvac.Compressor == 'ON' ?? false;
-                    const swingMode = vaneVerticalDirection == 'swing' && vaneHorizontalDirection === 'swing' ? 1 : 0;
+                    const compressor = miElHvac.Compressor === 'on' ?? false;
+                    const operationPower = miElHvac.OperationPower ?? 0;
+                    const operationEnergy = miElHvac.OperationEnergy ?? 0;
+                    const swingMode = vaneVerticalDirection === 'swing' && vaneHorizontalDirection === 'swing' ? 1 : 0;
                     const defaultCoolingSetTemperature = parseFloat(await this.readData(this.defaultCoolingSetTemperatureFile));
                     const defaultHeatingSetTemperature = parseFloat(await this.readData(this.defaultHeatingSetTemperatureFile));
 
@@ -274,9 +275,6 @@ class TasmotaDevice extends EventEmitter {
 
                     const hideDryModeControl = false;
                     const hideVaneControls = false;
-                    const prohibitPower = prohibit === 'power' ?? false;
-                    const prohibitOperationMode = prohibit === 'mode' ?? false;
-                    const prohibitSetTemperature = prohibit === 'temp' ?? false;
 
                     this.accessory = {
                         time: time,
@@ -290,8 +288,9 @@ class TasmotaDevice extends EventEmitter {
                         prohibit: prohibit,
                         airDirection: airDirection,
                         swingMode: swingMode,
-                        operation: operation,
                         compressor: compressor,
+                        operationPower: operationPower,
+                        operationEnergy: operationEnergy,
                         defaultCoolingSetTemperature: defaultCoolingSetTemperature,
                         defaultHeatingSetTemperature: defaultHeatingSetTemperature,
                         modelSupportsHeat: modelSupportsHeat,
@@ -306,10 +305,7 @@ class TasmotaDevice extends EventEmitter {
                         useFahrenheit: useFahrenheit,
                         temperatureIncrement: temperatureIncrement,
                         hideDryModeControl: hideDryModeControl,
-                        hideVaneControls: hideVaneControls,
-                        prohibitPower: prohibitPower,
-                        prohibitOperationMode: prohibitOperationMode,
-                        prohibitSetTemperature: prohibitSetTemperature
+                        hideVaneControls: hideVaneControls
                     };
 
 
@@ -352,7 +348,7 @@ class TasmotaDevice extends EventEmitter {
                             return
                     };
 
-                    this.accessory.currentOperationMode = !power ? 0 : !operation ? 1 : this.accessory.currentOperationMode;
+                    this.accessory.currentOperationMode = !power ? 0 : this.accessory.currentOperationMode;
                     this.accessory.operationModeSetPropsMinValue = modelSupportsAuto && modelSupportsHeat ? 0 : !modelSupportsAuto && modelSupportsHeat ? 1 : modelSupportsAuto && !modelSupportsHeat ? 0 : 2;
                     this.accessory.operationModeSetPropsMaxValue = 2
                     this.accessory.operationModeSetPropsValidValues = modelSupportsAuto && modelSupportsHeat ? [0, 1, 2] : !modelSupportsAuto && modelSupportsHeat ? [1, 2] : modelSupportsAuto && !modelSupportsHeat ? [0, 2] : [2];
@@ -464,46 +460,49 @@ class TasmotaDevice extends EventEmitter {
                                     button.state = power ? (operationMode === 'purify') : false;
                                     break;
                                 case 7: //OPERATING MODE DRY CONTROL HIDE
-                                    button.state = power ? (hideDryModeControl === true) : false;
+                                    button.state = power ? hideDryModeControl : false;
                                     break;
-                                case 10: //VANE H LEFT
+                                case 10: //VANE H AUTO
+                                    button.state = power ? (vaneHorizontalDirection === 'auto') : false;
+                                    break;
+                                case 11: //VANE H LEFT
                                     button.state = power ? (vaneHorizontalDirection === 'left') : false;
                                     break;
-                                case 11: //VANE H LEFT MIDDLE
+                                case 12: //VANE H LEFT MIDDLE
                                     button.state = power ? (vaneHorizontalDirection === 'left_middle') : false;
                                     break;
-                                case 12: //VANE H CENTER
+                                case 13: //VANE H CENTER
                                     button.state = power ? (vaneHorizontalDirection === 'center') : false;
                                     break;
-                                case 13: //VANE H RIGHT MIDDLE
+                                case 14: //VANE H RIGHT MIDDLE
                                     button.state = power ? (vaneHorizontalDirection === 'right_middle') : false;
                                     break;
-                                case 14: //VANE H RIGHT
+                                case 15: //VANE H RIGHT
                                     button.state = power ? (vaneHorizontalDirection === 'right') : false;
                                     break;
-                                case 15: //VANE H SPLIT
+                                case 16: //VANE H SPLIT
                                     button.state = power ? (vaneHorizontalDirection === 'split') : false;
                                     break;
-                                case 16: //VANE H SWING
+                                case 17: //VANE H SWING
                                     button.state = power ? (vaneHorizontalDirection === 'swing') : false;
                                     break;
                                 case 20: //VANE V AUTO
                                     button.state = power ? (vaneVerticalDirection === 'auto') : false;
                                     break;
                                 case 21: //VANE V UP
-                                    button.state = power ? (vaneVerticalDirection === '1') : false;
+                                    button.state = power ? (vaneVerticalDirection === 'up') : false;
                                     break;
                                 case 22: //VANE V UP MIDDLE
-                                    button.state = power ? (vaneVerticalDirection === '2') : false;
+                                    button.state = power ? (vaneVerticalDirection === 'up_middle') : false;
                                     break;
                                 case 23: //VANE V CENTER
-                                    button.state = power ? (vaneVerticalDirection === '3') : false;
+                                    button.state = power ? (vaneVerticalDirection === 'center') : false;
                                     break;
                                 case 24: //VANE V DOWN MIDDLE
-                                    button.state = power ? (vaneVerticalDirection === '4') : false;
+                                    button.state = power ? (vaneVerticalDirection === 'down_middle') : false;
                                     break;
                                 case 25: //VANE V DOWN
-                                    button.state = power ? (vaneVerticalDirection === '5') : false;
+                                    button.state = power ? (vaneVerticalDirection === 'down') : false;
                                     break;
                                 case 26: //VANE V SWING
                                     button.state = power ? (vaneVerticalDirection === 'swing') : false;
@@ -530,25 +529,25 @@ class TasmotaDevice extends EventEmitter {
                                     button.state = power ? (fanSpeed === '4') : false;
                                     break;
                                 case 40: //AIR DIRECTION EVEN
-                                    button.state = power ? (vaneHorizontalDirection === 'isee' && airDirection === 'even') : false;
+                                    button.state = power ? (vaneHorizontalDirection === 'auto' && airDirection === 'even') : false;
                                     break;
                                 case 41: //AIR DIRECTION INDIRECT
-                                    button.state = power ? (vaneHorizontalDirection === 'isee' && airDirection === 'indirect') : false;
+                                    button.state = power ? (vaneHorizontalDirection === 'auto' && airDirection === 'indirect') : false;
                                     break;
                                 case 42: //AIR DIRECTION DIRECT
-                                    button.state = power ? (vaneHorizontalDirection === 'isee' && airDirection === 'direct') : false;
+                                    button.state = power ? (vaneHorizontalDirection === 'auto' && airDirection === 'direct') : false;
                                     break;
                                 case 50: //PHYSICAL LOCK CONTROLS ALL
-                                    button.state = (lockPhysicalControl === 1);
+                                    button.state = prohibit === 'all';
                                     break;
                                 case 51: //PHYSICAL LOCK CONTROLS POWER
-                                    button.state = (prohibitPower === 'true');
+                                    button.state = prohibit === 'power';
                                     break;
                                 case 52: //PHYSICAL LOCK CONTROLS MODE
-                                    button.state = (prohibitOperationMode === true);
+                                    button.state = prohibit === 'mode';
                                     break;
                                 case 53: //PHYSICAL LOCK CONTROLS TEMP
-                                    button.state = (prohibitSetTemperature === true);
+                                    button.state = prohibit === 'temp';
                                     break;
                                 default: //Unknown button
                                     this.emit('message', `Unknown button mode: ${mode} detected.`);
@@ -572,7 +571,7 @@ class TasmotaDevice extends EventEmitter {
                         const info2 = power ? this.emit('message', `Target temperature: ${setTemperature}${temperatureUnit}`) : false;
                         const info3 = power ? this.emit('message', `Current temperature: ${roomTemperature}${temperatureUnit}`) : false;
                         const info4 = power && outdoorTemperature !== null ? this.emit('message', `Outdoor temperature: ${outdoorTemperature}${temperatureUnit}`) : false;
-                        const info5 = power && modelSupportsFanSpeed ? this.emit('message', `Fan speed: ${CONSTANTS.AirConditioner.FanSpeed[fanSpeedMap[fanSpeed]]}`) : false;
+                        const info5 = power && modelSupportsFanSpeed ? this.emit('message', `Fan speed: ${CONSTANTS.AirConditioner.FanSpeed[fanSpeed]}`) : false;
                         const info6 = power && vaneHorizontalDirection !== 'Unknown' ? this.emit('message', `Vane horizontal: ${CONSTANTS.AirConditioner.HorizontalVane[vaneHorizontalDirection] ?? vaneHorizontalDirection}`) : false;
                         const info7 = power && vaneVerticalDirection !== 'Unknown' ? this.emit('message', `Vane vertical: ${CONSTANTS.AirConditioner.VerticalVane[vaneVerticalDirection] ?? vaneVerticalDirection}`) : false;
                         const info8 = power ? this.emit('message', `Swing mode: ${CONSTANTS.AirConditioner.SwingMode[swingMode]}`) : false;
@@ -927,24 +926,24 @@ class TasmotaDevice extends EventEmitter {
                             })
                             .onSet(async (value) => {
                                 try {
-                                    let fanSpeedModeText = 0; //AUTO, 1, 2, 3, 4, 5
                                     let fanSpeed = 0;
+                                    let fanSpeedModeText = 'off';
                                     switch (this.accessory.numberOfFanSpeeds) {
                                         case 2: //Fan speed mode 2
                                             fanSpeed = this.accessory.hasAutomaticFanSpeed ? [0, 1, 2, 0][value] : [1, 1, 2][value];
-                                            fanSpeedModeText = this.accessory.hasAutomaticFanSpeed ? [7, 1, 2, 0][value] : [7, 1, 2][value];
+                                            fanSpeedModeText = this.accessory.hasAutomaticFanSpeed ? ['off', 'quiet', '1', 'auto'][value] : ['off', 'quiet', '1'][value];
                                             break;
                                         case 3: //Fan speed mode 3
                                             fanSpeed = this.accessory.hasAutomaticFanSpeed ? [0, 1, 2, 3, 0][value] : [1, 1, 2, 3][value];
-                                            fanSpeedModeText = this.accessory.hasAutomaticFanSpeed ? [7, 1, 2, 3, 0][value] : [7, 1, 2, 3][value];
+                                            fanSpeedModeText = this.accessory.hasAutomaticFanSpeed ? ['off', 'quiet', '1', '2', 'auto'][value] : ['off', 'quiet', '1', '2',][value];
                                             break;
                                         case 4: //Fan speed mode 4
                                             fanSpeed = this.accessory.hasAutomaticFanSpeed ? [0, 1, 2, 3, 4, 0][value] : [1, 1, 2, 3, 4][value];
-                                            fanSpeedModeText = this.accessory.hasAutomaticFanSpeed ? [7, 1, 2, 3, 4, 0][value] : [7, 1, 2, 3, 4][value];
+                                            fanSpeedModeText = this.accessory.hasAutomaticFanSpeed ? ['off', 'quiet', '1', '2', '3', 'auto'][value] : ['off', 'quiet', '1', '2', '3'][value];
                                             break;
                                         case 5: //Fan speed mode 5
                                             fanSpeed = this.accessory.hasAutomaticFanSpeed ? [0, 1, 2, 3, 4, 5, 0][value] : [1, 1, 2, 3, 4, 5][value];
-                                            fanSpeedModeText = this.accessory.hasAutomaticFanSpeed ? [7, 1, 2, 3, 4, 5, 0][value] : [7, 1, 2, 3, 4, 5][value];
+                                            fanSpeedModeText = this.accessory.hasAutomaticFanSpeed ? ['off', 'quiet', '1', '2', '3', '4', 'auto'][value] : ['off', 'quiet', '1', '2', '3', '4'][value];
                                             break;
                                     };
 
@@ -1222,31 +1221,35 @@ class TasmotaDevice extends EventEmitter {
                                             case 7: //OPERATING MODE DRY CONTROL HIDE
                                                 this.accessory.hideDryModeControl = state;
                                                 break;
-                                            case 10: //VANE H LEFT
+                                            case 10: //VANE H AUTO
+                                                button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetSwingH.auto : button.previousValue;
+                                                break;
+                                            case 11: //VANE H LEFT
                                                 button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
                                                 data = state ? CONSTANTS.ApiCommands.HVACSetSwingH.left : button.previousValue;
                                                 break;
-                                            case 11: //VANE H LEFT MIDDLE
+                                            case 12: //VANE H LEFT MIDDLE
                                                 button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
                                                 data = state ? CONSTANTS.ApiCommands.HVACSetSwingH.left_middle : button.previousValue;
                                                 break;
-                                            case 12: //VANE H CENTER
+                                            case 13: //VANE H CENTER
                                                 button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
                                                 data = state ? CONSTANTS.ApiCommands.HVACSetSwingH.center : button.previousValue;
                                                 break;
-                                            case 13: //VANE H RIGHT MIDDLE
+                                            case 14: //VANE H RIGHT MIDDLE
                                                 button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
                                                 data = state ? CONSTANTS.ApiCommands.HVACSetSwingH.right_middle : button.previousValue;
                                                 break;
-                                            case 14: //VANE H RIGHT
+                                            case 15: //VANE H RIGHT
                                                 button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
                                                 data = state ? CONSTANTS.ApiCommands.HVACSetSwingH.right : button.previousValue;
                                                 break;
-                                            case 15: //VANE H SPLIT
+                                            case 16: //VANE H SPLIT
                                                 button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
                                                 data = state ? CONSTANTS.ApiCommands.HVACSetSwingH.split : button.previousValue;
                                                 break;
-                                            case 16: //VANE H SWING
+                                            case 17: //VANE H SWING
                                                 button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
                                                 data = state ? CONSTANTS.ApiCommands.HVACSetSwingH.swing : button.previousValue;
                                                 break;
@@ -1256,23 +1259,23 @@ class TasmotaDevice extends EventEmitter {
                                                 break;
                                             case 21: //VANE V UP
                                                 button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetSwingV[this.accessory.vaneVerticalDirection] : button.previousValue;
-                                                data = state ? CONSTANTS.ApiCommands.HVACSetSwingV['1'] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetSwingV.up : button.previousValue;
                                                 break;
                                             case 22: //VANE V UP MIDDLE
                                                 button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetSwingV[this.accessory.vaneVerticalDirection] : button.previousValue;
-                                                data = state ? CONSTANTS.ApiCommands.HVACSetSwingV['2'] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetSwingV.up_middle : button.previousValue;
                                                 break;
                                             case 23: //VANE V CENTER
                                                 button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetSwingV[this.accessory.vaneVerticalDirection] : button.previousValue;
-                                                data = state ? CONSTANTS.ApiCommands.HVACSetSwingV['3'] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetSwingV.center : button.previousValue;
                                                 break;
                                             case 24: //VANE V DOWN MIDDLE
                                                 button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetSwingV[this.accessory.vaneVerticalDirection] : button.previousValue;
-                                                data = state ? CONSTANTS.ApiCommands.HVACSetSwingV['4'] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetSwingV.down_middle : button.previousValue;
                                                 break;
                                             case 25: //VANE V DOWN
                                                 button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetSwingV[this.accessory.vaneVerticalDirection] : button.previousValue;
-                                                data = state ? CONSTANTS.ApiCommands.HVACSetSwingV['5'] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetSwingV.down : button.previousValue;
                                                 break;
                                             case 26: //VANE V SWING
                                                 button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetSwingV[this.accessory.vaneVerticalDirection] : button.previousValue;
@@ -1283,27 +1286,27 @@ class TasmotaDevice extends EventEmitter {
                                                 break;
                                             case 30: //FAN SPEED AUTO
                                                 button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed[this.accessory.fanSpeed] : button.previousValue;
-                                                data = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed['0'] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed.auto : button.previousValue;
                                                 break;
                                             case 31: //FAN SPEED QUIET
                                                 button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed[this.accessory.fanSpeed] : button.previousValue;
-                                                data = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed['1'] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed.quiet : button.previousValue;
                                                 break;
                                             case 32: //FAN SPEED 1
                                                 button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed[this.accessory.fanSpeed] : button.previousValue;
-                                                data = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed['2'] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed['1'] : button.previousValue;
                                                 break;
                                             case 33: //FAN SPEED 2
                                                 button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed[this.accessory.fanSpeed] : button.previousValue;
-                                                data = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed['3'] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed['2'] : button.previousValue;
                                                 break;
                                             case 34: //FAN 3
                                                 button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed[this.accessory.fanSpeed] : button.previousValue;
-                                                data = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed['4'] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed['3'] : button.previousValue;
                                                 break;
                                             case 35: //FAN SPEED 4
                                                 button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed[this.accessory.fanSpeed] : button.previousValue;
-                                                data = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed['5'] : button.previousValue;
+                                                data = state ? CONSTANTS.ApiCommands.HVACSetFanSpeed['4'] : button.previousValue;
                                                 break;
                                             case 40: //AIR DIRECTION EVEN
                                                 button.previousValue = state ? CONSTANTS.ApiCommands.HVACSetAirDirection[this.accessory.airDirection] : button.previousValue;
