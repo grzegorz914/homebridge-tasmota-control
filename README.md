@@ -63,6 +63,8 @@ Homebridge plugin for Tasmota flashed devices.
       * Presets `ACTIV/UNACTIV`.
       * Room temperature.
       * Outdoor temperature.
+  * Functions:
+    * Frost protect    
 
 * Supported relay devices:
   * Light - `Power ON/OFF`, `Dimmer`, `Color Temperature`, `Hue`, `Saturation`
@@ -100,7 +102,7 @@ Homebridge plugin for Tasmota flashed devices.
 | `miElHvac.temperatureSensorOutdoor` | This enable extra `Outdoor` temperature sensors to use with automations in HomeKit app. |
 | `miElHvac.presets` | Array of presets sensors. |
 | `miElHvac.presets.name` | Here You can schange the `Preset Name` which is exposed to the `Homebridge/HomeKit`. |
-| `miElHvac.presets.mode` | Here set the operation mode . |
+| `miElHvac.presets.mode` | Here set the operation mode. |
 | `miElHvac.presets.setTemp` | Here set the target temperature. |
 | `miElHvac.presets.fanSpeed` | Here set the fan speed. |
 | `miElHvac.presets.swingV` | Here set the vane vertical direction. |
@@ -111,6 +113,9 @@ Homebridge plugin for Tasmota flashed devices.
 | `miElHvac.buttonsSensors.mode` | Here select button function mode. |
 | `miElHvac.buttonsSensors.displayType` | Here select display type in HomeKit, `0 - None/Disabled`, `1 - Outlet`, `2 - Switch`, `3 - Motion Sensor`, `4 - Occupancy Sensor`, `5 - Contact Sensor`. |
 | `miElHvac.buttonsSensors.namePrefix` | Here enable/disable the accessory name as a prefix for button/sensor name. |
+| `miElHvac.frostProtect.enable` | This activate frost protect function. |
+| `miElHvac.frostProtect.lowTemp` | Here set the low temperature at which device start to frost protect. |
+| `miElHvac.frostProtect.highTemp` | Here set the high temperature at which device start to frost protect. |
 | `relaysNamePrefix` | Here enable/disable the accessory name as a prefix for relays name. |
 | `relaysDisplayType` | Here select characteristic display type for relays which are exposed in the HomeKit app. |
 | `lightsNamePrefix` | Here enable/disable the accessory name as a prefix for lights name. |

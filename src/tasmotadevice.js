@@ -42,6 +42,13 @@ class TasmotaDevice extends EventEmitter {
         this.presets = miElHvac.presets || [];
         this.buttons = miElHvac.buttonsSensors || [];
 
+        //frost protect
+        const frostProtect = miElHvac.frostProtect ?? {};
+        this.frostProtectEnable = frostProtect.enable || false;
+        this.frostProtectLowTemp = frostProtect.lowTemp || 14;
+        this.frostProtectHighTemp = frostProtect.highTemp || 16;
+        this.frostProtectActive = false;
+
         //files
         this.defaultHeatingSetTemperatureFile = defaultHeatingSetTemperatureFile;
         this.defaultCoolingSetTemperatureFile = defaultCoolingSetTemperatureFile;
@@ -396,6 +403,22 @@ class TasmotaDevice extends EventEmitter {
                         const updateDefCool = operationMode === 'auto' || operationMode === 'cool' ? this.miElHvacService.updateCharacteristic(Characteristic.CoolingThresholdTemperature, operationMode === 'auto' ? defaultCoolingSetTemperature : setTemperature) : false;
                         const updateDefHeat = operationMode === 'auto' || operationMode === 'heat' ? this.miElHvacService.updateCharacteristic(Characteristic.HeatingThresholdTemperature, operationMode === 'auto' ? defaultHeatingSetTemperature : setTemperature) : false;
                         const updateRS = modelSupportsFanSpeed ? this.miElHvacService.updateCharacteristic(Characteristic.RotationSpeed, this.accessory.fanSpeed) : false;
+
+                        if (this.frostProtectEnable) {
+                            if (roomTemperature <= this.frostProtectLowTemp && !power) {
+                                this.miElHvacService
+                                    .setCharacteristic(Characteristic.Active, true)
+                                    .setCharacteristic(Characteristic.TargetHeaterCoolerState, 1)
+                                    .setCharacteristic(Characteristic.HeatingThresholdTemperature, this.frostProtectHighTemp);
+                                this.frostProtectActive = true;
+
+                            };
+
+                            if (roomTemperature >= this.frostProtectHighTemp && this.frostProtectActive) {
+                                this.miElHvacService.setCharacteristic(Characteristic.Active, false);
+                                this.frostProtectActive = false;
+                            };
+                        };
                     };
 
                     if (this.roomTemperatureSensorService) {

@@ -738,6 +738,39 @@
                       }
                     }
                   }
+                },
+                "frostProtect": {
+                  "title": "Frost Protect",
+                  "type": "object",
+                  "properties": {
+                    "enable": {
+                      "title": "Activate",
+                      "type": "boolean",
+                      "default": false,
+                      "description": "This enable frost protect function.",
+                      "required": true
+                    },
+                    "lowTemp": {
+                      "title": "Low Temperature",
+                      "type": "number",
+                      "minimum": 4,
+                      "maximum": 14,
+                      "multipleOf": 0.5,
+                      "default": 14,
+                      "description": "Here set the low temperature at which device start to frost protect.",
+                      "required": true
+                    },
+                    "highTemp": {
+                      "title": "High Temperature",
+                      "type": "number",
+                      "minimum": 6,
+                      "maximum": 16,
+                      "multipleOf": 0.5,
+                      "default": 16,
+                      "description": "Here set the high temperature at which device will be disable.",
+                      "required": true
+                    }
+                  }
                 }
               }
             },
@@ -885,7 +918,8 @@
                       "items": [
                         "devices[].miElHvac.temperatureSensor",
                         "devices[].miElHvac.temperatureSensorOutdoor"
-                      ]
+                      ],
+                      "description": "In this section You can enable extra temperature sensors."
                     },
                     {
                       "key": "devices[].miElHvac",
@@ -909,7 +943,8 @@
                             "devices[].miElHvac.presets[].namePrefix"
                           ]
                         }
-                      ]
+                      ],
+                      "description": "In this section You can create presets."
                     },
                     {
                       "key": "devices[].miElHvac",
@@ -929,7 +964,21 @@
                             "devices[].miElHvac.buttonsSensors[].namePrefix"
                           ]
                         }
-                      ]
+                      ],
+                      "description": "In this section You can create buttons and sensors."
+                    },
+                    {
+                      "key": "devices[].miElHvac.frostProtect",
+                      "type": "section",
+                      "title": "Frost Protect",
+                      "expandable": true,
+                      "expanded": false,
+                      "items": [
+                        "devices[].miElHvac.frostProtect.enable",
+                        "devices[].miElHvac.frostProtect.lowTemp",
+                        "devices[].miElHvac.frostProtect.highTemp"
+                      ],
+                      "description": "In this section You can enable frost protect control."
                     }
                   ]
                 },

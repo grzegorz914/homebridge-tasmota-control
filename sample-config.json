@@ -51,6 +51,11 @@
               }
             ]
           },
+          "frostProtect": {
+            "enable": false,
+            "lowTemp": 14,
+            "highTemp": 16
+          },
           "relaysNamePrefix": false,
           "relaysDisplayType": 0,
           "lightsNamePrefix": false,
