@@ -263,6 +263,7 @@ class TasmotaDevice extends EventEmitter {
                     const prohibit = miElHvac.Prohibit ?? 'Unknown';
                     const airDirection = miElHvac.AirDirection ?? 'Unknown';
                     const compressor = miElHvac.Compressor === 'on' ?? false;
+                    const compressorFrequency = miElHvac.CompressorFrequency ?? 0;
                     const operationPower = miElHvac.OperationPower ?? 0;
                     const operationEnergy = miElHvac.OperationEnergy ?? 0;
                     const swingMode = vaneVerticalDirection === 'swing' && vaneHorizontalDirection === 'swing' ? 1 : 0;
@@ -296,6 +297,7 @@ class TasmotaDevice extends EventEmitter {
                         airDirection: airDirection,
                         swingMode: swingMode,
                         compressor: compressor,
+                        compressorFrequency: compressorFrequency,
                         operationPower: operationPower,
                         operationEnergy: operationEnergy,
                         defaultCoolingSetTemperature: defaultCoolingSetTemperature,

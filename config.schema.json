@@ -186,11 +186,12 @@
                         "type": "string",
                         "placeholder": "Preset name",
                         "description": "Your own name displayed in Homebridge/HomeKit app.",
-                        "required": true
+                        "required": false
                       },
                       "mode": {
                         "title": "Operation Mode",
                         "type": "string",
+                        "default": "auto",
                         "oneOf": [
                           {
                             "title": "HEAT",
@@ -239,6 +240,7 @@
                       "fanSpeed": {
                         "title": "Fan Speed",
                         "type": "string",
+                        "default": "auto",
                         "oneOf": [
                           {
                             "title": "AUTO",
@@ -283,6 +285,7 @@
                       "swingV": {
                         "title": "Vane Vertical Direction",
                         "type": "string",
+                        "default": "auto",
                         "oneOf": [
                           {
                             "title": "AUTO",
@@ -333,6 +336,7 @@
                       "swingH": {
                         "title": "Vane Horizontal Direction",
                         "type": "string",
+                        "default": "swing",
                         "oneOf": [
                           {
                             "title": "LEFT",
@@ -448,13 +452,14 @@
                         "type": "string",
                         "placeholder": "Button name",
                         "description": "Your own name displayed in Homebridge/HomeKit app.",
-                        "required": true
+                        "required": false
                       },
                       "mode": {
                         "title": "Mode",
                         "type": "integer",
                         "minimum": 0,
                         "maximum": 53,
+                        "default": 0,
                         "description": "Here select function.",
                         "oneOf": [
                           {
@@ -748,7 +753,7 @@
                       "type": "boolean",
                       "default": false,
                       "description": "This enable frost protect function.",
-                      "required": true
+                      "required": false
                     },
                     "lowTemp": {
                       "title": "Low Temperature",
@@ -758,7 +763,7 @@
                       "multipleOf": 0.5,
                       "default": 14,
                       "description": "Here set the low temperature at which device start to frost protect.",
-                      "required": true
+                      "required": false
                     },
                     "highTemp": {
                       "title": "High Temperature",
@@ -768,7 +773,7 @@
                       "multipleOf": 0.5,
                       "default": 16,
                       "description": "Here set the high temperature at which device will be disable.",
-                      "required": true
+                      "required": false
                     }
                   }
                 }
