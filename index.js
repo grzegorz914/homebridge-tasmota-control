@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const TasmotaDevice = require('./src/tasmotadevice.js');
+const ImpulseGenerator = require('./src/impulsegenerator.js');
 const CONSTANTS = require('./src/constants.json');
 
 class tasmotaPlatform {
@@ -24,19 +25,23 @@ class tasmotaPlatform {
 
     api.on('didFinishLaunching', async () => {
       for (const device of config.devices) {
-        if (!device.name || !device.host) {
-          log.warn(`Device Name: ${device.name ? 'OK' : device.name}, host: ${device.host ? 'OK' : device.host}, in config wrong or missing.`);
+        const deviceName = device.name;
+        const host = device.host;
+
+        if (!deviceName || !host) {
+          log.warn(`Device Name: ${deviceName ? 'OK' : deviceName}, host: ${host ? 'OK' : host}, in config wrong or missing.`);
           return;
         }
 
         //debug config
-        const debug = device.enableDebugMode ? log.info(`Device: ${device.host} ${device.name}, did finish launching.`) : false;
+        const enableDebugMode = device.enableDebugMode || false;
+        const debug = enableDebugMode ? log.info(`Device: ${host} ${deviceName}, did finish launching.`) : false;
         const config = {
           ...device,
           user: 'removed',
           passwd: 'removed'
         };
-        const debug1 = device.enableDebugMode ? log.info(`Device: ${device.host} ${device.name}, Config: ${JSON.stringify(config, null, 2)}`) : false;
+        const debug1 = enableDebugMode ? log.info(`Device: ${host} ${deviceName}, Config: ${JSON.stringify(config, null, 2)}`) : false;
 
         //check files exists, if not then create it
         const postFix = device.host.split('.').join('');
@@ -56,7 +61,7 @@ class tasmotaPlatform {
             }
           });
         } catch (error) {
-          log.error(`Device: ${device.host} ${device.name}, prepare files error: ${error}`);
+          log.error(`Device: ${host} ${deviceName}, Prepare files error: ${error}`);
           return;
         }
 
@@ -66,30 +71,44 @@ class tasmotaPlatform {
           const tasmotaDevice = new TasmotaDevice(api, device, miElHvac, defaultHeatingSetTemperatureFile, defaultCoolingSetTemperatureFile);
           tasmotaDevice.on('publishAccessory', (accessory) => {
             api.publishExternalAccessories(CONSTANTS.PluginName, [accessory]);
-            log.success(`Device: ${device.host} ${device.name}, published as external accessory.`);
+            log.success(`Device: ${host} ${deviceName}, Published as external accessory.`);
           })
             .on('devInfo', (devInfo) => {
               log.info(devInfo);
             })
             .on('success', (message) => {
-              log.success(`Device: ${device.host} ${device.name}, ${message}`);
+              log.success(`Device: ${host} ${deviceName}, ${message}`);
             })
             .on('message', (message) => {
-              log.info(`Device: ${device.host} ${device.name}, ${message}`);
+              log.info(`Device: ${host} ${deviceName}, ${message}`);
             })
             .on('debug', (debug) => {
-              log.info(`Device: ${device.host} ${device.name}, debug: ${debug}`);
+              log.info(`Device: ${host} ${deviceName}, debug: ${debug}`);
             })
             .on('warn', (warn) => {
-              log.warn(`Device: ${device.host} ${device.name}: ${warn}`);
+              log.warn(`Device: ${host} ${deviceName}: ${warn}`);
             })
             .on('error', async (error) => {
-              log.error(`Device: ${device.host} ${device.name}, ${error}`);
+              log.error(`Device: ${host} ${deviceName}, ${error}`);
             });
 
-          await tasmotaDevice.start();
+          //create impulse generator
+          const impulseGenerator = new ImpulseGenerator();
+          impulseGenerator.on('start', async () => {
+            try {
+              await tasmotaDevice.start();
+              impulseGenerator.stop();
+            } catch (error) {
+              log.error(`Device: ${host} ${deviceName}, ${error}, trying again.`);
+            };
+          }).on('state', (state) => {
+            const debug = enableDebugMode ? state ? log.info(`Device: ${host} ${deviceName}, Start impulse generator started.`) : log.info(`Device: ${host} ${deviceName}, Start impulse generator stopped.`) : false;
+          });
+
+          //start impulse generator
+          impulseGenerator.start([{ name: 'start', sampling: 45000 }]);
         } catch (error) {
-          log.error(`Device: ${device.host} ${device.name}, did finish launch error: ${error}.`);
+          log.error(`Device: ${host} ${deviceName}, Did finish launch error: ${error}.`);
         }
       };
     });
