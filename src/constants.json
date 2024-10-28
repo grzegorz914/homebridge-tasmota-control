@@ -38,6 +38,7 @@
         },
         "HVACSetTemp": "HVACSetTemp%20",
         "HVACRemoteTemp": "HVACRemoteTemp%20",
+        "HVACRemoteTempClearTime": "HVACRemoteTempClearTime%20",
         "HVACSetSwingV": {
             "auto": "HVACSetSwingV%20auto",
             "up": "HVACSetSwingV%20up",

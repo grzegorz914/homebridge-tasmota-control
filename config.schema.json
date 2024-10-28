@@ -176,6 +176,13 @@
                   "description": "This enable extra outdoor temperature sensor to use with automations in HomeKit app.",
                   "required": false
                 },
+                "remoteTemperatureStateSensor": {
+                  "title": "Remote",
+                  "type": "boolean",
+                  "default": false,
+                  "description": "This enable extra remote temperature sensor state to use with automations in HomeKit app.",
+                  "required": false
+                },
                 "presets": {
                   "title": "Presets",
                   "type": "array",
@@ -923,7 +930,8 @@
                       "expanded": false,
                       "items": [
                         "devices[].miElHvac.temperatureSensor",
-                        "devices[].miElHvac.temperatureSensorOutdoor"
+                        "devices[].miElHvac.temperatureSensorOutdoor",
+                        "devices[].miElHvac.remoteTemperatureStateSensor"
                       ],
                       "description": "In this section You can enable extra temperature sensors."
                     },

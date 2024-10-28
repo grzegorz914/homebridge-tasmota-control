@@ -98,8 +98,9 @@ Homebridge plugin for Tasmota flashed devices.
 | `miElHvac.heatDryFanMode` | Here select the operatiing mode for `Heat`, only for Mitsubishio AC. |
 | `miElHvac.coolDryFanMode` | Here select the operatiing mode for `Cool`, only for Mitsubishio AC. |
 | `miElHvac.autoDryFanMode` | Here select the operatiing mode for `Auto`, only for Mitsubishio AC. |
-| `miElHvac.temperatureSensor` | This enable extra `Room` temperature sensors to use with automations in HomeKit app. |
-| `miElHvac.temperatureSensorOutdoor` | This enable extra `Outdoor` temperature sensors to use with automations in HomeKit app. |
+| `miElHvac.temperatureSensor` | This enable extra `Room` temperature sensor to use with automations in HomeKit app. |
+| `miElHvac.temperatureSensorOutdoor` | This enable extra `Outdoor` temperature sensor to use with automations in HomeKit app. |
+| `miElHvac.remoteTemperatureStateSensor` | This enable extra `Remote` temperature state sensor to use with automations in HomeKit app. |
 | `miElHvac.presets` | Array of presets sensors. |
 | `miElHvac.presets.name` | Here You can schange the `Preset Name` which is exposed to the `Homebridge/HomeKit`. |
 | `miElHvac.presets.mode` | Here set the operation mode. |

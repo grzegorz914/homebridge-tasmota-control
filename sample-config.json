@@ -30,6 +30,7 @@
             "autoDryFanMode": 1,
             "temperatureSensor": false,
             "temperatureSensorOutdoor": false,
+            "remoteTemperatureStateSensor": false,
             "presets": [
               {
                 "name": "Name",

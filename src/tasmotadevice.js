@@ -39,6 +39,7 @@ class TasmotaDevice extends EventEmitter {
         this.autoDryFanMode = miElHvac.autoDryFanMode || 1; //NONE, COOL, DRY, FAN
         this.temperatureSensor = miElHvac.temperatureSensor || false;
         this.temperatureSensorOutdoor = miElHvac.temperatureSensorOutdoor || false;
+        this.remoteTemperatureStateSensor = miElHvac.remoteTemperatureStateSensor || false;
         this.presets = miElHvac.presets || [];
         this.buttons = miElHvac.buttonsSensors || [];
 
@@ -271,6 +272,7 @@ class TasmotaDevice extends EventEmitter {
                     const swingMode = vaneVerticalDirection === 'swing' && vaneHorizontalDirection === 'swing' ? 1 : 0;
                     const defaultCoolingSetTemperature = parseFloat(await this.readData(this.defaultCoolingSetTemperatureFile));
                     const defaultHeatingSetTemperature = parseFloat(await this.readData(this.defaultHeatingSetTemperatureFile));
+                    const remoteTemperatureSensor = miElHvac.RemoteTemperatureSensor ?? false; //ON, OFF
 
                     const modelSupportsHeat = true;
                     const modelSupportsDry = true;
@@ -304,6 +306,7 @@ class TasmotaDevice extends EventEmitter {
                         operationEnergy: operationEnergy,
                         defaultCoolingSetTemperature: defaultCoolingSetTemperature,
                         defaultHeatingSetTemperature: defaultHeatingSetTemperature,
+                        remoteTemperatureSensor: remoteTemperatureSensor,
                         modelSupportsHeat: modelSupportsHeat,
                         modelSupportsDry: modelSupportsDry,
                         modelSupportsCool: modelSupportsCool,
@@ -433,6 +436,11 @@ class TasmotaDevice extends EventEmitter {
                     if (this.outdoorTemperatureSensorService) {
                         this.outdoorTemperatureSensorService
                             .updateCharacteristic(Characteristic.CurrentTemperature, outdoorTemperature)
+                    };
+
+                    if (this.remoteTemperatureStateSensorService) {
+                        this.remoteTemperatureStateSensorService
+                            .updateCharacteristic(Characteristic.ContactSensorState, remoteTemperatureSensor)
                     };
 
                     //update presets state
@@ -1095,7 +1103,7 @@ class TasmotaDevice extends EventEmitter {
                     //temperature sensor services
                     if (this.temperatureSensor && this.accessory.roomTemperature !== null) {
                         const debug = this.enableDebugMode ? this.emit('debug', `Prepare room temperature sensor service`) : false;
-                        this.roomTemperatureSensorService = new Service.TemperatureSensor(`${serviceName} Room`, `Room Temperature Sensor ${deviceId}`);
+                        this.roomTemperatureSensorService = new Service.TemperatureSensor(`${serviceName} Room`, `Room Temperature Sensor`);
                         this.roomTemperatureSensorService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                         this.roomTemperatureSensorService.setCharacteristic(Characteristic.ConfiguredName, `${accessoryName} Room`);
                         this.roomTemperatureSensorService.getCharacteristic(Characteristic.CurrentTemperature)
@@ -1111,9 +1119,9 @@ class TasmotaDevice extends EventEmitter {
                         accessory.addService(this.roomTemperatureSensorService);
                     };
 
-                    if (this.temperatureSensorOutdoor && hasOutdoorTemperature && this.accessory.outdoorTemperature !== null) {
+                    if (this.temperatureSensorOutdoor && this.accessory.hasOutdoorTemperature && this.accessory.outdoorTemperature !== null) {
                         const debug = this.enableDebugMode ? this.emit('debug', `Prepare outdoor temperature sensor service`) : false;
-                        this.outdoorTemperatureSensorService = new Service.TemperatureSensor(`${serviceName} Outdoor`, `Outdoor Temperature Sensor ${deviceId}`);
+                        this.outdoorTemperatureSensorService = new Service.TemperatureSensor(`${serviceName} Outdoor`, `Outdoor Temperature Sensor`);
                         this.outdoorTemperatureSensorService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                         this.outdoorTemperatureSensorService.setCharacteristic(Characteristic.ConfiguredName, `${accessoryName} Outdoor`);
                         this.outdoorTemperatureSensorService.getCharacteristic(Characteristic.CurrentTemperature)
@@ -1127,6 +1135,19 @@ class TasmotaDevice extends EventEmitter {
                                 return state;
                             })
                         accessory.addService(this.outdoorTemperatureSensorService);
+                    };
+
+                    if (this.remoteTemperatureStateSensor) {
+                        const debug = this.enableDebugMode ? this.emit('debug', `Prepare remote temperature state sensor service`) : false;
+                        this.remoteTemperatureStateSensorService = new Service.ContactSensor(`${serviceName} Remote Sensor State`, `Remote Temperature State Sensor`);
+                        this.remoteTemperatureStateSensorService.addOptionalCharacteristic(Characteristic.ConfiguredName);
+                        this.remoteTemperatureStateSensorService.setCharacteristic(Characteristic.ConfiguredName, `${accessoryName} Remote Sensor State`);
+                        this.remoteTemperatureStateSensorService.getCharacteristic(Characteristic.ContactSensorState)
+                            .onGet(async () => {
+                                const state = this.accessory.remoteTemperatureSensor;
+                                return state;
+                            })
+                        accessory.addService(this.remoteTemperatureStateSensorService);
                     };
 
                     //presets services
