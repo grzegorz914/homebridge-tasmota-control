@@ -272,7 +272,8 @@ class TasmotaDevice extends EventEmitter {
                     const swingMode = vaneVerticalDirection === 'swing' && vaneHorizontalDirection === 'swing' ? 1 : 0;
                     const defaultCoolingSetTemperature = parseFloat(await this.readData(this.defaultCoolingSetTemperatureFile));
                     const defaultHeatingSetTemperature = parseFloat(await this.readData(this.defaultHeatingSetTemperatureFile));
-                    const remoteTemperatureSensor = miElHvac.RemoteTemperatureSensor ?? false; //ON, OFF
+                    const remoteTemperatureSensorState = miElHvac.RemoteTemperatureSensorState ?? false; //ON, OFF
+                    const remoteTemperatureSensorAutoClearTime = miElHvac.RemoteTemperatureSensorAutoClearTime ?? 0; //time in ms
 
                     const modelSupportsHeat = true;
                     const modelSupportsDry = true;
@@ -306,7 +307,8 @@ class TasmotaDevice extends EventEmitter {
                         operationEnergy: operationEnergy,
                         defaultCoolingSetTemperature: defaultCoolingSetTemperature,
                         defaultHeatingSetTemperature: defaultHeatingSetTemperature,
-                        remoteTemperatureSensor: remoteTemperatureSensor,
+                        remoteTemperatureSensorState: remoteTemperatureSensorState,
+                        remoteTemperatureSensorAutoClearTime: remoteTemperatureSensorAutoClearTime,
                         modelSupportsHeat: modelSupportsHeat,
                         modelSupportsDry: modelSupportsDry,
                         modelSupportsCool: modelSupportsCool,
@@ -440,7 +442,7 @@ class TasmotaDevice extends EventEmitter {
 
                     if (this.remoteTemperatureStateSensorService) {
                         this.remoteTemperatureStateSensorService
-                            .updateCharacteristic(Characteristic.ContactSensorState, remoteTemperatureSensor)
+                            .updateCharacteristic(Characteristic.ContactSensorState, remoteTemperatureSensorState)
                     };
 
                     //update presets state
@@ -1144,7 +1146,7 @@ class TasmotaDevice extends EventEmitter {
                         this.remoteTemperatureStateSensorService.setCharacteristic(Characteristic.ConfiguredName, `${accessoryName} Remote Sensor State`);
                         this.remoteTemperatureStateSensorService.getCharacteristic(Characteristic.ContactSensorState)
                             .onGet(async () => {
-                                const state = this.accessory.remoteTemperatureSensor;
+                                const state = this.accessory.remoteTemperatureSensorState;
                                 return state;
                             })
                         accessory.addService(this.remoteTemperatureStateSensorService);
