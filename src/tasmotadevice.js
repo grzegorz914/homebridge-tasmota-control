@@ -260,12 +260,15 @@ class TasmotaDevice extends EventEmitter {
                     const outdoorTemperature = miElHvac.OutdoorTemperature ?? null;
                     const setTemperature = miElHvac.SetTemperature;
                     const operationMode = miElHvac.Mode ?? 'Unknown';
+                    const operationModeStage = miElHvac.ModeStage ?? 'Unknown';
                     const fanSpeed = miElHvac.FanSpeed ?? 'Unknown';
+                    const fanSpeedStage = miElHvac.FanStage ?? 'Unknown';
                     const vaneVerticalDirection = miElHvac.SwingV ?? 'Unknown';
                     const vaneHorizontalDirection = miElHvac.SwingH ?? 'Unknown';
                     const prohibit = miElHvac.Prohibit ?? 'Unknown';
                     const airDirection = miElHvac.AirDirection ?? 'Unknown';
-                    const compressor = miElHvac.Compressor === 'on' ?? false;
+                    const preRunStage = miElHvac.PrerunStage ?? 'Unknown';
+                    const compressor = miElHvac.Compressor ?? 'Unknown';
                     const compressorFrequency = miElHvac.CompressorFrequency ?? 0;
                     const operationPower = miElHvac.OperationPower ?? 0;
                     const operationEnergy = miElHvac.OperationEnergy ?? 0;
@@ -296,11 +299,13 @@ class TasmotaDevice extends EventEmitter {
                         outdoorTemperature: outdoorTemperature,
                         setTemperature: setTemperature,
                         operationMode: operationMode,
+                        operationModeStage: operationModeStage,
                         vaneVerticalDirection: vaneVerticalDirection,
                         vaneHorizontalDirection: vaneHorizontalDirection,
                         prohibit: prohibit,
                         airDirection: airDirection,
                         swingMode: swingMode,
+                        preRunStage: preRunStage,
                         compressor: compressor,
                         compressorFrequency: compressorFrequency,
                         operationPower: operationPower,
@@ -326,37 +331,50 @@ class TasmotaDevice extends EventEmitter {
 
 
                     //operating mode
+                    const operationModeStageMap = {
+                        'manual': 0,
+                        'heat': 2,
+                        'dry': 1,
+                        'cool': 3,
+                        'fan_only': 1,
+                        'heat_isee': 2,
+                        'dry_isee': 1,
+                        'cool_isee': 3,
+                        'auto_fan': 1,
+                        'auto_heat': 2,
+                        'auto_cool': 3
+                    };
                     switch (operationMode) {
                         case 'heat':
-                            this.accessory.currentOperationMode = roomTemperature > setTemperature ? 1 : 2; //INACTIVE, IDLE, HEATING, COOLING
+                            this.accessory.currentOperationMode = [2, 1, 2, 3][operationModeStageMap[operationModeStage]]; //INACTIVE, IDLE, HEATING, COOLING
                             this.accessory.targetOperationMode = 1; //AUTO, HEAT, COOL
                             break;
                         case 'dry':
-                            this.accessory.currentOperationMode = 1;
+                            this.accessory.currentOperationMode = [1, 1, 2, 3][operationModeStageMap[operationModeStage]];
                             this.accessory.targetOperationMode = this.autoDryFanMode === 2 ? 0 : this.heatDryFanMode === 2 ? 1 : this.coolDryFanMode === 2 ? 2 : this.accessory.targetOperationMode ?? 0;
                             break;
                         case 'cool':
-                            this.accessory.currentOperationMode = roomTemperature < setTemperature ? 1 : 3;
+                            this.accessory.currentOperationMode = [3, 1, 2, 3][operationModeStageMap[operationModeStage]];
                             this.accessory.targetOperationMode = 2;
                             break;
                         case 'fan_only':
-                            this.accessory.currentOperationMode = 1;
+                            this.accessory.currentOperationMode = [1, 1, 2, 3][operationModeStageMap[operationModeStage]];
                             this.accessory.targetOperationMode = this.autoDryFanMode === 3 ? 0 : this.heatDryFanMode === 3 ? 1 : this.coolDryFanMode === 3 ? 2 : this.accessory.targetOperationMode ?? 0;
                             break;
                         case 'auto':
-                            this.accessory.currentOperationMode = roomTemperature > setTemperature ? 3 : roomTemperature < setTemperature ? 2 : 1;
+                            this.accessory.currentOperationMode = [2, 1, 2, 3][operationModeStageMap[operationModeStage]];
                             this.accessory.targetOperationMode = 0;
                             break;
                         case 'heat_isee':
-                            this.accessory.currentOperationMode = roomTemperature > setTemperature ? 1 : 2
+                            this.accessory.currentOperationMode = [2, 1, 2, 3][operationModeStageMap[operationModeStage]];
                             this.accessory.targetOperationMode = 1;
                             break;
                         case 'dry_isee':
-                            this.accessory.currentOperationMode = 1;
+                            this.accessory.currentOperationMode = [1, 1, 2, 3][operationModeStageMap[operationModeStage]];
                             this.accessory.targetOperationMode = this.autoDryFanMode === 2 ? 0 : this.heatDryFanMode === 2 ? 1 : this.coolDryFanMode === 2 ? 2 : this.accessory.targetOperationMode ?? 0;
                             break;
                         case 'cool_isee':
-                            this.accessory.currentOperationMode = roomTemperature < setTemperature ? 1 : 3;
+                            this.accessory.currentOperationMode = [3, 1, 2, 3][operationModeStageMap[operationModeStage]];
                             this.accessory.targetOperationMode = 2;
                             break;
                         default:
@@ -376,7 +394,7 @@ class TasmotaDevice extends EventEmitter {
                         '1': 2,
                         '2': 3,
                         '3': 4,
-                        '4': 5,
+                        '4': 5
                     };
                     if (modelSupportsFanSpeed) {
                         switch (numberOfFanSpeeds) {
@@ -603,18 +621,22 @@ class TasmotaDevice extends EventEmitter {
                     //log current state
                     if (!this.disableLogInfo) {
                         this.emit('message', `Power: ${power ? 'ON' : 'OFF'}`);
-                        const info = power ? this.emit('message', `Target operation mode: ${CONSTANTS.AirConditioner.OperationMode[this.accessory.targetOperationMode]}`) : false;
-                        const info1 = power ? this.emit('message', `Current operation mode: ${CONSTANTS.AirConditioner.CurrentOperationMode[this.accessory.currentOperationMode]}`) : false;
+                        const info = power ? this.emit('message', `Target operation mode: ${operationMode.toUpperCase()}`) : false;
+                        const info1 = power ? this.emit('message', `Current operation mode: ${operationModeStage.toUpperCase()}`) : false;
                         const info2 = power ? this.emit('message', `Target temperature: ${setTemperature}${temperatureUnit}`) : false;
                         const info3 = power ? this.emit('message', `Current temperature: ${roomTemperature}${temperatureUnit}`) : false;
                         const info4 = power && outdoorTemperature !== null ? this.emit('message', `Outdoor temperature: ${outdoorTemperature}${temperatureUnit}`) : false;
-                        const info5 = power && modelSupportsFanSpeed ? this.emit('message', `Fan speed: ${CONSTANTS.AirConditioner.FanSpeed[fanSpeed]}`) : false;
-                        const info6 = power && vaneHorizontalDirection !== 'Unknown' ? this.emit('message', `Vane horizontal: ${CONSTANTS.AirConditioner.HorizontalVane[vaneHorizontalDirection] ?? vaneHorizontalDirection}`) : false;
-                        const info7 = power && vaneVerticalDirection !== 'Unknown' ? this.emit('message', `Vane vertical: ${CONSTANTS.AirConditioner.VerticalVane[vaneVerticalDirection] ?? vaneVerticalDirection}`) : false;
-                        const info8 = power ? this.emit('message', `Swing mode: ${CONSTANTS.AirConditioner.SwingMode[swingMode]}`) : false;
-                        const info9 = power && vaneHorizontalDirection === 'isee' && airDirection !== 'Unknown' ? this.emit('message', `Air direction: ${CONSTANTS.AirConditioner.AirDirection[airDirection]}`) : false;
+                        const info5 = power && modelSupportsFanSpeed ? this.emit('message', `Target Fan speed: ${fanSpeed.toUpperCase()}`) : false;
+                        const info6 = power && modelSupportsFanSpeed ? this.emit('message', `Current Fan speed: ${fanSpeedStage.toUpperCase()}`) : false;
+                        const info7 = power && vaneHorizontalDirection !== 'Unknown' ? this.emit('message', `Vane horizontal: ${CONSTANTS.AirConditioner.HorizontalVane[vaneHorizontalDirection] ?? vaneHorizontalDirection}`) : false;
+                        const info8 = power && vaneVerticalDirection !== 'Unknown' ? this.emit('message', `Vane vertical: ${CONSTANTS.AirConditioner.VerticalVane[vaneVerticalDirection] ?? vaneVerticalDirection}`) : false;
+                        const info9 = power ? this.emit('message', `Swing mode: ${CONSTANTS.AirConditioner.SwingMode[swingMode]}`) : false;
+                        const info10 = power && vaneHorizontalDirection === 'isee' && airDirection !== 'Unknown' ? this.emit('message', `Air direction: ${CONSTANTS.AirConditioner.AirDirection[airDirection]}`) : false;
                         const info11 = power ? this.emit('message', `Prohibit: ${CONSTANTS.AirConditioner.Prohibit[prohibit]}`) : false;
-                        const info10 = power ? this.emit('message', `Temperature display unit: ${temperatureUnit}`) : false;
+                        const info12 = power ? this.emit('message', `Temperature display unit: ${temperatureUnit}`) : false;
+                        const info13 = power ? this.emit('message', `Compressor: ${compressor.toUpperCase()}`) : false;
+                        const info14 = power ? this.emit('message', `OperationPower: ${operationPower}W`) : false;
+                        const info15 = power ? this.emit('message', `OperationEnergy: ${operationEnergy}kWh`) : false;
                     };
                     break;
                 case false:
