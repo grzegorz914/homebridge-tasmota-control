@@ -31,6 +31,14 @@
             "temperatureSensor": false,
             "temperatureSensorOutdoor": false,
             "remoteTemperatureStateSensor": false,
+            "remoteTemperatureSensor": {
+              "enable": false,
+              "path": "http://192.168.1.1/tempsensor",
+              "refreshInterval": 5.0,
+              "auth": false,
+              "user": "user",
+              "passwd": "password"
+            },
             "presets": [
               {
                 "name": "Name",

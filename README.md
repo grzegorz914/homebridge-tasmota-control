@@ -101,6 +101,13 @@ Homebridge plugin for Tasmota flashed devices.
 | `miElHvac.temperatureSensor` | This enable extra `Room` temperature sensor to use with automations in HomeKit app. |
 | `miElHvac.temperatureSensorOutdoor` | This enable extra `Outdoor` temperature sensor to use with automations in HomeKit app. |
 | `miElHvac.remoteTemperatureStateSensor` | This enable extra `Remote` temperature state sensor to use with automations in HomeKit app. |
+| `miElHvac.remoteTemperatureSensor` | Object of remote temperature sensor. |
+| `miElHvac.remoteTemperatureSensor.enable` | This activate the function. |
+| `miElHvac.remoteTemperatureSensor.path` | Here set the path to the temperature sensor, the request need to return value. |
+| `miElHvac.remoteTemperatureSensor.refreshInterval` | Here set remote sensor refresh interval. |
+| `miElHvac.remoteTemperatureSensor.auth` | If enabled, authorizatins credentials will be used for remote sensor. |
+| `miElHvac.remoteTemperatureSensor.user` | Here set the authorization *Username*. |
+| `miElHvac.remoteTemperatureSensor.passwd` | Here set the authorization *Password*. |
 | `miElHvac.presets` | Array of presets sensors. |
 | `miElHvac.presets.name` | Here You can schange the `Preset Name` which is exposed to the `Homebridge/HomeKit`. |
 | `miElHvac.presets.mode` | Here set the operation mode. |
@@ -114,6 +121,7 @@ Homebridge plugin for Tasmota flashed devices.
 | `miElHvac.buttonsSensors.mode` | Here select button function mode. |
 | `miElHvac.buttonsSensors.displayType` | Here select display type in HomeKit, `0 - None/Disabled`, `1 - Outlet`, `2 - Switch`, `3 - Motion Sensor`, `4 - Occupancy Sensor`, `5 - Contact Sensor`. |
 | `miElHvac.buttonsSensors.namePrefix` | Here enable/disable the accessory name as a prefix for button/sensor name. |
+| `miElHvac.frostProtect` | Object of frost protect function. |
 | `miElHvac.frostProtect.enable` | This activate frost protect function. |
 | `miElHvac.frostProtect.lowTemp` | Here set the low temperature at which device start to frost protect. |
 | `miElHvac.frostProtect.highTemp` | Here set the high temperature at which device start to frost protect. |

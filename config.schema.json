@@ -177,11 +177,75 @@
                   "required": false
                 },
                 "remoteTemperatureStateSensor": {
-                  "title": "Remote",
+                  "title": "Remote State",
                   "type": "boolean",
                   "default": false,
-                  "description": "This enable extra remote temperature sensor state to use with automations in HomeKit app.",
+                  "description": "This enable extra remote temperature state sensor to use with automations in HomeKit app.",
                   "required": false
+                },
+                "remoteTemperatureSensor": {
+                  "title": "External Sensor",
+                  "type": "object",
+                  "properties": {
+                    "enable": {
+                      "title": "Activate",
+                      "type": "boolean",
+                      "default": false,
+                      "description": "This enable external remote sensor for A.C. device.",
+                      "required": false
+                    },
+                    "path": {
+                      "title": "Path",
+                      "type": "string",
+                      "format": "hostname",
+                      "placeholder": "http://192.168.1.1/tempsensor",
+                      "description": "Here set the path to the external temperature sensor.",
+                      "condition": {
+                        "functionBody": "return model.devices[arrayIndices].miElHvac.remoteTemperatureSensor.enable === true;"
+                      },
+                      "required": false
+                    },
+                    "refreshInterval": {
+                      "title": "Refresh Interval",
+                      "type": "number",
+                      "minimum": 1.0,
+                      "maximum": 600,
+                      "multipleOf": 0.5,
+                      "description": "Here set the sensor data refresh time in (sec).",
+                      "condition": {
+                        "functionBody": "return model.devices[arrayIndices].miElHvac.remoteTemperatureSensor.enable === true;"
+                      },
+                      "required": false
+                    },
+                    "auth": {
+                      "title": "Authorization",
+                      "type": "boolean",
+                      "default": false,
+                      "condition": {
+                        "functionBody": "return model.devices[arrayIndices].miElHvac.remoteTemperatureSensor.enable === true;"
+                      },
+                      "required": false
+                    },
+                    "user": {
+                      "title": "User",
+                      "type": "string",
+                      "placeholder": "username",
+                      "condition": {
+                        "functionBody": "return model.devices[arrayIndices].miElHvac.remoteTemperatureSensor.enable === true && model.devices[arrayIndices].miElHvac.remoteTemperatureSensor.auth === true;"
+                      },
+                      "required": false
+                    },
+                    "passwd": {
+                      "title": "Password",
+                      "type": "string",
+                      "placeholder": "password",
+                      "format": "password",
+                      "condition": {
+                        "functionBody": "return model.devices[arrayIndices].miElHvac.remoteTemperatureSensor.enable === true && model.devices[arrayIndices].miElHvac.remoteTemperatureSensor.auth === true;"
+                      },
+                      "required": false
+                    }
+                  }
                 },
                 "presets": {
                   "title": "Presets",
@@ -771,6 +835,9 @@
                       "multipleOf": 0.5,
                       "default": 14,
                       "description": "Here set the low temperature at which device start to frost protect.",
+                      "condition": {
+                        "functionBody": "return model.devices[arrayIndices].miElHvac.frostProtect.enable === true;"
+                      },
                       "required": false
                     },
                     "highTemp": {
@@ -781,6 +848,9 @@
                       "multipleOf": 0.5,
                       "default": 16,
                       "description": "Here set the high temperature at which device will be disable.",
+                      "condition": {
+                        "functionBody": "return model.devices[arrayIndices].miElHvac.frostProtect.enable === true;"
+                      },
                       "required": false
                     }
                   }
@@ -839,7 +909,7 @@
               "required": false
             },
             "refreshInterval": {
-              "title": "Refresh Interval (sec)",
+              "title": "Refresh Interval",
               "type": "number",
               "minimum": 0.5,
               "maximum": 60,
@@ -894,28 +964,6 @@
               "title": "{{ value.title }}",
               "items": [
                 {
-                  "key": "devices[]",
-                  "title": "Relays",
-                  "items": [
-                    "devices[].relaysDisplayType",
-                    "devices[].relaysNamePrefix"
-                  ]
-                },
-                {
-                  "key": "devices[]",
-                  "title": "Lights",
-                  "items": [
-                    "devices[].lightsNamePrefix"
-                  ]
-                },
-                {
-                  "key": "devices[]",
-                  "title": "Sensors",
-                  "items": [
-                    "devices[].sensorsNamePrefix"
-                  ]
-                },
-                {
                   "key": "devices[].miElHvac",
                   "title": "Mitsubishi AC",
                   "items": [
@@ -931,9 +979,26 @@
                       "items": [
                         "devices[].miElHvac.temperatureSensor",
                         "devices[].miElHvac.temperatureSensorOutdoor",
-                        "devices[].miElHvac.remoteTemperatureStateSensor"
-                      ],
-                      "description": "In this section You can enable extra temperature sensors."
+                        "devices[].miElHvac.remoteTemperatureStateSensor",
+                        {
+                          "key": "devices[].miElHvac.remoteTemperatureSensor",
+                          "type": "section",
+                          "title": "Remote Sensor",
+                          "expandable": true,
+                          "expanded": false,
+                          "items": [
+                            "devices[].miElHvac.remoteTemperatureSensor.enable",
+                            "devices[].miElHvac.remoteTemperatureSensor.path",
+                            "devices[].miElHvac.remoteTemperatureSensor.refreshInterval",
+                            "devices[].miElHvac.remoteTemperatureSensor.auth",
+                            "devices[].miElHvac.remoteTemperatureSensor.user",
+                            {
+                              "key": "devices[].miElHvac.remoteTemperatureSensor.passwd",
+                              "type": "password"
+                            }
+                          ]
+                        }
+                      ]
                     },
                     {
                       "key": "devices[].miElHvac",
@@ -957,8 +1022,7 @@
                             "devices[].miElHvac.presets[].namePrefix"
                           ]
                         }
-                      ],
-                      "description": "In this section You can create presets."
+                      ]
                     },
                     {
                       "key": "devices[].miElHvac",
@@ -978,8 +1042,7 @@
                             "devices[].miElHvac.buttonsSensors[].namePrefix"
                           ]
                         }
-                      ],
-                      "description": "In this section You can create buttons and sensors."
+                      ]
                     },
                     {
                       "key": "devices[].miElHvac.frostProtect",
@@ -991,9 +1054,30 @@
                         "devices[].miElHvac.frostProtect.enable",
                         "devices[].miElHvac.frostProtect.lowTemp",
                         "devices[].miElHvac.frostProtect.highTemp"
-                      ],
-                      "description": "In this section You can enable frost protect control."
+                      ]
                     }
+                  ]
+                },
+                {
+                  "key": "devices[]",
+                  "title": "Relays",
+                  "items": [
+                    "devices[].relaysDisplayType",
+                    "devices[].relaysNamePrefix"
+                  ]
+                },
+                {
+                  "key": "devices[]",
+                  "title": "Lights",
+                  "items": [
+                    "devices[].lightsNamePrefix"
+                  ]
+                },
+                {
+                  "key": "devices[]",
+                  "title": "Sensors",
+                  "items": [
+                    "devices[].sensorsNamePrefix"
                   ]
                 },
                 {

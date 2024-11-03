@@ -40,7 +40,20 @@ class TasmotaDevice extends EventEmitter {
         this.temperatureSensor = miElHvac.temperatureSensor || false;
         this.temperatureSensorOutdoor = miElHvac.temperatureSensorOutdoor || false;
         this.remoteTemperatureStateSensor = miElHvac.remoteTemperatureStateSensor || false;
+
+        //external sensor
+        const remoteTemperatureSensor = miElHvac.remoteTemperatureSensor ?? {};
+        const remoteTemperatureSensorEnable = remoteTemperatureSensor.enable || false;
+        const remoteTemperatureSensorPath = remoteTemperatureSensor.path;
+        const remoteTemperatureSensorRefreshInterval = remoteTemperatureSensor.refreshInterval || 5.0;
+        const remoteTemperatureSensorAuth = remoteTemperatureSensor.auth || false;
+        const remoteTemperatureSensorUser = remoteTemperatureSensor.user;
+        const remoteTemperatureSensorPasswd = remoteTemperatureSensor.passwd;
+
+        //presets
         this.presets = miElHvac.presets || [];
+
+        //buttons
         this.buttons = miElHvac.buttonsSensors || [];
 
         //frost protect
@@ -136,11 +149,34 @@ class TasmotaDevice extends EventEmitter {
             }
         });
 
+        //axios instance remoteTemp
+        if (remoteTemperatureSensorEnable) {
+            const path = remoteTemperatureSensorPath;
+            this.axiosInstanceRemoteTemp = axios.create({
+                method: 'GET',
+                baseURL: path,
+                timeout: remoteTemperatureSensorRefreshInterval > 10 ? 10 : remoteTemperatureSensorAuth,
+                withCredentials: remoteTemperatureSensorAuth,
+                auth: {
+                    username: remoteTemperatureSensorUser,
+                    password: remoteTemperatureSensorPasswd
+                }
+            });
+        };
+
         //impulse generator
+        this.timers = [{ name: 'checkDeviceState', sampling: this.refreshInterval }]
+        const remoteTempSensor = remoteTemperatureSensorEnable ? this.timers.push({ name: 'updateRemoteTemp', sampling: remoteTemperatureSensorRefreshInterval }) : false
         this.impulseGenerator = new ImpulseGenerator();
         this.impulseGenerator.on('checkDeviceState', async () => {
             try {
                 await this.checkDeviceState();
+            } catch (error) {
+                this.emit('error', `Impulse generator error: ${error}`);
+            };
+        }).on('updateRemoteTemp', async () => {
+            try {
+                await this.updateRemoteTemp();
             } catch (error) {
                 this.emit('error', `Impulse generator error: ${error}`);
             };
@@ -176,7 +212,7 @@ class TasmotaDevice extends EventEmitter {
             this.startPrepareAccessory = false;
 
             //start update data
-            await this.impulseGenerator.start([{ name: 'checkDeviceState', sampling: this.refreshInterval }]);
+            await this.impulseGenerator.start(this.timers);
             return;
         } catch (error) {
             throw new Error(`Start error: ${error}`);
@@ -857,6 +893,21 @@ class TasmotaDevice extends EventEmitter {
             throw new Error(`Check state error: ${error.message || error}`);
         };
     };
+
+    async updateRemoteTemp() {
+        try {
+            //get remote temp
+            const rmoteTempData = await this.axiosInstanceRemoteTemp();
+            const remoteTemp = rmoteTempData.data ?? false;
+            const debug = this.enableDebugMode ? this.emit('debug', `Remote temp: ${JSON.stringify(remoteTemp, null, 2)}`) : false;
+
+            //set remote temp
+            const temp = `${CONSTANTS.ApiCommands.HVACRemoteTemp}${remoteTemp}`
+            await this.axiosInstance(temp);
+        } catch (error) {
+            throw new Error(`Update remote temperature error: ${error.message ?? error}`);
+        };
+    }
 
     deviceInfo() {
         this.emit('devInfo', `----- ${this.deviceName} -----`);
