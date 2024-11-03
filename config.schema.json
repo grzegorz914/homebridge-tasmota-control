@@ -263,7 +263,6 @@
                       "mode": {
                         "title": "Operation Mode",
                         "type": "string",
-                        "default": "auto",
                         "oneOf": [
                           {
                             "title": "HEAT",
@@ -297,7 +296,7 @@
                           }
                         ],
                         "description": "Select the operation mode.",
-                        "required": true
+                        "required": false
                       },
                       "setTemp": {
                         "title": "Target Temperature",
@@ -305,14 +304,15 @@
                         "minimum": 10,
                         "maximum": 31,
                         "multipleOf": 0.5,
-                        "default": 21,
                         "description": "Here set the target temperature.",
-                        "required": true
+                        "condition": {
+                          "functionBody": "return model.devices[arrayIndices].miElHvac.presets[arrayIndices].mode === heat || return model.devices[arrayIndices].miElHvac.presets[arrayIndices].mode === cool || return model.devices[arrayIndices].miElHvac.presets[arrayIndices].mode === auto;"
+                        },
+                        "required": false
                       },
                       "fanSpeed": {
                         "title": "Fan Speed",
                         "type": "string",
-                        "default": "auto",
                         "oneOf": [
                           {
                             "title": "AUTO",
@@ -352,12 +352,11 @@
                           }
                         ],
                         "description": "Select the fan speed.",
-                        "required": true
+                        "required": false
                       },
                       "swingV": {
                         "title": "Vane Vertical Direction",
                         "type": "string",
-                        "default": "auto",
                         "oneOf": [
                           {
                             "title": "AUTO",
@@ -403,12 +402,11 @@
                           }
                         ],
                         "description": "Select the vane vertical direction.",
-                        "required": true
+                        "required": false
                       },
                       "swingH": {
                         "title": "Vane Horizontal Direction",
                         "type": "string",
-                        "default": "swing",
                         "oneOf": [
                           {
                             "title": "LEFT",
@@ -454,7 +452,7 @@
                           }
                         ],
                         "description": "Select the vane horizontal direction.",
-                        "required": true
+                        "required": false
                       },
                       "displayType": {
                         "title": "Type",
@@ -531,7 +529,6 @@
                         "type": "integer",
                         "minimum": 0,
                         "maximum": 53,
-                        "default": 0,
                         "description": "Here select function.",
                         "oneOf": [
                           {
@@ -757,7 +754,7 @@
                             ]
                           }
                         ],
-                        "required": true
+                        "required": false
                       },
                       "displayType": {
                         "title": "Type",
@@ -878,7 +875,7 @@
                 }
               ],
               "description": "Here select characteristic display type for relays which are exposed in the HomeKit app.",
-              "required": true
+              "required": false
             },
             "relaysNamePrefix": {
               "title": "Name Prefix",
