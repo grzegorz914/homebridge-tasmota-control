@@ -105,7 +105,7 @@ class TasmotaDevice extends EventEmitter {
                 const log = sensorDisplayType === 0 ? false : this.emit('warn', `Sensor Name: ${sensorName ? sensorName : 'Missing'}, Mode: ${sensorMode ? sensorMode : 'Missing'}.`);
             };
         }
-        this.sensorsConfigured = this.sensorsConfigured.length || 0;
+        this.sensorsConfiguredCount = this.sensorsConfigured.length || 0;
 
         //frost protect
         const frostProtect = miElHvac.frostProtect ?? {};
