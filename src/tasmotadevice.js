@@ -40,9 +40,9 @@ class TasmotaDevice extends EventEmitter {
         const remoteTemperatureSensorPasswd = remoteTemperatureSensor.passwd;
 
         //presets
-        this.presets = miElHvac.presets || [];
+        const presets = miElHvac.presets || [];
         this.presetsConfigured = [];
-        for (const preset of this.presets) {
+        for (const preset of presets) {
             const presetName = preset.name ?? false;
             const presetDisplayType = preset.displayType ?? 0;
             const presetNamePrefix = preset.namePrefix ?? false;
@@ -62,9 +62,9 @@ class TasmotaDevice extends EventEmitter {
         this.presetsConfiguredCount = this.presetsConfigured.length || 0;
 
         //buttons
-        this.buttons = miElHvac.buttons || [];
+        const buttons = miElHvac.buttons || [];
         this.buttonsConfigured = [];
-        for (const button of this.buttons) {
+        for (const button of buttons) {
             const buttonName = button.name ?? false;
             const buttonMode = button.mode ?? -1;
             const buttonDisplayType = button.displayType ?? 0;
@@ -85,9 +85,9 @@ class TasmotaDevice extends EventEmitter {
         this.buttonsConfiguredCount = this.buttonsConfigured.length || 0;
 
         //sensors
-        this.sensors = miElHvac.sensors || [];
+        const sensors = miElHvac.sensors || [];
         this.sensorsConfigured = [];
-        for (const sensor of this.buttons) {
+        for (const sensor of sensors) {
             const sensorName = sensor.name ?? false;
             const sensorMode = sensor.mode ?? -1;
             const sensorDisplayType = sensor.displayType ?? 0;
