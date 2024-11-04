@@ -70,7 +70,7 @@ class TasmotaDevice extends EventEmitter {
             const buttonDisplayType = button.displayType ?? 0;
             const buttonNamePrefix = button.namePrefix ?? false;
             if (buttonName && buttonMode >= 0 && buttonDisplayType > 0) {
-                const buttonServiceType = ['', Service.Outlet, Service.Switch, Service.MotionSensor, Service.OccupancySensor, Service.ContactSensor][buttonDisplayType];
+                const buttonServiceType = ['', Service.Outlet, Service.Switch][buttonDisplayType];
                 const buttonCharacteristicType = ['', Characteristic.On, Characteristic.On][buttonDisplayType];
                 button.namePrefix = buttonNamePrefix;
                 button.serviceType = buttonServiceType;
@@ -93,7 +93,7 @@ class TasmotaDevice extends EventEmitter {
             const sensorDisplayType = sensor.displayType ?? 0;
             const sensorNamePrefix = sensor.namePrefix ?? false;
             if (sensorName && sensorMode >= 0 && sensorDisplayType > 0) {
-                const sensorServiceType = ['', Service.Outlet, Service.Switch, Service.MotionSensor, Service.OccupancySensor, Service.ContactSensor][sensorDisplayType];
+                const sensorServiceType = ['', Service.MotionSensor, Service.OccupancySensor, Service.ContactSensor][sensorDisplayType];
                 const sensorCharacteristicType = ['', Characteristic.MotionDetected, Characteristic.OccupancyDetected, Characteristic.ContactSensorState][sensorDisplayType];
                 sensor.namePrefix = sensorNamePrefix;
                 sensor.serviceType = sensorServiceType;
@@ -1635,7 +1635,7 @@ class TasmotaDevice extends EventEmitter {
                             const serviceName = sensorNamePrefix ? `${accessoryName} ${sensorName}` : sensorName;
                             const serviceType = sensor.serviceType;
                             const characteristicType = sensor.characteristicType;
-                            const sensorService = new serviceType(serviceName, `Button ${i}`);
+                            const sensorService = new serviceType(serviceName, `Sensor ${i}`);
                             sensorService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                             sensorService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
                             sensorService.getCharacteristic(characteristicType)
