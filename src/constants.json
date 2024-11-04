@@ -19,16 +19,20 @@
         "ColorTemperature": "CT",
         "HSBColor": "HSBColor",
         "HSBHue": "HSBColor1",
-        "HSBSaturation": "HSBColor2",
-        "HVACSetMode": {
+        "HSBSaturation": "HSBColor2"
+    },
+    "MiElHVAC": {
+        "PowerOn": "Power%20on",
+        "PowerOff": "Power%20off",
+        "SetMode": {
             "heat": "HVACSetMode%20heat",
             "dry": "HVACSetMode%20dry",
             "cool": "HVACSetMode%20cool",
-            "fan_only": "HVACSetMode%20fan_only",
+            "fan": "HVACSetMode%20fan",
             "auto": "HVACSetMode%20auto",
             "purify": "HVACSetMode%20purify"
         },
-        "HVACSetFanSpeed": {
+        "SetFanSpeed": {
             "auto": "HVACSetFanSpeed%20auto",
             "quiet": "HVACSetFanSpeed%20quiet",
             "1": "HVACSetFanSpeed%201",
@@ -36,10 +40,8 @@
             "3": "HVACSetFanSpeed%203",
             "4": "HVACSetFanSpeed%204"
         },
-        "HVACSetTemp": "HVACSetTemp%20",
-        "HVACRemoteTemp": "HVACRemoteTemp%20",
-        "HVACRemoteTempClearTime": "HVACRemoteTempClearTime%20",
-        "HVACSetSwingV": {
+        "SetTemp": "HVACSetTemp%20",
+        "SetSwingV": {
             "auto": "HVACSetSwingV%20auto",
             "up": "HVACSetSwingV%20up",
             "up_middle": "HVACSetSwingV%20up_middle",
@@ -48,7 +50,7 @@
             "down_middle": "HVACSetSwingV%20down_middle",
             "swing": "HVACSetSwingV%20swing"
         },
-        "HVACSetSwingH": {
+        "SetSwingH": {
             "auto": "HVACSetSwingH%20auto",
             "left": "HVACSetSwingH%20left",
             "left_middle": "HVACSetSwingH%20left_middle",
@@ -58,12 +60,12 @@
             "split": "HVACSetSwingH%20split",
             "swing": "HVACSetSwingH%20swing"
         },
-        "HVACSetAirDirection": {
+        "SetAirDirection": {
             "even": "HVACSetAirDirection%20even",
             "indirect": "HVACSetAirDirection%20indirect",
             "direct": "HVACSetAirDirection%20direct"
         },
-        "HVACSetProhibit": {
+        "SetProhibit": {
             "off": "HVACSetProhibit%20off",
             "power": "HVACSetProhibit%20power",
             "mode": "HVACSetProhibit%20mode",
@@ -73,10 +75,80 @@
             "temp_mode": "HVACSetProhibit%20temp_mode",
             "all": "HVACSetProhibit%20all"
         },
-        "HVACSetDisplayUnit": {
+        "SetDisplayUnit": {
             "c": "HVACSetDisplayUnit%20c",
             "f": "HVACSetDisplayUnit%20f"
-        }
+        },
+        "RemoteTemp": "HVACRemoteTemp%20",
+        "RemoteTempClearTime": "HVACRemoteTempClearTime%20",
+        "OperationMode": [
+            "AUTO",
+            "HEAT",
+            "COOL",
+            "DRY",
+            "FAN",
+            "ISEE HEAT",
+            "ISEE DRY",
+            "ISEE COOL"
+        ],
+        "CurrentOperationMode": [
+            "INACTIVE",
+            "IDLE",
+            "HEATING",
+            "COOLING"
+        ],
+        "FanSpeed": {
+            "auto": "AUTO",
+            "quiet": "QUIET",
+            "1": "WEAK",
+            "2": "NORMAL",
+            "3": "STRONG",
+            "4": "ERY STRONG",
+            "6": "OFF"
+        },
+        "VerticalVane": {
+            "auto": "AUTO",
+            "up": "UP",
+            "up_middle": "UP MIDDLE",
+            "center": "CENTER",
+            "down_middle": "DOWN MIDDLE",
+            "down": "DOWN",
+            "swing": "SWING"
+        },
+        "HorizontalVane": {
+            "auto": "AUTO",
+            "left_middle": "LEFT",
+            "left": "LEFT MIDDLE",
+            "center": "CENTER",
+            "right_middle": "RIGHT MIDDLE",
+            "right": "RIGHT",
+            "split": "SPLIT",
+            "swing": "SWING"
+        },
+        "AirDirection": {
+            "off": "OFF",
+            "even": "EVEN",
+            "indirect": "INDIRECT",
+            "direct": "DIRECT"
+        },
+        "Prohibit": {
+            "off": "OFF",
+            "power": "POWER",
+            "mode": "MODE",
+            "power_mode": "POWER AND MODE",
+            "temp": "TEMPERATURE",
+            "temp_power": "TEMP AND POWER",
+            "temp_mode": "TEMP AND MODE",
+            "all": "ALL"
+        },
+        "Compressor": {
+            "off": "OFF",
+            "on": "ON"
+        },
+        "SwingMode": [
+            "AUTO",
+            "SWING"
+        ]
     },
     "LightKeys": [
         "Dimmer",
@@ -166,75 +238,5 @@
         "Illuminance",
         "Speed",
         "Dir"
-    ],
-    "AirConditioner": {
-        "OperationMode": [
-            "AUTO",
-            "HEAT",
-            "COOL",
-            "DRY",
-            "FAN",
-            "ISEE HEAT",
-            "ISEE DRY",
-            "ISEE COOL"
-        ],
-        "CurrentOperationMode": [
-            "INACTIVE",
-            "IDLE",
-            "HEATING",
-            "COOLING"
-        ],
-        "FanSpeed": {
-            "auto": "AUTO",
-            "quiet": "QUIET",
-            "1": "WEAK",
-            "2": "NORMAL",
-            "3": "STRONG",
-            "4": "ERY STRONG",
-            "6": "OFF"
-        },
-        "VerticalVane": {
-            "auto": "AUTO",
-            "up": "UP",
-            "up_middle": "UP MIDDLE",
-            "center": "CENTER",
-            "down_middle": "DOWN MIDDLE",
-            "down": "DOWN",
-            "swing": "SWING"
-        },
-        "HorizontalVane": {
-            "auto": "AUTO",
-            "left_middle": "LEFT",
-            "left": "LEFT MIDDLE",
-            "center": "CENTER",
-            "right_middle": "RIGHT MIDDLE",
-            "right": "RIGHT",
-            "split": "SPLIT",
-            "swing": "SWING"
-        },
-        "AirDirection": {
-            "off": "OFF",
-            "even": "EVEN",
-            "indirect": "INDIRECT",
-            "direct": "DIRECT"
-        },
-        "Prohibit": {
-            "off": "OFF",
-            "power": "POWER",
-            "mode": "MODE",
-            "power_mode": "POWER AND MODE",
-            "temp": "TEMPERATURE",
-            "temp_power": "TEMP AND POWER",
-            "temp_mode": "TEMP AND MODE",
-            "all": "ALL"
-        },
-        "Compressor": {
-            "off": "OFF",
-            "on": "ON"
-        },
-        "SwingMode": [
-            "AUTO",
-            "SWING"
-        ]
-    }
+    ]
 }

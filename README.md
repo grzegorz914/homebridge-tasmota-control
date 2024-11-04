@@ -53,18 +53,24 @@ Homebridge plugin for Tasmota flashed devices.
       * Presets `SET/UNSET`.
   * Sensors:
     * For automation and notifications.
-      * Power `ON/OFF`.
-      * Operating mode `HEAT/DRY/COOL/FAN/AUTO`.
-      * Fan speed `OFF/QUIET/1/2/3/4/AUTO`.
-      * Vane H `AUTO/1/2/3/4/5/SPLIT/SWING`.
-      * Vane V `AUTO/1/2/3/4/5/SWING`.
-      * Air direction `INDIRECT/DIRECT/EVEN`.
-      * Physical lock controls `LOCK/UNLOCK`.
-      * Presets `ACTIV/UNACTIV`.
-      * Room temperature.
-      * Outdoor temperature.
+      * State sensors:
+        * Power `ON/OFF`.
+        * Operating mode `HEAT/DRY/COOL/FAN/AUTO`.
+        * Fan speed `OFF/QUIET/1/2/3/4/AUTO`.
+        * Vane H `AUTO/1/2/3/4/5/SPLIT/SWING`.
+        * Vane V `AUTO/1/2/3/4/5/SWING`.
+        * Air direction `INDIRECT/DIRECT/EVEN`.
+        * Physical lock controls `LOCK/UNLOCK`.
+        * Presets `ACTIV/UNACTIV`.
+        * Operation stage `NORMAL/DEFROST/PREHEAT/STANDBY`.
+        * Fan stage `OFF/QUIET/1/2/3/4/5`.
+        * Mode stage `AUTO OFF/AUTO FAN/AUTO HEAT/AUTO COOL`.
+        * Remote temperature.
+      * Temperature sensors:  
+        * Room temperature.
+        * Outdoor temperature.
   * Functions:
-    * Frost protect    
+    * Frost protect
 
 * Supported relay devices:
   * Light - `Power ON/OFF`, `Dimmer`, `Color Temperature`, `Hue`, `Saturation`
@@ -100,7 +106,6 @@ Homebridge plugin for Tasmota flashed devices.
 | `miElHvac.autoDryFanMode` | Here select the operatiing mode for `Auto`, only for Mitsubishio AC. |
 | `miElHvac.temperatureSensor` | This enable extra `Room` temperature sensor to use with automations in HomeKit app. |
 | `miElHvac.temperatureSensorOutdoor` | This enable extra `Outdoor` temperature sensor to use with automations in HomeKit app. |
-| `miElHvac.remoteTemperatureStateSensor` | This enable extra `Remote` temperature state sensor to use with automations in HomeKit app. |
 | `miElHvac.remoteTemperatureSensor` | Object of remote temperature sensor. |
 | `miElHvac.remoteTemperatureSensor.enable` | This activate the function. |
 | `miElHvac.remoteTemperatureSensor.path` | Here set the path to the temperature sensor, the request need to return value. |
@@ -116,11 +121,16 @@ Homebridge plugin for Tasmota flashed devices.
 | `miElHvac.presets.swingV` | Here set the vane vertical direction. |
 | `miElHvac.presets.swingH` | Here set the vane horizontal direction. |
 | `miElHvac.presets.displayType` | Here select display type in HomeKit, `0 - None/Disabled`, `1 - Outlet`, `2 - Switch`, `3 - Motion Sensor`, `4 - Occupancy Sensor`, `5 - Contact Sensor`. |
-| `miElHvac.buttonsSensors` | Array of buttons sensors. |
-| `miElHvac.buttonsSensors.name` | Here set `Button Name` which You want expose to the `Homebridge/HomeKit`. |
-| `miElHvac.buttonsSensors.mode` | Here select button function mode. |
-| `miElHvac.buttonsSensors.displayType` | Here select display type in HomeKit, `0 - None/Disabled`, `1 - Outlet`, `2 - Switch`, `3 - Motion Sensor`, `4 - Occupancy Sensor`, `5 - Contact Sensor`. |
-| `miElHvac.buttonsSensors.namePrefix` | Here enable/disable the accessory name as a prefix for button/sensor name. |
+| `miElHvac.buttons` | Array of buttons sensors. |
+| `miElHvac.buttons.name` | Here set `Button Name` which You want expose to the `Homebridge/HomeKit`. |
+| `miElHvac.buttons.mode` | Here select button function mode. |
+| `miElHvac.buttons.displayType` | Here select display type in HomeKit, `0 - None/Disabled`, `1 - Outlet`, `2 - Switch`, `3 - Motion Sensor`. |
+| `miElHvac.buttons.namePrefix` | Here enable/disable the accessory name as a prefix for button name. |
+| `miElHvac.sensors` | Array of sensors sensors. |
+| `miElHvac.sensors.name` | Here set `Sensor Name` which You want expose to the `Homebridge/HomeKit`. |
+| `miElHvac.sensors.mode` | Here select sensor function mode. |
+| `miElHvac.sensors.displayType` | Here select display type in HomeKit, `0 - None/Disabled`, `1 - Motion Sensor`, `2 - Occupancy Sensor`, `3 - Contact Sensor`. |
+| `miElHvac.sensors.namePrefix` | Here enable/disable the accessory name as a prefix for sensor name. |
 | `miElHvac.frostProtect` | Object of frost protect function. |
 | `miElHvac.frostProtect.enable` | This activate frost protect function. |
 | `miElHvac.frostProtect.lowTemp` | Here set the low temperature at which device start to frost protect. |

@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - (04.11.2024)
+
+## Changes
+
+- compatibility with [Tasmota](https://github.com/grzegorz914/homebridge-tasmota-control/tree/main/firmware) build from 04.11.2024
+- removed buttonsSensors config properties for MiElHVAC
+- added buttons array in config.json for MiElHVAC
+- added sensors array in config.json for MiElHVAC
+- added remote temperature sensor state to sensors for MiElHVAC
+- added operation stage to sensors for MiElHVAC
+- added fan stage to sensors for MiElHVAC
+- added mode stage to sensors for MiElHVAC
+- config.schema update
+- redme update
+- cleanup
+
 ## [0.20.0] - (03.11.2024)
 
 ## Changes

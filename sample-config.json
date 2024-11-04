@@ -28,9 +28,6 @@
             "heatDryFanMode": 1,
             "coolDryFanMode": 1,
             "autoDryFanMode": 1,
-            "temperatureSensor": false,
-            "temperatureSensorOutdoor": false,
-            "remoteTemperatureStateSensor": false,
             "remoteTemperatureSensor": {
               "enable": false,
               "path": "http://192.168.1.1/tempsensor",
@@ -51,7 +48,15 @@
                 "namePrefix": false
               }
             ],
-            "buttonsSensors": [
+            "buttons": [
+              {
+                "name": "Name",
+                "mode": 0,
+                "displayType": 0,
+                "namePrefix": false
+              }
+            ],
+            "sensors": [
               {
                 "name": "Name",
                 "mode": 0,
@@ -65,6 +70,8 @@
             "lowTemp": 14,
             "highTemp": 16
           },
+          "temperatureSensor": false,
+          "temperatureSensorOutdoor": false,
           "relaysNamePrefix": false,
           "relaysDisplayType": 0,
           "lightsNamePrefix": false,
