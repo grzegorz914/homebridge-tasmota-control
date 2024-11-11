@@ -1150,7 +1150,8 @@ class TasmotaDevice extends EventEmitter {
                 .setCharacteristic(Characteristic.Manufacturer, 'Tasmota')
                 .setCharacteristic(Characteristic.Model, this.modelName ?? 'Model Name')
                 .setCharacteristic(Characteristic.SerialNumber, this.serialNumber ?? 'Serial Number')
-                .setCharacteristic(Characteristic.FirmwareRevision, this.firmwareRevision.replace(/[a-zA-Z]/g, '') ?? '0');
+                .setCharacteristic(Characteristic.FirmwareRevision, this.firmwareRevision.replace(/[a-zA-Z]/g, '') ?? '0')
+                .setCharacteristic(Characteristic.ConfiguredName, accessoryName);
 
             //Prepare services 
             const debug2 = this.enableDebugMode ? this.emit('debug', `Prepare Services`) : false;
