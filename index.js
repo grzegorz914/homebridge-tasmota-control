@@ -1,23 +1,24 @@
 'use strict';
-const fs = require('fs');
-const path = require('path');
-const TasmotaDevice = require('./src/tasmotadevice.js');
-const ImpulseGenerator = require('./src/impulsegenerator.js');
-const CONSTANTS = require('./src/constants.json');
+import fs from 'fs';
+import { join } from 'path';
+import { mkdirSync } from 'fs';
+import TasmotaDevice from './src/tasmotadevice.js';
+import ImpulseGenerator from './src/impulsegenerator.js';
+import { PluginName, PlatformName } from './src/constants.js';
 
 class tasmotaPlatform {
   constructor(log, config, api) {
     // only load if configured
     if (!config || !Array.isArray(config.devices)) {
-      log(`No configuration found for ${CONSTANTS.PluginName}.`);
+      log(`No configuration found for ${PluginName}.`);
       return;
     };
     this.accessories = [];
 
     //check if prefs directory exist
-    const prefDir = path.join(api.user.storagePath(), 'tasmota');
+    const prefDir = join(api.user.storagePath(), 'tasmota');
     try {
-      fs.mkdirSync(prefDir, { recursive: true });
+      mkdirSync(prefDir, { recursive: true });
     } catch (error) {
       log.error(`Prepare directory error: ${error.message ?? error}`);
       return;
@@ -70,7 +71,7 @@ class tasmotaPlatform {
           const miElHvac = device.miElHvac ?? {};
           const tasmotaDevice = new TasmotaDevice(api, device, miElHvac, defaultHeatingSetTemperatureFile, defaultCoolingSetTemperatureFile);
           tasmotaDevice.on('publishAccessory', (accessory) => {
-            api.publishExternalAccessories(CONSTANTS.PluginName, [accessory]);
+            api.publishExternalAccessories(PluginName, [accessory]);
             log.success(`Device: ${host} ${deviceName}, Published as external accessory.`);
           })
             .on('devInfo', (devInfo) => {
@@ -119,6 +120,6 @@ class tasmotaPlatform {
   };
 };
 
-module.exports = (api) => {
-  api.registerPlatform(CONSTANTS.PluginName, CONSTANTS.PlatformName, tasmotaPlatform, true);
+export default (api) => {
+  api.registerPlatform(PluginName, PlatformName, tasmotaPlatform, true);
 };

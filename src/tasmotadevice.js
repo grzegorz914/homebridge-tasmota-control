@@ -1,10 +1,10 @@
 'use strict';
-const fs = require('fs');
-const fsPromises = fs.promises;
-const axios = require('axios');
-const EventEmitter = require('events');
-const ImpulseGenerator = require('./impulsegenerator.js');
-const CONSTANTS = require('./constants.json');
+import { promises } from 'fs';
+const fsPromises = promises;
+import axios from 'axios';
+import EventEmitter from 'events';
+import ImpulseGenerator from './impulsegenerator.js';
+import { ApiCommands, MiElHVAC, LightKeys, SensorKeys, TemperatureDisplayUnits } from './constants.js';
 let Accessory, Characteristic, Service, Categories, AccessoryUUID;
 
 class TasmotaDevice extends EventEmitter {
@@ -244,7 +244,7 @@ class TasmotaDevice extends EventEmitter {
     async getDeviceInfo() {
         const debug = this.enableDebugMode ? this.emit('debug', `Requesting info.`) : false;
         try {
-            const deviceInfoData = await this.axiosInstance(CONSTANTS.ApiCommands.Status);
+            const deviceInfoData = await this.axiosInstance(ApiCommands.Status);
             const deviceInfo = deviceInfoData.data ?? {};
             const debug = this.enableDebugMode ? this.emit('debug', `Info: ${JSON.stringify(deviceInfo, null, 2)}`) : false;
             await new Promise(resolve => setTimeout(resolve, 250));
@@ -291,12 +291,12 @@ class TasmotaDevice extends EventEmitter {
         const debug = this.enableDebugMode ? this.emit('debug', `Requesting status.`) : false;
         try {
             //power status
-            const powerStatusData = await this.axiosInstance(CONSTANTS.ApiCommands.PowerStatus);
+            const powerStatusData = await this.axiosInstance(ApiCommands.PowerStatus);
             const powerStatus = powerStatusData.data ?? {};
             const debug = this.enableDebugMode ? this.emit('debug', `Power status: ${JSON.stringify(powerStatus, null, 2)}`) : false;
 
             //sensor status
-            const sensorStatusData = await this.axiosInstance(CONSTANTS.ApiCommands.Status);
+            const sensorStatusData = await this.axiosInstance(ApiCommands.Status);
             const sensorStatus = sensorStatusData.data ?? {};
             const debug1 = this.enableDebugMode ? this.emit('debug', `Sensors status: ${JSON.stringify(sensorStatus, null, 2)}`) : false;
 
@@ -858,11 +858,11 @@ class TasmotaDevice extends EventEmitter {
                         const info4 = power && outdoorTemperature !== null ? this.emit('message', `Outdoor temperature: ${outdoorTemperature}${temperatureUnit}`) : false;
                         const info5 = power && modelSupportsFanSpeed ? this.emit('message', `Target Fan speed: ${fanSpeed.toUpperCase()}`) : false;
                         const info6 = power && modelSupportsFanSpeed ? this.emit('message', `Current Fan speed: ${fanSpeedStage.toUpperCase()}`) : false;
-                        const info7 = power && vaneHorizontalDirection !== 'Unknown' ? this.emit('message', `Vane horizontal: ${CONSTANTS.MiElHVAC.HorizontalVane[vaneHorizontalDirection] ?? vaneHorizontalDirection}`) : false;
-                        const info8 = power && vaneVerticalDirection !== 'Unknown' ? this.emit('message', `Vane vertical: ${CONSTANTS.MiElHVAC.VerticalVane[vaneVerticalDirection] ?? vaneVerticalDirection}`) : false;
-                        const info9 = power ? this.emit('message', `Swing mode: ${CONSTANTS.MiElHVAC.SwingMode[swingMode]}`) : false;
-                        const info10 = power && vaneHorizontalDirection === 'isee' && airDirection !== 'Unknown' ? this.emit('message', `Air direction: ${CONSTANTS.MiElHVAC.AirDirection[airDirection]}`) : false;
-                        const info11 = power ? this.emit('message', `Prohibit: ${CONSTANTS.MiElHVAC.Prohibit[prohibit]}`) : false;
+                        const info7 = power && vaneHorizontalDirection !== 'Unknown' ? this.emit('message', `Vane horizontal: ${MiElHVAC.HorizontalVane[vaneHorizontalDirection] ?? vaneHorizontalDirection}`) : false;
+                        const info8 = power && vaneVerticalDirection !== 'Unknown' ? this.emit('message', `Vane vertical: ${MiElHVAC.VerticalVane[vaneVerticalDirection] ?? vaneVerticalDirection}`) : false;
+                        const info9 = power ? this.emit('message', `Swing mode: ${MiElHVAC.SwingMode[swingMode]}`) : false;
+                        const info10 = power && vaneHorizontalDirection === 'isee' && airDirection !== 'Unknown' ? this.emit('message', `Air direction: ${MiElHVAC.AirDirection[airDirection]}`) : false;
+                        const info11 = power ? this.emit('message', `Prohibit: ${MiElHVAC.Prohibit[prohibit]}`) : false;
                         const info12 = power ? this.emit('message', `Temperature display unit: ${temperatureUnit}`) : false;
                         const info13 = power ? this.emit('message', `Compressor: ${compressor.toUpperCase()}`) : false;
                         const info14 = power ? this.emit('message', `OperationPower: ${operationPower}W`) : false;
@@ -882,7 +882,7 @@ class TasmotaDevice extends EventEmitter {
 
                         //power status keys and device type
                         const powerKeys = Object.keys(powerStatus);
-                        const deviceType = powerKeys.some(key => CONSTANTS.LightKeys.includes(key)) ? 1 : 0; //0 - switch/outlet, 1 - light
+                        const deviceType = powerKeys.some(key => LightKeys.includes(key)) ? 1 : 0; //0 - switch/outlet, 1 - light
 
                         for (let i = 0; i < relaysCount; i++) {
                             const powerNr = i + 1;
@@ -940,7 +940,7 @@ class TasmotaDevice extends EventEmitter {
                         this.sensorsAmbientLight = [];
                         this.sensorsMotion = [];
 
-                        const sensorTypes = CONSTANTS.SensorKeys;
+                        const sensorTypes = SensorKeys;
                         const sensor = Object.entries(sensorStatus.StatusSNS)
                             .filter(([key]) => sensorTypes.some(type => key.includes(type)))
                             .reduce((obj, [key, value]) => {
@@ -1096,7 +1096,7 @@ class TasmotaDevice extends EventEmitter {
             const debug = this.enableDebugMode ? this.emit('debug', `Remote temp: ${JSON.stringify(remoteTemp, null, 2)}`) : false;
 
             //set remote temp
-            const temp = `${CONSTANTS.MiElHVAC.RemoteTemp}${remoteTemp}`
+            const temp = `${MiElHVAC.RemoteTemp}${remoteTemp}`
             await this.axiosInstance(temp);
         } catch (error) {
             throw new Error(`Update remote temperature error: ${error.message ?? error}`);
@@ -1159,9 +1159,9 @@ class TasmotaDevice extends EventEmitter {
             switch (this.miElHvac) {
                 case true:
                     const debug = this.enableDebugMode ? this.emit('debug', `Prepare mitsubishi hvac service`) : false;
-                    const autoDryFanMode = [CONSTANTS.MiElHVAC.SetMode.auto, CONSTANTS.MiElHVAC.SetMode.auto, CONSTANTS.MiElHVAC.SetMode.dry, CONSTANTS.MiElHVAC.SetMode.fan][this.autoDryFanMode]; //NONE, AUTO, DRY, FAN
-                    const heatDryFanMode = [CONSTANTS.MiElHVAC.SetMode.heat, CONSTANTS.MiElHVAC.SetMode.heat, CONSTANTS.MiElHVAC.SetMode.dry, CONSTANTS.MiElHVAC.SetMode.fan][this.heatDryFanMode]; //NONE, HEAT, DRY, FAN
-                    const coolDryFanMode = [CONSTANTS.MiElHVAC.SetMode.cool, CONSTANTS.MiElHVAC.SetMode.cool, CONSTANTS.MiElHVAC.SetMode.dry, CONSTANTS.MiElHVAC.SetMode.fan][this.coolDryFanMode]; //NONE, COOL, DRY, FAN
+                    const autoDryFanMode = [MiElHVAC.SetMode.auto, MiElHVAC.SetMode.auto, MiElHVAC.SetMode.dry, MiElHVAC.SetMode.fan][this.autoDryFanMode]; //NONE, AUTO, DRY, FAN
+                    const heatDryFanMode = [MiElHVAC.SetMode.heat, MiElHVAC.SetMode.heat, MiElHVAC.SetMode.dry, MiElHVAC.SetMode.fan][this.heatDryFanMode]; //NONE, HEAT, DRY, FAN
+                    const coolDryFanMode = [MiElHVAC.SetMode.cool, MiElHVAC.SetMode.cool, MiElHVAC.SetMode.dry, MiElHVAC.SetMode.fan][this.coolDryFanMode]; //NONE, COOL, DRY, FAN
 
                     //services
                     this.miElHvacService = new Service.HeaterCooler(accessoryName, `HeaterCooler ${this.serialNumber}`);
@@ -1172,7 +1172,7 @@ class TasmotaDevice extends EventEmitter {
                         })
                         .onSet(async (state) => {
                             try {
-                                const power = [CONSTANTS.MiElHVAC.PowerOff, CONSTANTS.MiElHVAC.PowerOn][state];
+                                const power = [MiElHVAC.PowerOff, MiElHVAC.PowerOn][state];
                                 await this.axiosInstance(power);
                                 const info = this.disableLogInfo ? false : this.emit('message', `Set power: ${state ? 'ON' : 'OFF'}`);
                             } catch (error) {
@@ -1208,7 +1208,7 @@ class TasmotaDevice extends EventEmitter {
                                         break;
                                 };
 
-                                const info = this.disableLogInfo ? false : this.emit('message', `Set operation mode: ${CONSTANTS.MiElHVAC.OperationMode[value]}`);
+                                const info = this.disableLogInfo ? false : this.emit('message', `Set operation mode: ${MiElHVAC.OperationMode[value]}`);
                             } catch (error) {
                                 this.emit('warn', `Set operation mode error: ${error}`);
                             };
@@ -1254,8 +1254,8 @@ class TasmotaDevice extends EventEmitter {
 
                                     //fan speed mode
                                     const fanSpeedMap = ['auto', 'quiet', '1', '2', '3', '4'][fanSpeed];
-                                    await this.axiosInstance(CONSTANTS.MiElHVAC.SetFanSpeed[fanSpeedMap]);
-                                    const info = this.disableLogInfo ? false : this.emit('message', `Set fan speed mode: ${CONSTANTS.MiElHVAC.FanSpeed[fanSpeedModeText]}`);
+                                    await this.axiosInstance(MiElHVAC.SetFanSpeed[fanSpeedMap]);
+                                    const info = this.disableLogInfo ? false : this.emit('message', `Set fan speed mode: ${MiElHVAC.FanSpeed[fanSpeedModeText]}`);
                                 } catch (error) {
                                     this.emit('warn', `Set fan speed mode error: ${error}`);
                                 };
@@ -1271,20 +1271,20 @@ class TasmotaDevice extends EventEmitter {
                                 try {
                                     switch (value) {
                                         case 0:
-                                            await this.axiosInstance(CONSTANTS.MiElHVAC.SetSwingV[this.previousStateSwingV]);
-                                            await this.axiosInstance(CONSTANTS.MiElHVAC.SetSwingH[this.previousStateSwingH]);
+                                            await this.axiosInstance(MiElHVAC.SetSwingV[this.previousStateSwingV]);
+                                            await this.axiosInstance(MiElHVAC.SetSwingH[this.previousStateSwingH]);
                                             break;
                                         case 1:
                                             //set vane v
                                             this.previousStateSwingV = this.accessory.vaneVerticalDirection;
-                                            await this.axiosInstance(CONSTANTS.MiElHVAC.SetSwingV.swing);
+                                            await this.axiosInstance(MiElHVAC.SetSwingV.swing);
 
                                             //set vane h
                                             this.previousStateSwingH = this.accessory.vaneHorizontalDirection;
-                                            await this.axiosInstance(CONSTANTS.MiElHVAC.SetSwingH.swing);
+                                            await this.axiosInstance(MiElHVAC.SetSwingH.swing);
                                             break;
                                     }
-                                    const info = this.disableLogInfo ? false : this.emit('message', `Set air direction mode: ${CONSTANTS.MiElHVAC.SwingMode[value]}`);
+                                    const info = this.disableLogInfo ? false : this.emit('message', `Set air direction mode: ${MiElHVAC.SwingMode[value]}`);
                                 } catch (error) {
                                     this.emit('warn', `Set vane swing mode error: ${error}`);
                                 };
@@ -1307,7 +1307,7 @@ class TasmotaDevice extends EventEmitter {
                                     value = (value + this.accessory.defaultHeatingSetTemperature) / 2;
                                 }
 
-                                const temp = `${CONSTANTS.MiElHVAC.SetTemp}${value}`
+                                const temp = `${MiElHVAC.SetTemp}${value}`
                                 await this.axiosInstance(temp);
                                 const info = this.disableLogInfo ? false : this.emit('message', `Set ${this.accessory.operationMode === 'auto' ? 'cooling threshold temperature' : 'temperature'}: ${value}${this.accessory.temperatureUnit}`);
                             } catch (error) {
@@ -1332,7 +1332,7 @@ class TasmotaDevice extends EventEmitter {
                                         value = (value + this.accessory.defaultCoolingSetTemperature) / 2;
                                     }
 
-                                    const temp = `${CONSTANTS.MiElHVAC.SetTemp}${value}`
+                                    const temp = `${MiElHVAC.SetTemp}${value}`
                                     await this.axiosInstance(temp);
                                     const info = this.disableLogInfo ? false : this.emit('message', `Set ${this.accessory.operationMode === 'auto' ? 'heating threshold temperature' : 'temperature'}: ${value}${this.accessory.temperatureUnit}`);
                                 } catch (error) {
@@ -1347,7 +1347,7 @@ class TasmotaDevice extends EventEmitter {
                         })
                         .onSet(async (value) => {
                             try {
-                                const lock = [CONSTANTS.MiElHVAC.SetProhibit.off, CONSTANTS.MiElHVAC.SetProhibit.all][value];
+                                const lock = [MiElHVAC.SetProhibit.off, MiElHVAC.SetProhibit.all][value];
                                 await this.axiosInstance(lock);
                                 const info = this.disableLogInfo ? false : this.emit('message', `Set local physical controls: ${value ? 'LOCK' : 'UNLOCK'}`);
                             } catch (error) {
@@ -1361,9 +1361,9 @@ class TasmotaDevice extends EventEmitter {
                         })
                         .onSet(async (value) => {
                             try {
-                                const unit = [CONSTANTS.MiElHVAC.SetDisplayUnit.c, CONSTANTS.MiElHVAC.SetDisplayUnit.f][value];
+                                const unit = [MiElHVAC.SetDisplayUnit.c, MiElHVAC.SetDisplayUnit.f][value];
                                 //await this.axiosInstance(unit);
-                                const info = this.disableLogInfo ? false : this.emit('message', `Set temperature display unit: ${CONSTANTS.TemperatureDisplayUnits[value]}`);
+                                const info = this.disableLogInfo ? false : this.emit('message', `Set temperature display unit: ${TemperatureDisplayUnits[value]}`);
                             } catch (error) {
                                 this.emit('warn', `Set temperature display unit error: ${error}`);
                             };
@@ -1400,16 +1400,16 @@ class TasmotaDevice extends EventEmitter {
                                         let data = '';
                                         switch (state) {
                                             case true:
-                                                const setPower = !this.accessory.power ? await this.axiosInstance(CONSTANTS.MiElHVAC.PowerOn) : false;
-                                                data = CONSTANTS.MiElHVAC.SetMode[preset.mode];
+                                                const setPower = !this.accessory.power ? await this.axiosInstance(MiElHVAC.PowerOn) : false;
+                                                data = MiElHVAC.SetMode[preset.mode];
                                                 await this.axiosInstance(data);
-                                                data = `${CONSTANTS.MiElHVAC.SetTemp}${preset.setTemp}`;
+                                                data = `${MiElHVAC.SetTemp}${preset.setTemp}`;
                                                 await this.axiosInstance(data);
-                                                data = CONSTANTS.MiElHVAC.SetFanSpeed[preset.fanSpeed];
+                                                data = MiElHVAC.SetFanSpeed[preset.fanSpeed];
                                                 await this.axiosInstance(data);
-                                                data = CONSTANTS.MiElHVAC.SetSwingV[preset.swingV];
+                                                data = MiElHVAC.SetSwingV[preset.swingV];
                                                 await this.axiosInstance(data);
-                                                data = CONSTANTS.MiElHVAC.SetSwingH[preset.swingH];
+                                                data = MiElHVAC.SetSwingH[preset.swingH];
                                                 await this.axiosInstance(data);
                                                 break;
                                             case false:
@@ -1460,150 +1460,150 @@ class TasmotaDevice extends EventEmitter {
                                         let data = '';
                                         switch (mode) {
                                             case 0: //POWER ON,OFF
-                                                data = state ? CONSTANTS.MiElHVAC.PowerOn : CONSTANTS.MiElHVAC.PowerOff;
+                                                data = state ? MiElHVAC.PowerOn : MiElHVAC.PowerOff;
                                                 break;
                                             case 1: //OPERATING MODE HEAT
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetMode[this.accessory.operationMode] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetMode.heat : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetMode[this.accessory.operationMode] : button.previousValue;
+                                                data = state ? MiElHVAC.SetMode.heat : button.previousValue;
                                                 break;
                                             case 2: //OPERATING MODE DRY
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetMode[this.accessory.operationMode] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetMode.dry : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetMode[this.accessory.operationMode] : button.previousValue;
+                                                data = state ? MiElHVAC.SetMode.dry : button.previousValue;
                                                 break
                                             case 3: //OPERATING MODE COOL
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetMode[this.accessory.operationMode] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetMode.cool : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetMode[this.accessory.operationMode] : button.previousValue;
+                                                data = state ? MiElHVAC.SetMode.cool : button.previousValue;
                                                 break;
                                             case 4: //OPERATING MODE FAN
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetMode[this.accessory.operationMode] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetMode.fan : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetMode[this.accessory.operationMode] : button.previousValue;
+                                                data = state ? MiElHVAC.SetMode.fan : button.previousValue;
                                                 break;
                                             case 5: //OPERATING MODE AUTO
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetMode[this.accessory.operationMode] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetMode.auto : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetMode[this.accessory.operationMode] : button.previousValue;
+                                                data = state ? MiElHVAC.SetMode.auto : button.previousValue;
                                                 break;
                                             case 6: //OPERATING MODE PURIFY
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetMode[this.accessory.operationMode] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetMode.purify : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetMode[this.accessory.operationMode] : button.previousValue;
+                                                data = state ? MiElHVAC.SetMode.purify : button.previousValue;
                                                 break;
                                             case 10: //VANE H AUTO
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetSwingH.auto : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
+                                                data = state ? MiElHVAC.SetSwingH.auto : button.previousValue;
                                                 break;
                                             case 11: //VANE H LEFT
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetSwingH.left : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
+                                                data = state ? MiElHVAC.SetSwingH.left : button.previousValue;
                                                 break;
                                             case 12: //VANE H LEFT MIDDLE
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetSwingH.left_middle : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
+                                                data = state ? MiElHVAC.SetSwingH.left_middle : button.previousValue;
                                                 break;
                                             case 13: //VANE H CENTER
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetSwingH.center : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
+                                                data = state ? MiElHVAC.SetSwingH.center : button.previousValue;
                                                 break;
                                             case 14: //VANE H RIGHT MIDDLE
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetSwingH.right_middle : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
+                                                data = state ? MiElHVAC.SetSwingH.right_middle : button.previousValue;
                                                 break;
                                             case 15: //VANE H RIGHT
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetSwingH.right : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
+                                                data = state ? MiElHVAC.SetSwingH.right : button.previousValue;
                                                 break;
                                             case 16: //VANE H SPLIT
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetSwingH.split : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
+                                                data = state ? MiElHVAC.SetSwingH.split : button.previousValue;
                                                 break;
                                             case 17: //VANE H SWING
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetSwingH.swing : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetSwingH[this.accessory.vaneHorizontalDirection] : button.previousValue;
+                                                data = state ? MiElHVAC.SetSwingH.swing : button.previousValue;
                                                 break;
                                             case 20: //VANE V AUTO
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetSwingV[this.accessory.vaneVerticalDirection] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetSwingV.auto : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetSwingV[this.accessory.vaneVerticalDirection] : button.previousValue;
+                                                data = state ? MiElHVAC.SetSwingV.auto : button.previousValue;
                                                 break;
                                             case 21: //VANE V UP
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetSwingV[this.accessory.vaneVerticalDirection] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetSwingV.up : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetSwingV[this.accessory.vaneVerticalDirection] : button.previousValue;
+                                                data = state ? MiElHVAC.SetSwingV.up : button.previousValue;
                                                 break;
                                             case 22: //VANE V UP MIDDLE
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetSwingV[this.accessory.vaneVerticalDirection] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetSwingV.up_middle : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetSwingV[this.accessory.vaneVerticalDirection] : button.previousValue;
+                                                data = state ? MiElHVAC.SetSwingV.up_middle : button.previousValue;
                                                 break;
                                             case 23: //VANE V CENTER
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetSwingV[this.accessory.vaneVerticalDirection] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetSwingV.center : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetSwingV[this.accessory.vaneVerticalDirection] : button.previousValue;
+                                                data = state ? MiElHVAC.SetSwingV.center : button.previousValue;
                                                 break;
                                             case 24: //VANE V DOWN MIDDLE
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetSwingV[this.accessory.vaneVerticalDirection] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetSwingV.down_middle : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetSwingV[this.accessory.vaneVerticalDirection] : button.previousValue;
+                                                data = state ? MiElHVAC.SetSwingV.down_middle : button.previousValue;
                                                 break;
                                             case 25: //VANE V DOWN
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetSwingV[this.accessory.vaneVerticalDirection] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetSwingV.down : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetSwingV[this.accessory.vaneVerticalDirection] : button.previousValue;
+                                                data = state ? MiElHVAC.SetSwingV.down : button.previousValue;
                                                 break;
                                             case 26: //VANE V SWING
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetSwingV[this.accessory.vaneVerticalDirection] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetSwingV.swing : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetSwingV[this.accessory.vaneVerticalDirection] : button.previousValue;
+                                                data = state ? MiElHVAC.SetSwingV.swing : button.previousValue;
                                                 break;
                                             case 30: //FAN SPEED AUTO
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetFanSpeed[this.accessory.fanSpeed] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetFanSpeed.auto : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetFanSpeed[this.accessory.fanSpeed] : button.previousValue;
+                                                data = state ? MiElHVAC.SetFanSpeed.auto : button.previousValue;
                                                 break;
                                             case 31: //FAN SPEED QUIET
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetFanSpeed[this.accessory.fanSpeed] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetFanSpeed.quiet : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetFanSpeed[this.accessory.fanSpeed] : button.previousValue;
+                                                data = state ? MiElHVAC.SetFanSpeed.quiet : button.previousValue;
                                                 break;
                                             case 32: //FAN SPEED 1
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetFanSpeed[this.accessory.fanSpeed] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetFanSpeed['1'] : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetFanSpeed[this.accessory.fanSpeed] : button.previousValue;
+                                                data = state ? MiElHVAC.SetFanSpeed['1'] : button.previousValue;
                                                 break;
                                             case 33: //FAN SPEED 2
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetFanSpeed[this.accessory.fanSpeed] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetFanSpeed['2'] : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetFanSpeed[this.accessory.fanSpeed] : button.previousValue;
+                                                data = state ? MiElHVAC.SetFanSpeed['2'] : button.previousValue;
                                                 break;
                                             case 34: //FAN 3
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetFanSpeed[this.accessory.fanSpeed] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetFanSpeed['3'] : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetFanSpeed[this.accessory.fanSpeed] : button.previousValue;
+                                                data = state ? MiElHVAC.SetFanSpeed['3'] : button.previousValue;
                                                 break;
                                             case 35: //FAN SPEED 4
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetFanSpeed[this.accessory.fanSpeed] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetFanSpeed['4'] : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetFanSpeed[this.accessory.fanSpeed] : button.previousValue;
+                                                data = state ? MiElHVAC.SetFanSpeed['4'] : button.previousValue;
                                                 break;
                                             case 40: //AIR DIRECTION EVEN
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetAirDirection[this.accessory.airDirection] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetAirDirection.even : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetAirDirection[this.accessory.airDirection] : button.previousValue;
+                                                data = state ? MiElHVAC.SetAirDirection.even : button.previousValue;
                                                 break;
                                             case 41: //AIR DIRECTION INDIRECT
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetAirDirection[this.accessory.airDirection] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetAirDirection.indirect : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetAirDirection[this.accessory.airDirection] : button.previousValue;
+                                                data = state ? MiElHVAC.SetAirDirection.indirect : button.previousValue;
                                                 break;
                                             case 42: //AIR DIRECTION DIRECT
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetAirDirection[this.accessory.airDirection] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetAirDirection.direct : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetAirDirection[this.accessory.airDirection] : button.previousValue;
+                                                data = state ? MiElHVAC.SetAirDirection.direct : button.previousValue;
                                                 break;
                                             case 50: //PHYSICAL LOCK CONTROLS
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetProhibit[this.accessory.prohibit] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetProhibit.all : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetProhibit[this.accessory.prohibit] : button.previousValue;
+                                                data = state ? MiElHVAC.SetProhibit.all : button.previousValue;
                                                 break;
                                             case 51: //PHYSICAL LOCK CONTROLS POWER
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetProhibit[this.accessory.prohibit] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetProhibit.power : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetProhibit[this.accessory.prohibit] : button.previousValue;
+                                                data = state ? MiElHVAC.SetProhibit.power : button.previousValue;
                                                 break;
                                             case 52: //PHYSICAL LOCK CONTROLS MODE
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetProhibit[this.accessory.prohibit] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetProhibit.mode : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetProhibit[this.accessory.prohibit] : button.previousValue;
+                                                data = state ? MiElHVAC.SetProhibit.mode : button.previousValue;
                                                 break;
                                             case 53: //PHYSICAL LOCK CONTROLS TEMP
-                                                button.previousValue = state ? CONSTANTS.MiElHVAC.SetProhibit[this.accessory.prohibit] : button.previousValue;
-                                                data = state ? CONSTANTS.MiElHVAC.SetProhibit.temp : button.previousValue;
+                                                button.previousValue = state ? MiElHVAC.SetProhibit[this.accessory.prohibit] : button.previousValue;
+                                                data = state ? MiElHVAC.SetProhibit.temp : button.previousValue;
                                                 break;
                                             default:
                                                 this.emit('message', `Unknown button mode: ${mode}`);
                                                 return
                                         };
 
-                                        const setPower = !this.accessory.power && state && (mode > 0 && mode < 50) ? await this.axiosInstance(CONSTANTS.MiElHVAC.PowerOn) : false;
+                                        const setPower = !this.accessory.power && state && (mode > 0 && mode < 50) ? await this.axiosInstance(MiElHVAC.PowerOn) : false;
                                         await this.axiosInstance(data);
                                         const info = this.disableLogInfo ? false : mode > 0 ? this.emit('message', `${state ? `Set: ${buttonName}` : `Unset: ${buttonName}, Set: ${button.previousValue}`}`) : `Set: ${buttonName}`;
                                         await new Promise(resolve => setTimeout(resolve, 250));
@@ -1714,8 +1714,8 @@ class TasmotaDevice extends EventEmitter {
                                 .onSet(async (state) => {
                                     try {
                                         const relayNr = i + 1;
-                                        const powerOn = relaysCount === 1 ? CONSTANTS.ApiCommands.PowerOn : `${CONSTANTS.ApiCommands.Power}${relayNr}${CONSTANTS.ApiCommands.On}`;
-                                        const powerOff = relaysCount === 1 ? CONSTANTS.ApiCommands.PowerOff : `${CONSTANTS.ApiCommands.Power}${relayNr}${CONSTANTS.ApiCommands.Off}`;
+                                        const powerOn = relaysCount === 1 ? ApiCommands.PowerOn : `${ApiCommands.Power}${relayNr}${ApiCommands.On}`;
+                                        const powerOff = relaysCount === 1 ? ApiCommands.PowerOff : `${ApiCommands.Power}${relayNr}${ApiCommands.Off}`;
                                         state = state ? powerOn : powerOff;
 
                                         await this.axiosInstance(state);
@@ -1734,7 +1734,7 @@ class TasmotaDevice extends EventEmitter {
                                         })
                                         .onSet(async (value) => {
                                             try {
-                                                const brightness = `${CONSTANTS.ApiCommands.Dimmer}${value}`; //0..100
+                                                const brightness = `${ApiCommands.Dimmer}${value}`; //0..100
                                                 await this.axiosInstance(brightness);
                                                 const logInfo = this.disableLogInfo ? false : this.emit('message', `set brightness: ${value} %`);
                                             } catch (error) {
@@ -1752,7 +1752,7 @@ class TasmotaDevice extends EventEmitter {
                                         .onSet(async (value) => {
                                             try {
                                                 value = value < 153 ? 153 : value;
-                                                const colorTemperature = `${CONSTANTS.ApiCommands.ColorTemperature}${value}`; //140..500
+                                                const colorTemperature = `${ApiCommands.ColorTemperature}${value}`; //140..500
                                                 await this.axiosInstance(colorTemperature);
                                                 const logInfo = this.disableLogInfo ? false : this.emit('message', `set color temperatur: ${value} °`);
                                             } catch (error) {
@@ -1769,7 +1769,7 @@ class TasmotaDevice extends EventEmitter {
                                         })
                                         .onSet(async (value) => {
                                             try {
-                                                const hue = `${CONSTANTS.ApiCommands.HSBHue}${value}`; //0..360
+                                                const hue = `${ApiCommands.HSBHue}${value}`; //0..360
                                                 await this.axiosInstance(hue);
                                                 const logInfo = this.disableLogInfo ? false : this.emit('message', `set hue: ${value} °`);
                                             } catch (error) {
@@ -1786,7 +1786,7 @@ class TasmotaDevice extends EventEmitter {
                                         })
                                         .onSet(async (value) => {
                                             try {
-                                                const saturation = `${CONSTANTS.ApiCommands.HSBSaturation}${value}`; //0..100
+                                                const saturation = `${ApiCommands.HSBSaturation}${value}`; //0..100
                                                 await this.axiosInstance(saturation);
                                                 const logInfo = this.disableLogInfo ? false : this.emit('message', `set saturation: ${value} °`);
                                             } catch (error) {
@@ -2018,4 +2018,4 @@ class TasmotaDevice extends EventEmitter {
         };
     }
 };
-module.exports = TasmotaDevice;
+export default TasmotaDevice;
