@@ -1,7 +1,6 @@
 'use strict';
-import fs from 'fs';
 import { join } from 'path';
-import { mkdirSync } from 'fs';
+import { mkdirSync, existsSync, writeFileSync } from 'fs';
 import TasmotaDevice from './src/tasmotadevice.js';
 import ImpulseGenerator from './src/impulsegenerator.js';
 import { PluginName, PlatformName } from './src/constants.js';
@@ -56,9 +55,9 @@ class tasmotaPlatform {
           ];
 
           files.forEach((file, index) => {
-            if (!fs.existsSync(file)) {
+            if (!existsSync(file)) {
               const data = ['20', '23'][index]
-              fs.writeFileSync(file, data);
+              writeFileSync(file, data);
             }
           });
         } catch (error) {
