@@ -18,7 +18,7 @@ class tasmotaPlatform {
     try {
       mkdirSync(prefDir, { recursive: true });
     } catch (error) {
-      log.error(`Prepare directory error: ${error.message ?? error}`);
+      log.error(`Prepare directory error: ${error}.`);
       return;
     }
 
@@ -40,7 +40,7 @@ class tasmotaPlatform {
           user: 'removed',
           passwd: 'removed'
         };
-        const debug1 = enableDebugMode ? log.info(`Device: ${host} ${deviceName}, Config: ${JSON.stringify(config, null, 2)}`) : false;
+        const debug1 = enableDebugMode ? log.info(`Device: ${host} ${deviceName}, Config: ${JSON.stringify(config, null, 2)}.`) : false;
 
         //check files exists, if not then create it
         const postFix = device.host.split('.').join('');
@@ -76,19 +76,19 @@ class tasmotaPlatform {
               log.info(devInfo);
             })
             .on('success', (message) => {
-              log.success(`Device: ${host} ${deviceName}, ${message}`);
+              log.success(`Device: ${host} ${deviceName}, ${message}.`);
             })
             .on('message', (message) => {
-              log.info(`Device: ${host} ${deviceName}, ${message}`);
+              log.info(`Device: ${host} ${deviceName}, ${message}.`);
             })
             .on('debug', (debug) => {
-              log.info(`Device: ${host} ${deviceName}, debug: ${debug}`);
+              log.info(`Device: ${host} ${deviceName}, debug: ${debug}.`);
             })
             .on('warn', (warn) => {
-              log.warn(`Device: ${host} ${deviceName}: ${warn}`);
+              log.warn(`Device: ${host} ${deviceName}: ${warn}.`);
             })
             .on('error', async (error) => {
-              log.error(`Device: ${host} ${deviceName}, ${error}`);
+              log.error(`Device: ${host} ${deviceName}, ${error}.`);
             });
 
           //create impulse generator

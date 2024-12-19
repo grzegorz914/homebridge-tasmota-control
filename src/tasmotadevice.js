@@ -54,7 +54,7 @@ class TasmotaDevice extends EventEmitter {
                 preset.previousSettings = {};
                 this.presetsConfigured.push(preset);
             } else {
-                const log = presetDisplayType === 0 ? false : this.emit('warn', `Preset Name: ${preset ? preset : 'Missing'}.`);
+                const log = presetDisplayType === 0 ? false : this.emit('warn', `Preset Name: ${preset ? preset : 'Missing'}`);
             };
         }
         this.presetsConfiguredCount = this.presetsConfigured.length || 0;
@@ -77,7 +77,7 @@ class TasmotaDevice extends EventEmitter {
                 button.previousValue = null;
                 this.buttonsConfigured.push(button);
             } else {
-                const log = buttonDisplayType === 0 ? false : this.emit('warn', `Button Name: ${buttonName ? buttonName : 'Missing'}, Mode: ${buttonMode ? buttonMode : 'Missing'}.`);
+                const log = buttonDisplayType === 0 ? false : this.emit('warn', `Button Name: ${buttonName ? buttonName : 'Missing'}, Mode: ${buttonMode ? buttonMode : 'Missing'}`);
             };
         }
         this.buttonsConfiguredCount = this.buttonsConfigured.length || 0;
@@ -100,7 +100,7 @@ class TasmotaDevice extends EventEmitter {
                 sensor.previousValue = null;
                 this.sensorsConfigured.push(sensor);
             } else {
-                const log = sensorDisplayType === 0 ? false : this.emit('warn', `Sensor Name: ${sensorName ? sensorName : 'Missing'}, Mode: ${sensorMode ? sensorMode : 'Missing'}.`);
+                const log = sensorDisplayType === 0 ? false : this.emit('warn', `Sensor Name: ${sensorName ? sensorName : 'Missing'}, Mode: ${sensorMode ? sensorMode : 'Missing'}`);
             };
         }
         this.sensorsConfiguredCount = this.sensorsConfigured.length || 0;
@@ -201,7 +201,7 @@ class TasmotaDevice extends EventEmitter {
                 this.emit('error', `Impulse generator error: ${error}`);
             };
         }).on('state', (state) => {
-            const emitState = state ? this.emit('success', `Impulse generator started.`) : this.emit('warn', `Impulse generator stopped.`);
+            const emitState = state ? this.emit('success', `Impulse generator started`) : this.emit('warn', `Impulse generator stopped`);
         });
     };
 
@@ -209,7 +209,7 @@ class TasmotaDevice extends EventEmitter {
         try {
             const addressMac = await this.getDeviceInfo();
             if (!addressMac) {
-                this.emit('warn', `Serial number not found.`);
+                this.emit('warn', `Serial number not found`);
                 return;
             };
 
@@ -217,7 +217,7 @@ class TasmotaDevice extends EventEmitter {
             await this.checkDeviceState();
 
             //connect to deice success
-            this.emit('success', `Connect Success.`)
+            this.emit('success', `Connect Success`)
 
             //check device info 
             const devInfo = !this.disableLogDeviceInfo ? this.deviceInfo() : false;
@@ -240,7 +240,7 @@ class TasmotaDevice extends EventEmitter {
     };
 
     async getDeviceInfo() {
-        const debug = this.enableDebugMode ? this.emit('debug', `Requesting info.`) : false;
+        const debug = this.enableDebugMode ? this.emit('debug', `Requesting info`) : false;
         try {
             const deviceInfoData = await this.axiosInstance(ApiCommands.Status);
             const deviceInfo = deviceInfoData.data ?? {};
@@ -281,12 +281,12 @@ class TasmotaDevice extends EventEmitter {
 
             return addressMac;
         } catch (error) {
-            throw new Error(`Check info error: ${error.message || error}`);
+            throw new Error(`Check info error: ${error}`);
         };
     };
 
     async checkDeviceState() {
-        const debug = this.enableDebugMode ? this.emit('debug', `Requesting status.`) : false;
+        const debug = this.enableDebugMode ? this.emit('debug', `Requesting status`) : false;
         try {
             //power status
             const powerStatusData = await this.axiosInstance(ApiCommands.PowerStatus);
@@ -642,7 +642,7 @@ class TasmotaDevice extends EventEmitter {
                                     button.state = prohibit === 'temp';
                                     break;
                                 default: //Unknown button
-                                    this.emit('message', `Unknown button mode: ${mode} detected.`);
+                                    this.emit('message', `Unknown button mode: ${mode} detected`);
                                     break;
                             };
 
@@ -821,7 +821,7 @@ class TasmotaDevice extends EventEmitter {
                                     sensor.state = operationModeStage === 'auto_leader';;
                                     break;
                                 default: //Unknown sensor
-                                    this.emit('message', `Unknown sensor mode: ${mode} detected.`);
+                                    this.emit('message', `Unknown sensor mode: ${mode} detected`);
                                     break;
                             };
 
@@ -1082,7 +1082,7 @@ class TasmotaDevice extends EventEmitter {
 
             return true;
         } catch (error) {
-            throw new Error(`Check state error: ${error.message || error}`);
+            throw new Error(`Check state error: ${error}`);
         };
     };
 
@@ -1097,7 +1097,7 @@ class TasmotaDevice extends EventEmitter {
             const temp = `${MiElHVAC.RemoteTemp}${remoteTemp}`
             await this.axiosInstance(temp);
         } catch (error) {
-            throw new Error(`Update remote temperature error: ${error.message ?? error}`);
+            throw new Error(`Update remote temperature error: ${error}`);
         };
     }
 
@@ -1120,7 +1120,7 @@ class TasmotaDevice extends EventEmitter {
             const debug = !this.enableDebugMode ? false : this.emit('debug', `Saved data: ${data}`);
             return true;
         } catch (error) {
-            throw new Error(`Save data error: ${error.message ?? error}`);
+            throw new Error(`Save data error: ${error}`);
         };
     }
 
@@ -1129,7 +1129,7 @@ class TasmotaDevice extends EventEmitter {
             const data = await fsPromises.readFile(path);
             return data;
         } catch (error) {
-            throw new Error(`Read data error: ${error.message ?? error}`);
+            throw new Error(`Read data error: ${error}`);
         };
     }
 
@@ -2012,7 +2012,7 @@ class TasmotaDevice extends EventEmitter {
 
             return accessory;
         } catch (error) {
-            throw new Error(`Prepare accessory error: ${error.message || error}`)
+            throw new Error(`Prepare accessory error: ${error}`)
         };
     }
 };
