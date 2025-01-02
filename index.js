@@ -95,8 +95,8 @@ class tasmotaPlatform {
           const impulseGenerator = new ImpulseGenerator();
           impulseGenerator.on('start', async () => {
             try {
-              await tasmotaDevice.start();
-              impulseGenerator.stop();
+              const startDone = await tasmotaDevice.start();
+              const stopImpulseGenerator = startDone ? await impulseGenerator.stop() : false;
             } catch (error) {
               log.error(`Device: ${host} ${deviceName}, ${error}, trying again.`);
             };
@@ -105,7 +105,7 @@ class tasmotaPlatform {
           });
 
           //start impulse generator
-          impulseGenerator.start([{ name: 'start', sampling: 45000 }]);
+          await impulseGenerator.start([{ name: 'start', sampling: 45000 }]);
         } catch (error) {
           log.error(`Device: ${host} ${deviceName}, Did finish launch error: ${error}.`);
         }
