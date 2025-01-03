@@ -1085,7 +1085,7 @@ class TasmotaDevice extends EventEmitter {
                             //lightbulb
                             const brightness = statusSts.Dimmer ?? false;
                             const colorTemp = statusSts.CT ?? false;
-                            const colorTemperature = colorTemp === false ? false : colorTemp > 153 ? colorTemp : 140;
+                            const colorTemperature = colorTemp === false ? false : colorTemp >= 153 ? colorTemp : 153;
                             const hue = statusSts.HSBColor1 ?? false;
                             const saturation = statusSts.HSBColor2 ?? false;
 
@@ -2190,7 +2190,7 @@ class TasmotaDevice extends EventEmitter {
                                     .onSet(async (value) => {
                                         try {
                                             value = value < 153 ? 153 : value;
-                                            const colorTemperature = `${ApiCommands.ColorTemperature}${value}`; //140..500
+                                            const colorTemperature = `${ApiCommands.ColorTemperature}${value}`; //153..500
                                             await this.axiosInstance(colorTemperature);
                                             const logInfo = this.disableLogInfo ? false : this.emit('message', `set color temperatur: ${value} °`);
                                         } catch (error) {

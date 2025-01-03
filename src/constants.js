@@ -12,14 +12,14 @@ export const ApiCommands = {
     "Toggle": "%20toggle",
     "Blink": "%20blink",
     "BlinkOff": "%20blinkoff",
-    "Dimmer": "Dimmer",
-    "DimmerAllChannels": "Dimmer1",
-    "DimmerForRgbChannels": "Dimmer2",
-    "DimmerForWhiteChannels": "Dimmer3",
-    "ColorTemperature": "CT",
-    "HSBColor": "HSBColor",
-    "HSBHue": "HSBColor1",
-    "HSBSaturation": "HSBColor2"
+    "Dimmer": "Dimmer%20",
+    "DimmerAllChannels": "Dimmer1%20",
+    "DimmerForRgbChannels": "Dimmer2%20",
+    "DimmerForWhiteChannels": "Dimmer3%20",
+    "ColorTemperature": "CT%20",
+    "HSBColor": "HSBColor%20",
+    "HSBHue": "HSBColor1%20",
+    "HSBSaturation": "HSBColor2%20"
 };
 
 export const MiElHVAC = {
