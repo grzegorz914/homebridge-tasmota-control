@@ -1085,7 +1085,7 @@ class TasmotaDevice extends EventEmitter {
                             //lightbulb
                             const brightness = statusSts.Dimmer ?? false;
                             const colorTemp = statusSts.CT ?? false;
-                            const colorTemperature = colorTemp !== false ? statusSts.CT > 153 ? statusSts.CT : 140 : false;
+                            const colorTemperature = colorTemp === false ? false : colorTemp > 153 ? colorTemp : 140;
                             const hue = statusSts.HSBColor1 ?? false;
                             const saturation = statusSts.HSBColor2 ?? false;
 
@@ -2181,10 +2181,10 @@ class TasmotaDevice extends EventEmitter {
                                         }
                                     });
                             };
-                            if (this.lights[i].colorTemperatue !== false) {
+                            if (this.lights[i].colorTemperature !== false) {
                                 switchOutletLightService.getCharacteristic(Characteristic.ColorTemperature)
                                     .onGet(async () => {
-                                        const value = this.lights[i].colorTemperatue;
+                                        const value = this.lights[i].colorTemperature;
                                         return value;
                                     })
                                     .onSet(async (value) => {
