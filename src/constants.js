@@ -19,7 +19,8 @@ export const ApiCommands = {
     "ColorTemperature": "CT%20",
     "HSBColor": "HSBColor%20",
     "HSBHue": "HSBColor1%20",
-    "HSBSaturation": "HSBColor2%20"
+    "HSBSaturation": "HSBColor2%20",
+    "HSBBrightness": "HSBColor3%20"
 };
 
 export const MiElHVAC = {

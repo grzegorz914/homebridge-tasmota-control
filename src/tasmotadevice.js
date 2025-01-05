@@ -311,12 +311,12 @@ class TasmotaDevice extends EventEmitter {
 
             //status SNS
             const statusSnsSupported = sensorStatusKeys.includes('StatusSNS');
-            const statusSns = sensorStatus.StatusSNS ?? {};
+            const statusSns = statusSnsSupported ? sensorStatus.StatusSNS : {};
             const statusSnsKeys = Object.keys(statusSns);
 
             //status STS
             const statusStsSupported = sensorStatusKeys.includes('StatusSTS');
-            const statusSts = sensorStatus.StatusSTS ?? {};
+            const statusSts = statusStsSupported ? sensorStatus.StatusSTS : {};
             const statusStsKeys = Object.keys(statusSts);
 
             //relays
@@ -1082,21 +1082,32 @@ class TasmotaDevice extends EventEmitter {
                             const powerKey = relaysCount === 1 ? 'POWER' : `POWER${powerNr}`;
                             const power = powerStatus[powerKey] === 'ON';
 
-                            //lightbulb
-                            const brightness = statusSts.Dimmer ?? false;
+                            //dimmer
+                            const dimmer = statusSts.Dimmer ?? false;
+
+                            //color temperature scale tasmota 153..500 to homekit 140..500
                             const colorTemp = statusSts.CT ?? false;
-                            const colorTemperature = colorTemp === false ? false : colorTemp >= 153 ? colorTemp : 153;
-                            const hue = statusSts.HSBColor1 ?? false;
-                            const saturation = statusSts.HSBColor2 ?? false;
+                            const colorTemperature = colorTemp !== false ? await scaleValue(colorTemp, 153, 500, 140, 500) : false;
+
+                            //hasb color map to array number
+                            const hsbColor = statusSts.HSBColor ? statusSts.HSBColor.split(',').map((value) => Number(value.trim())) : false;
+
+                            //extract hsb colors
+                            const [hue, saturation, brightness] = hsbColor !== false ? hsbColor : [false, false, false];
+
+                            //brightness type and brightness
+                            const brightnessType = brightness !== false ? 2 : dimmer !== false ? 1 : 0;
+                            const bright = [0, dimmer, brightness][brightnessType];
 
                             //push to array
                             const light = {
                                 friendlyName: friendlyName,
                                 power: power,
-                                brightness: brightness,
+                                brightness: bright,
                                 colorTemperature: colorTemperature,
                                 hue: hue,
-                                saturation: saturation
+                                saturation: saturation,
+                                brightnessType: brightnessType
                             };
                             this.lights.push(light);
 
@@ -1104,8 +1115,8 @@ class TasmotaDevice extends EventEmitter {
                             if (this.switchOutletLightServices) {
                                 this.switchOutletLightServices[i].updateCharacteristic(Characteristic.On, power);
 
-                                if (brightness !== false) {
-                                    this.switchOutletLightServices[i].updateCharacteristic(Characteristic.Brightness, brightness);
+                                if (brightnessType > 0) {
+                                    this.switchOutletLightServices[i].updateCharacteristic(Characteristic.Brightness, bright);
                                 };
                                 if (colorTemperature !== false) {
                                     this.switchOutletLightServices[i].updateCharacteristic(Characteristic.ColorTemperature, colorTemperature);
@@ -1121,7 +1132,7 @@ class TasmotaDevice extends EventEmitter {
                             //log info
                             if (!this.disableLogInfo) {
                                 this.emit('message', `${friendlyName}, state: ${power ? 'ON' : 'OFF'}`);
-                                const logInfo = brightness === false ? false : this.emit('message', `brightness: ${brightness} %`);
+                                const logInfo = brightnessType === 0 ? false : this.emit('message', `brightness: ${bright} %`);
                                 const logInfo1 = colorTemperature === false ? false : this.emit('message', `color temperatur: ${colorTemperature}`);
                                 const logInfo2 = hue === false ? false : this.emit('message', `hue: ${hue} %`);
                                 const logInfo3 = saturation === false ? false : this.emit('message', `saturation: ${saturation} %`);
@@ -1302,22 +1313,17 @@ class TasmotaDevice extends EventEmitter {
             //set remote temp
             const temp = `${MiElHVAC.RemoteTemp}${remoteTemp}`
             await this.axiosInstance(temp);
+
+            return true
         } catch (error) {
             throw new Error(`Update remote temperature error: ${error}`);
         };
     }
 
-    deviceInfo() {
-        this.emit('devInfo', `----- ${this.deviceName} -----`);
-        this.emit('devInfo', `Manufacturer: Tasmota`);
-        this.emit('devInfo', `Hardware: ${this.modelName}`);
-        this.emit('devInfo', `Serialnr: ${this.serialNumber}`);
-        this.emit('devInfo', `Firmware: ${this.firmwareRevision}`);
-        const log = this.device === 0 ? this.emit('devInfo', `Sensor: MiELHVAC`) : false;
-        const log1 = this.device > 0 && this.relaysCount > 0 ? this.emit('devInfo', `Relays: ${this.relaysCount}`) : false;
-        const log2 = this.device > 0 && this.sensorsCount > 0 ? this.emit('devInfo', `Sensors: ${this.sensorsCount}`) : false;
-        this.emit('devInfo', `----------------------------------`);
-    };
+    async scaleValue(value, oldMin, oldMax, newMin, newMax) {
+        const scaledValue = parseFloat((((Math.max(oldMin, Math.min(oldMax, value)) - oldMin) * (newMax - newMin)) / (oldMax - oldMin) + newMin).toFixed(0));
+        return scaledValue;
+    }
 
     async saveData(path, data) {
         try {
@@ -1338,6 +1344,18 @@ class TasmotaDevice extends EventEmitter {
             throw new Error(`Read data error: ${error}`);
         };
     }
+
+    deviceInfo() {
+        this.emit('devInfo', `----- ${this.deviceName} -----`);
+        this.emit('devInfo', `Manufacturer: Tasmota`);
+        this.emit('devInfo', `Hardware: ${this.modelName}`);
+        this.emit('devInfo', `Serialnr: ${this.serialNumber}`);
+        this.emit('devInfo', `Firmware: ${this.firmwareRevision}`);
+        const log = this.device === 0 ? this.emit('devInfo', `Sensor: MiELHVAC`) : false;
+        const log1 = this.device > 0 && this.relaysCount > 0 ? this.emit('devInfo', `Relays: ${this.relaysCount}`) : false;
+        const log2 = this.device > 0 && this.sensorsCount > 0 ? this.emit('devInfo', `Sensors: ${this.sensorsCount}`) : false;
+        this.emit('devInfo', `----------------------------------`);
+    };
 
     //Prepare accessory
     async prepareAccessory() {
@@ -2144,7 +2162,7 @@ class TasmotaDevice extends EventEmitter {
                         for (let i = 0; i < this.lights.length; i++) {
                             const friendlyName = this.lights[i].friendlyName;
                             const serviceNameLightbulb = this.lightsNamePrefix ? `${accessoryName} ${friendlyName}` : friendlyName;
-                            const switchOutletLightService = accessory.addService(Service.Lightbulb, serviceNameLightbulb, `Power ${i}`)
+                            const switchOutletLightService = accessory.addService(Service.Lightbulb, serviceNameLightbulb, `Light ${i}`)
                             switchOutletLightService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                             switchOutletLightService.setCharacteristic(Characteristic.ConfiguredName, serviceNameLightbulb);
                             switchOutletLightService.getCharacteristic(Characteristic.On)
@@ -2165,7 +2183,7 @@ class TasmotaDevice extends EventEmitter {
                                         this.emit('warn', `${friendlyName}, set state error: ${error}`);
                                     }
                                 });
-                            if (this.lights[i].brightness !== false) {
+                            if (this.lights[i].brightnessType > 0) {
                                 switchOutletLightService.getCharacteristic(Characteristic.Brightness)
                                     .onGet(async () => {
                                         const value = this.lights[i].brightness;
@@ -2173,7 +2191,7 @@ class TasmotaDevice extends EventEmitter {
                                     })
                                     .onSet(async (value) => {
                                         try {
-                                            const brightness = `${ApiCommands.Dimmer}${value}`; //0..100
+                                            const brightness = ['', `${ApiCommands.Dimmer}${value}`, `${ApiCommands.HSBBrightness}${value}`][this.lights[i].brightnessType]; //0..100
                                             await this.axiosInstance(brightness);
                                             const logInfo = this.disableLogInfo ? false : this.emit('message', `set brightness: ${value} %`);
                                         } catch (error) {
@@ -2189,7 +2207,7 @@ class TasmotaDevice extends EventEmitter {
                                     })
                                     .onSet(async (value) => {
                                         try {
-                                            value = value < 153 ? 153 : value;
+                                            value = await scaleValue(value, 140, 500, 153, 500);
                                             const colorTemperature = `${ApiCommands.ColorTemperature}${value}`; //153..500
                                             await this.axiosInstance(colorTemperature);
                                             const logInfo = this.disableLogInfo ? false : this.emit('message', `set color temperatur: ${value} °`);
