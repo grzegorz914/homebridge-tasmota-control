@@ -206,40 +206,6 @@ class TasmotaDevice extends EventEmitter {
         });
     };
 
-    async start() {
-        try {
-            const addressMac = await this.getDeviceInfo();
-            if (!addressMac) {
-                this.emit('warn', `Serial number not found`);
-                return false;
-            };
-
-            //check device state 
-            await this.checkDeviceState();
-
-            //connect to deice success
-            this.emit('success', `Connect Success`)
-
-            //check device info 
-            const devInfo = !this.disableLogDeviceInfo ? this.deviceInfo() : false;
-
-            //start prepare accessory
-            if (this.startPrepareAccessory) {
-                const accessory = await this.prepareAccessory();
-                const publishAccessory = this.emit('publishAccessory', accessory);
-                this.startPrepareAccessory = false;
-            }
-
-            //start update data
-            const timers = [{ name: 'checkDeviceState', sampling: this.refreshInterval }];
-            const remoteTempSensor = this.remoteTemperatureSensorEnable ? timers.push({ name: 'updateRemoteTemp', sampling: this.remoteTemperatureSensorRefreshInterval }) : false;
-            await this.impulseGenerator.start(timers);
-            return true;
-        } catch (error) {
-            throw new Error(`Start error: ${error}`);
-        };
-    };
-
     async getDeviceInfo() {
         const debug = this.enableDebugMode ? this.emit('debug', `Requesting info`) : false;
         try {
@@ -1087,7 +1053,7 @@ class TasmotaDevice extends EventEmitter {
 
                             //color temperature scale tasmota 153..500 to homekit 140..500
                             const colorTemp = statusSts.CT ?? false;
-                            const colorTemperature = colorTemp !== false ? await scaleValue(colorTemp, 153, 500, 140, 500) : false;
+                            const colorTemperature = colorTemp !== false ? await this.scaleValue(colorTemp, 153, 500, 140, 500) : false;
 
                             //hasb color map to array number
                             const hsbColor = statusSts.HSBColor ? statusSts.HSBColor.split(',').map((value) => Number(value.trim())) : false;
@@ -1357,7 +1323,7 @@ class TasmotaDevice extends EventEmitter {
         this.emit('devInfo', `----------------------------------`);
     };
 
-    //Prepare accessory
+    //prepare accessory
     async prepareAccessory() {
         const debug = this.enableDebugMode ? this.emit('debug', `Prepare Accessory`) : false;
 
@@ -2207,7 +2173,7 @@ class TasmotaDevice extends EventEmitter {
                                     })
                                     .onSet(async (value) => {
                                         try {
-                                            value = await scaleValue(value, 140, 500, 153, 500);
+                                            value = await this.scaleValue(value, 140, 500, 153, 500);
                                             const colorTemperature = `${ApiCommands.ColorTemperature}${value}`; //153..500
                                             await this.axiosInstance(colorTemperature);
                                             const logInfo = this.disableLogInfo ? false : this.emit('message', `set color temperatur: ${value} °`);
@@ -2469,5 +2435,40 @@ class TasmotaDevice extends EventEmitter {
             throw new Error(`Prepare accessory error: ${error}`)
         };
     }
+
+    //start
+    async start() {
+        try {
+            const addressMac = await this.getDeviceInfo();
+            if (!addressMac) {
+                this.emit('warn', `Serial number not found`);
+                return false;
+            };
+
+            //check device state 
+            await this.checkDeviceState();
+
+            //connect to deice success
+            this.emit('success', `Connect Success`)
+
+            //check device info 
+            const devInfo = !this.disableLogDeviceInfo ? this.deviceInfo() : false;
+
+            //start prepare accessory
+            if (this.startPrepareAccessory) {
+                const accessory = await this.prepareAccessory();
+                const publishAccessory = this.emit('publishAccessory', accessory);
+                this.startPrepareAccessory = false;
+            }
+
+            //start update data
+            const timers = [{ name: 'checkDeviceState', sampling: this.refreshInterval }];
+            const remoteTempSensor = this.remoteTemperatureSensorEnable ? timers.push({ name: 'updateRemoteTemp', sampling: this.remoteTemperatureSensorRefreshInterval }) : false;
+            await this.impulseGenerator.start(timers);
+            return true;
+        } catch (error) {
+            throw new Error(`Start error: ${error}`);
+        };
+    };
 };
 export default TasmotaDevice;
