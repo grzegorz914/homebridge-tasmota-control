@@ -78,8 +78,11 @@
           "sensorssNamePrefix": false,
           "loadNameFromDevice": false,
           "refreshInterval": 5,
-          "disableLogInfo": false,
           "disableLogDeviceInfo": false,
+          "disableLogInfo": false,
+          "disableLogSuccess": false,
+          "disableLogWarn": false,
+          "disableLogError": false,
           "enableDebugMode": false
         }
       ]

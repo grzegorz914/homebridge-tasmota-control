@@ -141,6 +141,9 @@ Homebridge plugin for Tasmota flashed devices.
 | `sensorsNamePrefix` | Here enable/disable the accessory name as a prefix for sensors name. |
 | `loadNameFromDevice` | If enabled, the accessory name will be loaded direct from device. |
 | `refreshInterval` | Here set the data refresh time in (sec). |
-| `enableDebugMode` | This enable debug log in homebridge console. |
-| `disableLogInfo` | This disable log info, all values and state will not be displayed in Homebridge log console. |
 | `disableLogDeviceInfo` | If enabled, add ability to disable log device info by every connections device to the network. |
+| `disableLogInfo` | If enabled, disable log info, all values and state will not be displayed in Homebridge log console. |
+| `disableLogSuccess` | If enabled, disable logging device success. |
+| `disableLogWarn` | If enabled, disable logging device warnings. |
+| `disableLogError` | If enabled, disable logging device error. |
+| `enableDebugMode` | If enabled, deep log will be present in homebridge console. |

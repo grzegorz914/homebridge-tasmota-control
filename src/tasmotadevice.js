@@ -1286,8 +1286,8 @@ class TasmotaDevice extends EventEmitter {
         };
     }
 
-    async scaleValue(value, oldMin, oldMax, newMin, newMax) {
-        const scaledValue = parseFloat((((Math.max(oldMin, Math.min(oldMax, value)) - oldMin) * (newMax - newMin)) / (oldMax - oldMin) + newMin).toFixed(0));
+    async scaleValue(value, inMin, inMax, outMin, outMax) {
+        const scaledValue = parseFloat((((Math.max(inMin, Math.min(inMax, value)) - inMin) * (outMax - outMin)) / (inMax - inMin) + outMin).toFixed(0));
         return scaledValue;
     }
 
@@ -2465,6 +2465,7 @@ class TasmotaDevice extends EventEmitter {
             const timers = [{ name: 'checkDeviceState', sampling: this.refreshInterval }];
             const remoteTempSensor = this.remoteTemperatureSensorEnable ? timers.push({ name: 'updateRemoteTemp', sampling: this.remoteTemperatureSensorRefreshInterval }) : false;
             await this.impulseGenerator.start(timers);
+            
             return true;
         } catch (error) {
             throw new Error(`Start error: ${error}`);
