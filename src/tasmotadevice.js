@@ -1311,6 +1311,18 @@ class TasmotaDevice extends EventEmitter {
         };
     }
 
+    async startImpulseGenerator() {
+        try {
+            //start impulse generator 
+            const timers = [{ name: 'checkDeviceState', sampling: this.refreshInterval }];
+            const remoteTempSensor = this.remoteTemperatureSensorEnable ? timers.push({ name: 'updateRemoteTemp', sampling: this.remoteTemperatureSensorRefreshInterval }) : false;
+            await this.impulseGenerator.start(timers);
+            return true;
+        } catch (error) {
+            throw new Error(`Impulse generator start error: ${error}`);
+        };
+    }
+
     deviceInfo() {
         this.emit('devInfo', `----- ${this.deviceName} -----`);
         this.emit('devInfo', `Manufacturer: Tasmota`);
@@ -2461,11 +2473,6 @@ class TasmotaDevice extends EventEmitter {
                 this.startPrepareAccessory = false;
             }
 
-            //start update data
-            const timers = [{ name: 'checkDeviceState', sampling: this.refreshInterval }];
-            const remoteTempSensor = this.remoteTemperatureSensorEnable ? timers.push({ name: 'updateRemoteTemp', sampling: this.remoteTemperatureSensorRefreshInterval }) : false;
-            await this.impulseGenerator.start(timers);
-            
             return true;
         } catch (error) {
             throw new Error(`Start error: ${error}`);
