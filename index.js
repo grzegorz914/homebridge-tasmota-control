@@ -127,5 +127,5 @@ class tasmotaPlatform {
 };
 
 export default (api) => {
-  api.registerPlatform(PluginName, PlatformName, tasmotaPlatform, true);
+  api.registerPlatform(PluginName, PlatformName, tasmotaPlatform);
 };
