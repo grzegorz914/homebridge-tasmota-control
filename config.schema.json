@@ -57,6 +57,7 @@
               "title": "Disable Accessory",
               "type": "boolean",
               "default": false,
+              "description": "Here You can disable this accessory.",
               "required": false
             },
             "miElHvac": {
