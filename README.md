@@ -101,6 +101,7 @@ Homebridge plugin for Tasmota flashed devices.
 | `auth` | If enabled, authorizatins credentials will be used for login. |
 | `user` | Here set the authorization *Username*. |
 | `passwd` | Here set the authorization *Password*. |
+| `disableAccessory` | If enabled, the accessory will be disabled. |
 | `miElHvac.heatDryFanMode` | Here select the operatiing mode for `Heat`, only for Mitsubishio AC. |
 | `miElHvac.coolDryFanMode` | Here select the operatiing mode for `Cool`, only for Mitsubishio AC. |
 | `miElHvac.autoDryFanMode` | Here select the operatiing mode for `Auto`, only for Mitsubishio AC. |

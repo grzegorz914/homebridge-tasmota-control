@@ -53,6 +53,12 @@
               },
               "required": false
             },
+            "disableAccessory": {
+              "title": "Disable Accessory",
+              "type": "boolean",
+              "default": false,
+              "required": false
+            },
             "miElHvac": {
               "title": "RESTFul",
               "type": "object",
@@ -1307,6 +1313,7 @@
       "items": [
         "devices[].name",
         "devices[].host",
+        "devices[].disableAccessory",
         {
           "key": "devices[]",
           "type": "section",
@@ -1480,7 +1487,10 @@
                 }
               ]
             }
-          ]
+          ],
+          "condition": {
+            "functionBody": "return model.devices[arrayIndices].disableAccessory === false;"
+          }
         }
       ]
     }

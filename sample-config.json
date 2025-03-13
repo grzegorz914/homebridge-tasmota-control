@@ -24,6 +24,7 @@
           "auth": false,
           "user": "user",
           "passwd": "password",
+          "disableAccessory": false,
           "miElHvac": {
             "heatDryFanMode": 1,
             "coolDryFanMode": 1,
