@@ -197,6 +197,7 @@
                       "minimum": 1.0,
                       "maximum": 600,
                       "multipleOf": 0.5,
+                      "default": 5,
                       "description": "Here set the sensor data refresh time in (sec).",
                       "condition": {
                         "functionBody": "return model.devices[arrayIndices].miElHvac.remoteTemperatureSensor.enable === true;"
@@ -249,6 +250,7 @@
                       "mode": {
                         "title": "Operation Mode",
                         "type": "string",
+                        "default": "heat",
                         "oneOf": [
                           {
                             "title": "HEAT",
@@ -290,6 +292,7 @@
                         "minimum": 10,
                         "maximum": 31,
                         "multipleOf": 0.5,
+                        "default": 20,
                         "description": "Here set the target temperature.",
                         "condition": {
                           "functionBody": "return model.devices[arrayIndices].miElHvac.presets[arrayIndices].mode === heat || return model.devices[arrayIndices].miElHvac.presets[arrayIndices].mode === cool || return model.devices[arrayIndices].miElHvac.presets[arrayIndices].mode === auto;"
@@ -343,6 +346,7 @@
                       "swingV": {
                         "title": "VANE Vertical Direction",
                         "type": "string",
+                        "default": "auto",
                         "oneOf": [
                           {
                             "title": "AUTO",
@@ -393,6 +397,7 @@
                       "swingH": {
                         "title": "VANE Horizontal Direction",
                         "type": "string",
+                        "default": "swing",
                         "oneOf": [
                           {
                             "title": "LEFT",
@@ -515,6 +520,7 @@
                         "type": "integer",
                         "minimum": 0,
                         "maximum": 53,
+                        "default": 0,
                         "description": "Here select function.",
                         "oneOf": [
                           {
@@ -787,6 +793,7 @@
                         "type": "integer",
                         "minimum": 0,
                         "maximum": 94,
+                        "default": 0,
                         "description": "Here select function.",
                         "oneOf": [
                           {
@@ -1261,6 +1268,7 @@
               "minimum": 0.5,
               "maximum": 60,
               "multipleOf": 0.5,
+              "default": 5,
               "description": "Here set the data refresh time in (sec).",
               "required": true
             },
