@@ -45,9 +45,9 @@ class TasmotaDevice extends EventEmitter {
         for (const preset of presets) {
             const displayType = preset.displayType ?? 0;
             if (displayType === 0) {
-                return;
+                continue;
+            };
 
-            }
             const presetyServiceType = ['', Service.Outlet, Service.Switch, Service.MotionSensor, Service.OccupancySensor, Service.ContactSensor][displayType];
             const presetCharacteristicType = ['', Characteristic.On, Characteristic.On, Characteristic.MotionDetected, Characteristic.OccupancyDetected, Characteristic.ContactSensorState][displayType];
             preset.serviceType = presetyServiceType;
@@ -65,9 +65,8 @@ class TasmotaDevice extends EventEmitter {
         for (const button of buttons) {
             const displayType = button.displayType ?? 0;
             if (displayType === 0) {
-                return;
-
-            }
+                continue;
+            };
 
             const buttonServiceType = ['', Service.Outlet, Service.Switch][displayType];
             const buttonCharacteristicType = ['', Characteristic.On, Characteristic.On][displayType];
@@ -86,9 +85,9 @@ class TasmotaDevice extends EventEmitter {
         for (const sensor of sensors) {
             const displayType = sensor.displayType ?? 0;
             if (displayType === 0) {
-                return;
+                continue;
+            };
 
-            }
             const sensorServiceType = ['', Service.MotionSensor, Service.OccupancySensor, Service.ContactSensor][displayType];
             const sensorCharacteristicType = ['', Characteristic.MotionDetected, Characteristic.OccupancyDetected, Characteristic.ContactSensorState][displayType];
             sensor.serviceType = sensorServiceType;
