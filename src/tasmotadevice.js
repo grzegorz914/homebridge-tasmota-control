@@ -43,21 +43,19 @@ class TasmotaDevice extends EventEmitter {
         const presets = miElHvac.presets || [];
         this.presetsConfigured = [];
         for (const preset of presets) {
-            const presetName = preset.name ?? false;
-            const presetDisplayType = preset.displayType ?? 0;
-            const presetNamePrefix = preset.namePrefix ?? false;
-            if (presetName && presetDisplayType > 0) {
-                const presetyServiceType = ['', Service.Outlet, Service.Switch, Service.MotionSensor, Service.OccupancySensor, Service.ContactSensor][presetDisplayType];
-                const presetCharacteristicType = ['', Characteristic.On, Characteristic.On, Characteristic.MotionDetected, Characteristic.OccupancyDetected, Characteristic.ContactSensorState][presetDisplayType];
-                preset.namePrefix = presetNamePrefix;
-                preset.serviceType = presetyServiceType;
-                preset.characteristicType = presetCharacteristicType;
-                preset.state = false;
-                preset.previousSettings = {};
-                this.presetsConfigured.push(preset);
-            } else {
-                const log = presetDisplayType === 0 ? false : this.emit('warn', `Preset Name: ${preset ? preset : 'Missing'}`);
-            };
+            const displayType = preset.displayType ?? 0;
+            if (displayType === 0) {
+                return;
+
+            }
+            const presetyServiceType = ['', Service.Outlet, Service.Switch, Service.MotionSensor, Service.OccupancySensor, Service.ContactSensor][displayType];
+            const presetCharacteristicType = ['', Characteristic.On, Characteristic.On, Characteristic.MotionDetected, Characteristic.OccupancyDetected, Characteristic.ContactSensorState][displayType];
+            preset.serviceType = presetyServiceType;
+            preset.characteristicType = presetCharacteristicType;
+            preset.name = preset.name || 'Preset';
+            preset.state = false;
+            preset.previousSettings = {};
+            this.presetsConfigured.push(preset);
         }
         this.presetsConfiguredCount = this.presetsConfigured.length || 0;
 
@@ -65,22 +63,20 @@ class TasmotaDevice extends EventEmitter {
         const buttons = miElHvac.buttons || [];
         this.buttonsConfigured = [];
         for (const button of buttons) {
-            const buttonName = button.name ?? false;
-            const buttonMode = button.mode ?? -1;
-            const buttonDisplayType = button.displayType ?? 0;
-            const buttonNamePrefix = button.namePrefix ?? false;
-            if (buttonName && buttonMode >= 0 && buttonDisplayType > 0) {
-                const buttonServiceType = ['', Service.Outlet, Service.Switch][buttonDisplayType];
-                const buttonCharacteristicType = ['', Characteristic.On, Characteristic.On][buttonDisplayType];
-                button.namePrefix = buttonNamePrefix;
-                button.serviceType = buttonServiceType;
-                button.characteristicType = buttonCharacteristicType;
-                button.state = false;
-                button.previousValue = null;
-                this.buttonsConfigured.push(button);
-            } else {
-                const log = buttonDisplayType === 0 ? false : this.emit('warn', `Button Name: ${buttonName ? buttonName : 'Missing'}, Mode: ${buttonMode ? buttonMode : 'Missing'}`);
-            };
+            const displayType = button.displayType ?? 0;
+            if (displayType === 0) {
+                return;
+
+            }
+
+            const buttonServiceType = ['', Service.Outlet, Service.Switch][displayType];
+            const buttonCharacteristicType = ['', Characteristic.On, Characteristic.On][displayType];
+            button.serviceType = buttonServiceType;
+            button.characteristicType = buttonCharacteristicType;
+            button.name = button.name || 'Button';
+            button.state = false;
+            button.previousValue = null;
+            this.buttonsConfigured.push(button);
         }
         this.buttonsConfiguredCount = this.buttonsConfigured.length || 0;
 
@@ -88,22 +84,19 @@ class TasmotaDevice extends EventEmitter {
         const sensors = miElHvac.sensors || [];
         this.sensorsConfigured = [];
         for (const sensor of sensors) {
-            const sensorName = sensor.name ?? false;
-            const sensorMode = sensor.mode ?? -1;
-            const sensorDisplayType = sensor.displayType ?? 0;
-            const sensorNamePrefix = sensor.namePrefix ?? false;
-            if (sensorName && sensorMode >= 0 && sensorDisplayType > 0) {
-                const sensorServiceType = ['', Service.MotionSensor, Service.OccupancySensor, Service.ContactSensor][sensorDisplayType];
-                const sensorCharacteristicType = ['', Characteristic.MotionDetected, Characteristic.OccupancyDetected, Characteristic.ContactSensorState][sensorDisplayType];
-                sensor.namePrefix = sensorNamePrefix;
-                sensor.serviceType = sensorServiceType;
-                sensor.characteristicType = sensorCharacteristicType;
-                sensor.state = false;
-                sensor.previousValue = null;
-                this.sensorsConfigured.push(sensor);
-            } else {
-                const log = sensorDisplayType === 0 ? false : this.emit('warn', `Sensor Name: ${sensorName ? sensorName : 'Missing'}, Mode: ${sensorMode ? sensorMode : 'Missing'}`);
-            };
+            const displayType = sensor.displayType ?? 0;
+            if (displayType === 0) {
+                return;
+
+            }
+            const sensorServiceType = ['', Service.MotionSensor, Service.OccupancySensor, Service.ContactSensor][displayType];
+            const sensorCharacteristicType = ['', Characteristic.MotionDetected, Characteristic.OccupancyDetected, Characteristic.ContactSensorState][displayType];
+            sensor.serviceType = sensorServiceType;
+            sensor.characteristicType = sensorCharacteristicType;
+            sensor.name = sensor.name || 'Sensor';
+            sensor.state = false;
+            sensor.previousValue = null;
+            this.sensorsConfigured.push(sensor);
         }
         this.sensorsConfiguredCount = this.sensorsConfigured.length || 0;
 

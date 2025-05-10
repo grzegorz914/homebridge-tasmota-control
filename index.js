@@ -110,7 +110,7 @@ class tasmotaPlatform {
               const stopImpulseGenerator = startDone ? await impulseGenerator.stop() : false;
 
               //start impulse generator 
-              const startImpulseGenerator = startDone ? await tasmotaDevice.startImpulseGenerator() : false
+              const startImpulseGenerator = stopImpulseGenerator ? await tasmotaDevice.startImpulseGenerator() : false
             } catch (error) {
               const emitLog = disableLogError ? false : log.error(`Device: ${host} ${deviceName}, ${error}, trying again.`);
             };
