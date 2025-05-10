@@ -329,7 +329,7 @@ class TasmotaDevice extends EventEmitter {
                     const hideDryModeControl = false;
                     const hideVaneControls = false;
 
-                    this.accessory = {
+                    const accessory = {
                         time: time,
                         power: power,
                         roomTemperature: roomTemperature,
@@ -337,6 +337,8 @@ class TasmotaDevice extends EventEmitter {
                         setTemperature: setTemperature,
                         operationMode: operationMode,
                         operationModeStage: operationModeStage,
+                        currentOperationMode: 0,
+                        targetOperationMode: 0,
                         vaneVerticalDirection: vaneVerticalDirection,
                         vaneHorizontalDirection: vaneHorizontalDirection,
                         prohibit: prohibit,
@@ -383,46 +385,46 @@ class TasmotaDevice extends EventEmitter {
                     };
                     switch (operationMode) {
                         case 'heat':
-                            this.accessory.currentOperationMode = [2, 1, 2, 3, 0][operationModeStageMap[operationModeStage]]; //INACTIVE, IDLE, HEATING, COOLING
-                            this.accessory.targetOperationMode = 1; //AUTO, HEAT, COOL
+                            accessory.currentOperationMode = [2, 1, 2, 3, 0][operationModeStageMap[operationModeStage]]; //INACTIVE, IDLE, HEATING, COOLING
+                            accessory.targetOperationMode = 1; //AUTO, HEAT, COOL
                             break;
                         case 'dry':
-                            this.accessory.currentOperationMode = [1, 1, 2, 3, 0][operationModeStageMap[operationModeStage]];
-                            this.accessory.targetOperationMode = this.autoDryFanMode === 2 ? 0 : this.heatDryFanMode === 2 ? 1 : this.coolDryFanMode === 2 ? 2 : this.accessory.targetOperationMode ?? 0;
+                            accessory.currentOperationMode = [1, 1, 2, 3, 0][operationModeStageMap[operationModeStage]];
+                            accessory.targetOperationMode = this.autoDryFanMode === 2 ? 0 : this.heatDryFanMode === 2 ? 1 : this.coolDryFanMode === 2 ? 2 : accessory.targetOperationMode;
                             break;
                         case 'cool':
-                            this.accessory.currentOperationMode = [3, 1, 2, 3, 0][operationModeStageMap[operationModeStage]];
-                            this.accessory.targetOperationMode = 2;
+                            accessory.currentOperationMode = [3, 1, 2, 3, 0][operationModeStageMap[operationModeStage]];
+                            accessory.targetOperationMode = 2;
                             break;
                         case 'fan':
-                            this.accessory.currentOperationMode = [1, 1, 2, 3, 0][operationModeStageMap[operationModeStage]];
-                            this.accessory.targetOperationMode = this.autoDryFanMode === 3 ? 0 : this.heatDryFanMode === 3 ? 1 : this.coolDryFanMode === 3 ? 2 : this.accessory.targetOperationMode ?? 0;
+                            accessory.currentOperationMode = [1, 1, 2, 3, 0][operationModeStageMap[operationModeStage]];
+                            accessory.targetOperationMode = this.autoDryFanMode === 3 ? 0 : this.heatDryFanMode === 3 ? 1 : this.coolDryFanMode === 3 ? 2 : accessory.targetOperationMode;
                             break;
                         case 'auto':
-                            this.accessory.currentOperationMode = [2, 1, 2, 3, 0][operationModeStageMap[operationModeStage]];
-                            this.accessory.targetOperationMode = 0;
+                            accessory.currentOperationMode = [2, 1, 2, 3, 0][operationModeStageMap[operationModeStage]];
+                            accessory.targetOperationMode = 0;
                             break;
                         case 'heat_isee':
-                            this.accessory.currentOperationMode = [2, 1, 2, 3, 0][operationModeStageMap[operationModeStage]];
-                            this.accessory.targetOperationMode = 1;
+                            accessory.currentOperationMode = [2, 1, 2, 3, 0][operationModeStageMap[operationModeStage]];
+                            accessory.targetOperationMode = 1;
                             break;
                         case 'dry_isee':
-                            this.accessory.currentOperationMode = [1, 1, 2, 3, 0][operationModeStageMap[operationModeStage]];
-                            this.accessory.targetOperationMode = this.autoDryFanMode === 2 ? 0 : this.heatDryFanMode === 2 ? 1 : this.coolDryFanMode === 2 ? 2 : this.accessory.targetOperationMode ?? 0;
+                            accessory.currentOperationMode = [1, 1, 2, 3, 0][operationModeStageMap[operationModeStage]];
+                            accessory.targetOperationMode = this.autoDryFanMode === 2 ? 0 : this.heatDryFanMode === 2 ? 1 : this.coolDryFanMode === 2 ? 2 : accessory.targetOperationMode;
                             break;
                         case 'cool_isee':
-                            this.accessory.currentOperationMode = [3, 1, 2, 3, 0][operationModeStageMap[operationModeStage]];
-                            this.accessory.targetOperationMode = 2;
+                            accessory.currentOperationMode = [3, 1, 2, 3, 0][operationModeStageMap[operationModeStage]];
+                            accessory.targetOperationMode = 2;
                             break;
                         default:
                             this.emit('warn', `Unknown operating mode: ${operationMode}`);
                             return
                     };
 
-                    this.accessory.currentOperationMode = !power ? 0 : this.accessory.currentOperationMode;
-                    this.accessory.operationModeSetPropsMinValue = modelSupportsAuto && modelSupportsHeat ? 0 : !modelSupportsAuto && modelSupportsHeat ? 1 : modelSupportsAuto && !modelSupportsHeat ? 0 : 2;
-                    this.accessory.operationModeSetPropsMaxValue = 2
-                    this.accessory.operationModeSetPropsValidValues = modelSupportsAuto && modelSupportsHeat ? [0, 1, 2] : !modelSupportsAuto && modelSupportsHeat ? [1, 2] : modelSupportsAuto && !modelSupportsHeat ? [0, 2] : [2];
+                    accessory.currentOperationMode = !power ? 0 : accessory.currentOperationMode;
+                    accessory.operationModeSetPropsMinValue = modelSupportsAuto && modelSupportsHeat ? 0 : !modelSupportsAuto && modelSupportsHeat ? 1 : modelSupportsAuto && !modelSupportsHeat ? 0 : 2;
+                    accessory.operationModeSetPropsMaxValue = 2
+                    accessory.operationModeSetPropsValidValues = modelSupportsAuto && modelSupportsHeat ? [0, 1, 2] : !modelSupportsAuto && modelSupportsHeat ? [1, 2] : modelSupportsAuto && !modelSupportsHeat ? [0, 2] : [2];
 
                     if (modelSupportsFanSpeed) {
                         //fan speed mode
@@ -437,37 +439,38 @@ class TasmotaDevice extends EventEmitter {
 
                         switch (numberOfFanSpeeds) {
                             case 2: //Fan speed mode 2
-                                this.accessory.fanSpeed = hasAutomaticFanSpeed ? [3, 1, 2][fanSpeedMap[fanSpeed]] : [0, 1, 2][fanSpeedMap[fanSpeed]];
-                                this.accessory.fanSpeedSetPropsMaxValue = hasAutomaticFanSpeed ? 3 : 2;
+                                accessory.fanSpeed = hasAutomaticFanSpeed ? [3, 1, 2][fanSpeedMap[fanSpeed]] : [0, 1, 2][fanSpeedMap[fanSpeed]];
+                                accessory.fanSpeedSetPropsMaxValue = hasAutomaticFanSpeed ? 3 : 2;
                                 break;
                             case 3: //Fan speed mode 3
-                                this.accessory.fanSpeed = hasAutomaticFanSpeed ? [4, 1, 2, 3][fanSpeedMap[fanSpeed]] : [0, 1, 2, 3][fanSpeedMap[fanSpeed]];
-                                this.accessory.fanSpeedSetPropsMaxValue = hasAutomaticFanSpeed ? 4 : 3;
+                                accessory.fanSpeed = hasAutomaticFanSpeed ? [4, 1, 2, 3][fanSpeedMap[fanSpeed]] : [0, 1, 2, 3][fanSpeedMap[fanSpeed]];
+                                accessory.fanSpeedSetPropsMaxValue = hasAutomaticFanSpeed ? 4 : 3;
                                 break;
                             case 4: //Fan speed mode 4
-                                this.accessory.fanSpeed = hasAutomaticFanSpeed ? [5, 1, 2, 3, 4][fanSpeedMap[fanSpeed]] : [0, 1, 2, 3, 4][fanSpeedMap[fanSpeed]];
-                                this.accessory.fanSpeedSetPropsMaxValue = hasAutomaticFanSpeed ? 5 : 4;
+                                accessory.fanSpeed = hasAutomaticFanSpeed ? [5, 1, 2, 3, 4][fanSpeedMap[fanSpeed]] : [0, 1, 2, 3, 4][fanSpeedMap[fanSpeed]];
+                                accessory.fanSpeedSetPropsMaxValue = hasAutomaticFanSpeed ? 5 : 4;
                                 break;
                             case 5: //Fan speed mode 5
-                                this.accessory.fanSpeed = hasAutomaticFanSpeed ? [6, 1, 2, 3, 4, 5][fanSpeedMap[fanSpeed]] : [0, 1, 2, 3, 4, 5][fanSpeedMap[fanSpeed]];
-                                this.accessory.fanSpeedSetPropsMaxValue = hasAutomaticFanSpeed ? 6 : 5;
+                                accessory.fanSpeed = hasAutomaticFanSpeed ? [6, 1, 2, 3, 4, 5][fanSpeedMap[fanSpeed]] : [0, 1, 2, 3, 4, 5][fanSpeedMap[fanSpeed]];
+                                accessory.fanSpeedSetPropsMaxValue = hasAutomaticFanSpeed ? 6 : 5;
                                 break;
                         };
                     };
+                    this.accessory = accessory;
 
                     //update characteristics
                     if (this.miElHvacService) {
                         this.miElHvacService
                             .updateCharacteristic(Characteristic.Active, power)
-                            .updateCharacteristic(Characteristic.CurrentHeaterCoolerState, this.accessory.currentOperationMode)
-                            .updateCharacteristic(Characteristic.TargetHeaterCoolerState, this.accessory.targetOperationMode)
+                            .updateCharacteristic(Characteristic.CurrentHeaterCoolerState, accessory.currentOperationMode)
+                            .updateCharacteristic(Characteristic.TargetHeaterCoolerState, accessory.targetOperationMode)
                             .updateCharacteristic(Characteristic.CurrentTemperature, roomTemperature)
                             .updateCharacteristic(Characteristic.LockPhysicalControls, lockPhysicalControl)
                             .updateCharacteristic(Characteristic.TemperatureDisplayUnits, useFahrenheit)
                             .updateCharacteristic(Characteristic.SwingMode, swingMode);
-                        const updateDefCool = operationMode === 'auto' || operationMode === 'cool' ? this.miElHvacService.updateCharacteristic(Characteristic.CoolingThresholdTemperature, operationMode === 'auto' ? defaultCoolingSetTemperature : setTemperature) : false;
-                        const updateDefHeat = operationMode === 'auto' || operationMode === 'heat' ? this.miElHvacService.updateCharacteristic(Characteristic.HeatingThresholdTemperature, operationMode === 'auto' ? defaultHeatingSetTemperature : setTemperature) : false;
-                        const updateRS = modelSupportsFanSpeed ? this.miElHvacService.updateCharacteristic(Characteristic.RotationSpeed, this.accessory.fanSpeed) : false;
+                        const updateDefCool = accessory.targetOperationMode === 0 || accessory.targetOperationMode === 2 ? this.miElHvacService.updateCharacteristic(Characteristic.CoolingThresholdTemperature, accessory.targetOperationMode === 0 ? defaultCoolingSetTemperature : setTemperature) : false;
+                        const updateDefHeat = accessory.targetOperationMode === 0 || accessory.targetOperationMode === 1 ? this.miElHvacService.updateCharacteristic(Characteristic.HeatingThresholdTemperature, accessory.targetOperationMode === 0 ? defaultHeatingSetTemperature : setTemperature) : false;
+                        const updateRS = modelSupportsFanSpeed ? this.miElHvacService.updateCharacteristic(Characteristic.RotationSpeed, accessory.fanSpeed) : false;
 
                         if (this.frostProtectEnable) {
                             if (roomTemperature <= this.frostProtectLowTemp && !power) {
@@ -487,9 +490,8 @@ class TasmotaDevice extends EventEmitter {
                     };
 
                     //update presets state
-                    if (this.presetsConfigured.length > 0) {
-                        for (let i = 0; i < this.presetsConfigured.length; i++) {
-                            const preset = this.presetsConfigured[i];
+                    if (this.presetsConfiguredCount > 0) {
+                        this.presetsConfigured.forEach((preset, index) => {
 
                             let iseeMode = operationMode;
                             iseeMode = (operationMode === 'heat' || operationMode === 'heat_isee') ? 'heat' : iseeMode;
@@ -504,16 +506,15 @@ class TasmotaDevice extends EventEmitter {
 
                             if (this.presetsServices) {
                                 const characteristicType = preset.characteristicType;
-                                this.presetsServices[i]
+                                this.presetsServices[index]
                                     .updateCharacteristic(characteristicType, preset.state)
                             };
-                        };
+                        });
                     };
 
                     //update buttons state
                     if (this.buttonsConfiguredCount > 0) {
-                        for (let i = 0; i < this.buttonsConfiguredCount; i++) {
-                            const button = this.buttonsConfigured[i];
+                        this.buttonsConfigured.forEach((button, index) => {
                             const mode = button.mode;
                             switch (mode) {
                                 case 0: //POWER ON,OFF
@@ -629,16 +630,15 @@ class TasmotaDevice extends EventEmitter {
                             //update services
                             if (this.buttonsServices) {
                                 const characteristicType = button.characteristicType;
-                                this.buttonsServices[i]
+                                this.buttonsServices[index]
                                     .updateCharacteristic(characteristicType, button.state)
                             };
-                        };
+                        });
                     };
 
                     //update sensors state
                     if (this.sensorsConfiguredCount > 0) {
-                        for (let i = 0; i < this.sensorsConfiguredCount; i++) {
-                            const sensor = this.sensorsConfigured[i];
+                        this.sensorsConfigured.forEach((sensor, index) => {
                             const mode = sensor.mode;
                             switch (mode) {
                                 case 0: //POWER ON,OFF
@@ -808,10 +808,10 @@ class TasmotaDevice extends EventEmitter {
                             //update services
                             if (this.sensorsServices) {
                                 const characteristicType = sensor.characteristicType;
-                                this.sensorsServices[i]
+                                this.sensorsServices[index]
                                     .updateCharacteristic(characteristicType, sensor.state)
                             };
-                        };
+                        });
                     };
 
                     //update room temperature sensor
@@ -1568,9 +1568,7 @@ class TasmotaDevice extends EventEmitter {
                         const debug = this.enableDebugMode ? this.emit('debug', `Prepare presets services`) : false;
                         this.presetsServices = [];
 
-                        for (let i = 0; i < this.presetsConfiguredCount; i++) {
-                            const preset = this.presetsConfigured[i];
-
+                        this.presetsConfigured.forEach((preset, index) => {
                             //get preset name
                             const presetName = preset.name;
 
@@ -1580,7 +1578,7 @@ class TasmotaDevice extends EventEmitter {
                             const serviceName = presetNamePrefix ? `${accessoryName} ${presetName}` : presetName;
                             const serviceType = preset.serviceType;
                             const characteristicType = preset.characteristicType;
-                            const presetService = new serviceType(serviceName, `Preset ${i}`);
+                            const presetService = new serviceType(serviceName, `Preset ${index}`);
                             presetService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                             presetService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
                             presetService.getCharacteristic(characteristicType)
@@ -1617,7 +1615,7 @@ class TasmotaDevice extends EventEmitter {
                                 });
                             this.presetsServices.push(presetService);
                             accessory.addService(presetService);
-                        };
+                        });
                     };
 
                     //buttons services
@@ -1625,9 +1623,7 @@ class TasmotaDevice extends EventEmitter {
                         const debug = this.enableDebugMode ? this.emit('debug', `Prepare buttons services`) : false;
                         this.buttonsServices = [];
 
-                        for (let i = 0; i < this.buttonsConfiguredCount; i++) {
-                            const button = this.buttonsConfigured[i];
-
+                        this.buttonsConfigured.forEach((button, index) => {
                             //get button mode
                             const mode = button.mode;
 
@@ -1640,7 +1636,7 @@ class TasmotaDevice extends EventEmitter {
                             const serviceName = buttonNamePrefix ? `${accessoryName} ${buttonName}` : buttonName;
                             const serviceType = button.serviceType;
                             const characteristicType = button.characteristicType;
-                            const buttonService = new serviceType(serviceName, `Button ${i}`);
+                            const buttonService = new serviceType(serviceName, `Button ${index}`);
                             buttonService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                             buttonService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
                             buttonService.getCharacteristic(characteristicType)
@@ -1806,7 +1802,7 @@ class TasmotaDevice extends EventEmitter {
                                 });
                             this.buttonsServices.push(buttonService);
                             accessory.addService(buttonService);
-                        };
+                        });
                     };
 
                     //sensors services
@@ -1814,9 +1810,7 @@ class TasmotaDevice extends EventEmitter {
                         const debug = this.enableDebugMode ? this.emit('debug', `Prepare sensors services`) : false;
                         this.sensorsServices = [];
 
-                        for (let i = 0; i < this.sensorsConfiguredCount; i++) {
-                            const sensor = this.sensorsConfigured[i];
-
+                        this.sensorsConfigured.forEach((sensor, index) => {
                             //get sensor mode
                             const mode = sensor.mode;
 
@@ -1829,7 +1823,7 @@ class TasmotaDevice extends EventEmitter {
                             const serviceName = sensorNamePrefix ? `${accessoryName} ${sensorName}` : sensorName;
                             const serviceType = sensor.serviceType;
                             const characteristicType = sensor.characteristicType;
-                            const sensorService = new serviceType(serviceName, `Sensor ${i}`);
+                            const sensorService = new serviceType(serviceName, `Sensor ${index}`);
                             sensorService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                             sensorService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
                             sensorService.getCharacteristic(characteristicType)
@@ -1839,7 +1833,7 @@ class TasmotaDevice extends EventEmitter {
                                 });
                             this.sensorsServices.push(sensorService);
                             accessory.addService(sensorService);
-                        };
+                        });
                     };
 
                     //room temperature sensor service
