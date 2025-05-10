@@ -1498,19 +1498,19 @@ class TasmotaDevice extends EventEmitter {
                             minStep: this.accessory.temperatureIncrement
                         })
                         .onGet(async () => {
-                            const value = this.accessory.operationMode === 'auto' ? this.accessory.defaultCoolingSetTemperature : this.accessory.setTemperature;
+                            const value = this.accessory.targetOperationMode === 2 ? this.accessory.setTemperature : this.accessory.defaultCoolingSetTemperature;
                             return value;
                         })
                         .onSet(async (value) => {
                             try {
-                                if (this.accessory.operationMode === 'auto') {
+                                if (this.accessory.targetOperationMode === 0) {
                                     await this.saveData(this.defaultCoolingSetTemperatureFile, value);
                                     value = (value + this.accessory.defaultHeatingSetTemperature) / 2;
                                 }
 
                                 const temp = `${MiElHVAC.SetTemp}${value}`
                                 await this.axiosInstance(temp);
-                                const info = this.disableLogInfo ? false : this.emit('message', `Set ${this.accessory.operationMode === 'auto' ? 'cooling threshold temperature' : 'temperature'}: ${value}${this.accessory.temperatureUnit}`);
+                                const info = this.disableLogInfo ? false : this.emit('message', `Set ${this.accessory.targetOperationMode === 2 ? 'temperature' : 'cooling threshold temperature'}: ${value}${this.accessory.temperatureUnit}`);
                             } catch (error) {
                                 this.emit('warn', `Set cooling threshold temperature error: ${error}`);
                             };
@@ -1523,19 +1523,19 @@ class TasmotaDevice extends EventEmitter {
                                 minStep: this.accessory.temperatureIncrement
                             })
                             .onGet(async () => {
-                                const value = this.accessory.operationMode === 'auto' ? this.accessory.defaultHeatingSetTemperature : this.accessory.setTemperature;
+                                const value = this.accessory.targetOperationMode === 1 ? this.accessory.setTemperature : this.accessory.defaultHeatingSetTemperature;
                                 return value;
                             })
                             .onSet(async (value) => {
                                 try {
-                                    if (this.accessory.operationMode === 'auto') {
+                                    if (this.accessory.targetOperationMode === 0) {
                                         await this.saveData(this.defaultHeatingSetTemperatureFile, value);
                                         value = (value + this.accessory.defaultCoolingSetTemperature) / 2;
                                     }
 
                                     const temp = `${MiElHVAC.SetTemp}${value}`
                                     await this.axiosInstance(temp);
-                                    const info = this.disableLogInfo ? false : this.emit('message', `Set ${this.accessory.operationMode === 'auto' ? 'heating threshold temperature' : 'temperature'}: ${value}${this.accessory.temperatureUnit}`);
+                                    const info = this.disableLogInfo ? false : this.emit('message', `Set ${this.accessory.targetOperationMode === 1 ? 'temperature' : 'heating threshold temperature'}: ${value}${this.accessory.temperatureUnit}`);
                                 } catch (error) {
                                     this.emit('warn', `Set heating threshold temperature error: ${error}`);
                                 };
