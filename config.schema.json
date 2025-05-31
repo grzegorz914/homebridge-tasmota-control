@@ -1248,6 +1248,13 @@
               "description": "Here enable/disable the accessory name as a prefix for light name.",
               "required": false
             },
+            "fansNamePrefix": {
+              "title": "Name Prefix",
+              "type": "boolean",
+              "default": false,
+              "description": "Here enable/disable the accessory name as a prefix for fan name.",
+              "required": false
+            },
             "sensorsNamePrefix": {
               "title": "Name Prefix",
               "type": "boolean",
@@ -1453,6 +1460,13 @@
                   "title": "Lights",
                   "items": [
                     "devices[].lightsNamePrefix"
+                  ]
+                },
+                {
+                  "key": "devices[]",
+                  "title": "Fans",
+                  "items": [
+                    "devices[].fansNamePrefix"
                   ]
                 },
                 {

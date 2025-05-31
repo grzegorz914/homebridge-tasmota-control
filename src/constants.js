@@ -20,7 +20,9 @@ export const ApiCommands = {
     "HSBColor": "HSBColor%20",
     "HSBHue": "HSBColor1%20",
     "HSBSaturation": "HSBColor2%20",
-    "HSBBrightness": "HSBColor3%20"
+    "HSBBrightness": "HSBColor3%20",
+    "FanDirection": "FanDirection%20",
+    "FanSpeed": "FanSpeed%20"
 };
 
 export const MiElHVAC = {
@@ -243,7 +245,7 @@ export const SensorPropertiesKeys = [
     "Illuminance",
     "Speed",
     "Dir"
-]
+];
 
 export const TemperatureDisplayUnits = [
     "F",

@@ -76,6 +76,7 @@ Homebridge plugin for Tasmota flashed devices.
   * Light - `Power ON/OFF`, `Dimmer`, `Color Temperature`, `Hue`, `Saturation`
   * Outlet - `Power ON/OFF`
   * Switch - `Power ON/OFF`
+  * Fan - `Power ON/OFF`, `Speed`
   
 * Supported Sensors:
   * Temperature - `Temperature`, `Dew Point`, `Reference`, `Obj`, `Amb`
@@ -139,6 +140,7 @@ Homebridge plugin for Tasmota flashed devices.
 | `relaysNamePrefix` | Here enable/disable the accessory name as a prefix for relays name. |
 | `relaysDisplayType` | Here select characteristic display type for relays which are exposed in the HomeKit app. |
 | `lightsNamePrefix` | Here enable/disable the accessory name as a prefix for lights name. |
+| `fansNamePrefix` | Here enable/disable the accessory name as a prefix for fan name. |
 | `sensorsNamePrefix` | Here enable/disable the accessory name as a prefix for sensors name. |
 | `loadNameFromDevice` | If enabled, the accessory name will be loaded direct from device. |
 | `refreshInterval` | Here set the data refresh time in (sec). |

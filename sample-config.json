@@ -76,6 +76,7 @@
           "relaysNamePrefix": false,
           "relaysDisplayType": 0,
           "lightsNamePrefix": false,
+          "fansNamePrefix": false,
           "sensorssNamePrefix": false,
           "loadNameFromDevice": false,
           "refreshInterval": 5,
