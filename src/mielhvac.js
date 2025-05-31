@@ -6,7 +6,7 @@ import { ApiCommands, MiElHVAC, TemperatureDisplayUnits } from './constants.js';
 let Accessory, Characteristic, Service, Categories, AccessoryUUID;
 
 class MiElHvac extends EventEmitter {
-    constructor(api, config, info, refreshInterval) {
+    constructor(api, config, info, serialNumber, refreshInterval) {
         super();
 
         Accessory = api.platformAccessory;
@@ -17,6 +17,7 @@ class MiElHvac extends EventEmitter {
 
         //info
         this.info = info;
+        this.serialNumber = serialNumber;
 
         //mitsubishi ac
         const miElHvac = config.miElHvac ?? {};
@@ -811,7 +812,7 @@ class MiElHvac extends EventEmitter {
         this.emit('devInfo', `----- ${this.info.deviceName} -----`);
         this.emit('devInfo', `Manufacturer: Tasmota`);
         this.emit('devInfo', `Hardware: ${this.info.modelName}`);
-        this.emit('devInfo', `Serialnr: ${this.info.serialNumber}`)
+        this.emit('devInfo', `Serialnr: ${this.serialNumber}`)
         this.emit('devInfo', `Firmware: ${this.info.firmwareRevision}`);
         this.emit('devInfo', `Sensor: MiELHVAC`);
         this.emit('devInfo', `----------------------------------`);
@@ -825,7 +826,7 @@ class MiElHvac extends EventEmitter {
         try {
             //accessory
             const accessoryName = this.info.deviceName;
-            const accessoryUUID = AccessoryUUID.generate(this.info.serialNumber);
+            const accessoryUUID = AccessoryUUID.generate(this.serialNumber);
             const accessoryCategory = Categories.AIR_CONDITIONER
             const accessory = new Accessory(accessoryName, accessoryUUID, accessoryCategory);
 
@@ -834,7 +835,7 @@ class MiElHvac extends EventEmitter {
             accessory.getService(Service.AccessoryInformation)
                 .setCharacteristic(Characteristic.Manufacturer, 'Tasmota')
                 .setCharacteristic(Characteristic.Model, this.info.modelName ?? 'Model Name')
-                .setCharacteristic(Characteristic.SerialNumber, this.info.serialNumber ?? 'Serial Number')
+                .setCharacteristic(Characteristic.SerialNumber, this.serialNumber ?? 'Serial Number')
                 .setCharacteristic(Characteristic.FirmwareRevision, this.info.firmwareRevision.replace(/[a-zA-Z]/g, '') ?? '0')
                 .setCharacteristic(Characteristic.ConfiguredName, accessoryName);
 
@@ -846,7 +847,7 @@ class MiElHvac extends EventEmitter {
             const coolDryFanMode = [MiElHVAC.SetMode.cool, MiElHVAC.SetMode.cool, MiElHVAC.SetMode.dry, MiElHVAC.SetMode.fan][this.coolDryFanMode]; //NONE, COOL, DRY, FAN
 
             //services
-            this.miElHvacService = new Service.HeaterCooler(accessoryName, `HeaterCooler ${this.info.serialNumber}`);
+            this.miElHvacService = new Service.HeaterCooler(accessoryName, `HeaterCooler ${this.serialNumber}`);
             this.miElHvacService.setPrimaryService(true);
             this.miElHvacService.getCharacteristic(Characteristic.Active)
                 .onGet(async () => {

@@ -1,6 +1,6 @@
 import axios from 'axios';
 import EventEmitter from 'events';
-import { ApiCommands, LightKeys } from './constants.js';
+import { ApiCommands, LightKeys, SensorKeys } from './constants.js';
 
 class DeviceInfo extends EventEmitter {
     constructor(url, auth, user, passwd, deviceName, loadNameFromDevice, enableDebugMode, refreshInterval) {
@@ -58,15 +58,21 @@ class DeviceInfo extends EventEmitter {
             //status STS
             const statusSts = deviceInfo.StatusSTS ?? {};
             const statusStsKeys = Object.keys(statusSts);
-            const deviceType = statusSnsKeys.includes('MiElHVAC') ? 0 : statusStsKeys.some(key => LightKeys.includes(key)) ? 2 : statusStsKeys.includes('FanSpeed') ? 3 : 1;
+
+            //device types
+            const types = [];
+            const mielhvac = statusSnsKeys.includes('MiElHVAC') ? types.push(0) : false;
+            const lights = statusStsKeys.some(key => LightKeys.includes(key)) ? types.push(2) : false;
+            const fans = statusStsKeys.includes('FanSpeed') ? types.push(3) : false;
+            const switches = !mielhvac && !lights && !fans ? types.push(1) : false
+            const sensors = statusSnsKeys.some(key => SensorKeys.includes(key)) ? types.push(4) : false;
             const obj = {
-                deviceType: deviceType,
+                deviceTypes: types,
                 deviceName: deviceName,
                 friendlyNames: friendlyNames,
                 modelName: modelName,
                 serialNumber: addressMac,
-                firmwareRevision: firmwareRevision,
-                relaysCount: friendlyNames.length
+                firmwareRevision: firmwareRevision
             };
             return obj;
         } catch (error) {

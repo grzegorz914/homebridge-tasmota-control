@@ -2,11 +2,11 @@ import { promises as fsPromises } from 'fs';
 import axios from 'axios';
 import EventEmitter from 'events';
 import ImpulseGenerator from './impulsegenerator.js';
-import { ApiCommands, SensorKeys } from './constants.js';
+import { ApiCommands } from './constants.js';
 let Accessory, Characteristic, Service, Categories, AccessoryUUID;
 
 class Fans extends EventEmitter {
-    constructor(api, config, info, refreshInterval) {
+    constructor(api, config, info, serialNumber, refreshInterval) {
         super();
 
         Accessory = api.platformAccessory;
@@ -17,29 +17,16 @@ class Fans extends EventEmitter {
 
         //info
         this.info = info;
+        this.serialNumber = serialNumber;
+        this.relaysCount = info.friendlyNames.length;
 
         //other config
         this.lightsNamePrefix = config.lightsNamePrefix || false;
         this.fansNamePrefix = config.fansNamePrefix || false;
-        this.sensorsNamePrefix = config.sensorsNamePrefix || false;
         this.enableDebugMode = config.enableDebugMode || false;
         this.disableLogInfo = config.disableLogInfo || false;
         this.disableLogDeviceInfo = config.disableLogDeviceInfo || false;
         this.refreshInterval = refreshInterval;
-
-        //sensors
-        this.sensorsCount = 0;
-        this.sensorsTemperatureCount = 0;
-        this.sensorsReferenceTemperatureCount = 0;
-        this.sensorsObjTemperatureCount = 0;
-        this.sensorsAmbTemperatureCount = 0;
-        this.sensorsHumidityCount = 0;
-        this.sensorsDewPointTemperatureCount = 0;
-        this.sensorsPressureCount = 0;
-        this.sensorsGasCount = 0;
-        this.sensorsCarbonDioxydeCount = 0;
-        this.sensorsAmbientLightCount = 0;
-        this.sensorsMotionCount = 0;
 
         //variable
         this.startPrepareAccessory = true;
@@ -87,16 +74,12 @@ class Fans extends EventEmitter {
             //sensor status keys
             const sensorStatusKeys = Object.keys(sensorStatus);
 
-            //status SNS
-            const statusSnsSupported = sensorStatusKeys.includes('StatusSNS');
-            const statusSns = statusSnsSupported ? sensorStatus.StatusSNS : {};
-
             //status STS
             const statusStsSupported = sensorStatusKeys.includes('StatusSTS');
             const statusSts = statusStsSupported ? sensorStatus.StatusSTS : {};
 
             //relays
-            const relaysCount = this.info.relaysCount;
+            const relaysCount = this.relaysCount;
             if (relaysCount > 0) {
                 this.lights = [];
                 this.fans = [];
@@ -152,160 +135,6 @@ class Fans extends EventEmitter {
                 }
             }
 
-            //status SNS
-            if (statusSnsSupported) {
-                this.sensorsName = [];
-                this.sensorsTemperature = [];
-                this.sensorsReferenceTemperature = [];
-                this.sensorsObjTemperature = [];
-                this.sensorsAmbTemperature = [];
-                this.sensorsDewPointTemperature = [];
-                this.sensorsHumidity = [];
-                this.sensorsPressure = [];
-                this.sensorsGas = [];
-                this.sensorsCarbonDioxyde = [];
-                this.sensorsAmbientLight = [];
-                this.sensorsMotion = [];
-
-                const sensor = Object.entries(statusSns)
-                    .filter(([key]) => SensorKeys.some(type => key.includes(type)))
-                    .reduce((obj, [key, value]) => {
-                        obj[key] = value;
-                        return obj;
-                    }, {});
-
-                for (const [key, value] of Object.entries(sensor)) {
-                    const sensorName = key ?? `Sensor`;
-                    const sensorData = value;
-
-                    //sensors
-                    const temperature = sensorData.Temperature ?? false;
-                    const referenceTemperature = sensorData.ReferenceTemperature ?? false;
-                    const objTemperature = sensorData.OBJTMP ?? false;
-                    const ambTemperature = sensorData.AMBTMP ?? false;
-                    const dewPointTemperature = sensorData.DewPoint ?? false;
-                    const humidity = sensorData.Humidity ?? false;
-                    const pressure = sensorData.Pressure ?? false;
-                    const gas = sensorData.Gas ?? false;
-                    const carbonDioxyde = sensorData.CarbonDioxyde ?? false;
-                    const ambientLight = sensorData.Ambient ?? false;
-                    const motion = sensorData === 'ON';
-
-                    //energy
-                    const energyTotalStartTime = sensorData.TotalStartTime ?? '';
-                    const energyTotal = sensorData.Total ?? 0;
-                    const energyPeriod = sensorData.Period ?? 0;
-                    const energyYesterday = sensorData.Yesterday ?? 0;
-                    const energyToday = sensorData.Today ?? 0;
-                    const power = sensorData.Power ?? 0;
-                    const apparentPower = sensorData.ApparentPower ?? 0;
-                    const reactivePower = sensorData.ReactivePower ?? 0;
-                    const factor = sensorData.Factor ?? 0;
-                    const voltage = sensorData.Voltage ?? 0;
-                    const current = sensorData.Current ?? 0;
-                    const load = sensorData.Load ?? 0;
-
-                    //push to array
-                    this.sensorsName.push(sensorName);
-                    const push1 = temperature ? this.sensorsTemperature.push(temperature) : false;
-                    const push2 = referenceTemperature ? this.sensorsReferenceTemperature.push(referenceTemperature) : false;
-                    const push3 = objTemperature ? this.sensorsAmbTemperature.push(objTemperature) : false;
-                    const push4 = ambTemperature ? this.sensorsAmbTemperature.push(ambTemperature) : false;
-                    const push5 = dewPointTemperature ? this.sensorsDewPointTemperature.push(dewPointTemperature) : false;
-                    const push6 = humidity ? this.sensorsHumidity.push(humidity) : false;
-                    const push7 = pressure ? this.sensorsPressure.push(pressure) : false;
-                    const push8 = gas ? this.sensorsGas.push(gas) : false;
-                    const push9 = carbonDioxyde ? this.sensorsCarbonDioxyde.push(carbonDioxyde) : false;
-                    const push10 = ambientLight ? this.sensorsAmbientLight.push(ambientLight) : false;
-                    const push11 = motion ? this.sensorsMotion.push(motion) : false;
-                }
-
-                this.time = sensorStatus.Time ?? '';
-                this.tempUnit = sensorStatus.TempUnit === 'C' ? '°C' : 'F';
-                this.pressureUnit = sensorStatus.PressureUnit ?? 'hPa';
-                this.sensorsTemperatureCount = this.sensorsTemperature.length;
-                this.sensorsReferenceTemperatureCount = this.sensorsReferenceTemperature.length;
-                this.sensorsObjTemperatureCount = this.sensorsObjTemperature.length;
-                this.sensorsAmbTemperatureCount = this.sensorsAmbTemperature.length;
-                this.sensorsDewPointTemperatureCount = this.sensorsDewPointTemperature.length;
-                this.sensorsHumidityCount = this.sensorsHumidity.length;
-                this.sensorsPressureCount = this.sensorsPressure.length;
-                this.sensorsGasCount = this.sensorsGas.length;
-                this.sensorsCarbonDioxydeCount = this.sensorsCarbonDioxyde.length;
-                this.sensorsAmbientLightCount = this.sensorsAmbientLight.length;
-                this.sensorsMotionCount = this.sensorsMotion.length;
-                this.sensorsCount = this.sensorsName.length;
-
-
-                //update characteristics
-                if (this.sensorTemperatureServices) {
-                    for (let i = 0; i < this.sensorsTemperatureCount; i++) {
-                        const value = this.sensorsTemperature[i];
-                        this.sensorTemperatureServices[i].updateCharacteristic(Characteristic.CurrentTemperature, value);
-                    }
-                }
-
-                if (this.sensorReferenceTemperatureServices) {
-                    for (let i = 0; i < this.sensorsReferenceTemperatureCount; i++) {
-                        const value = this.sensorsReferenceTemperature[i];
-                        this.sensorReferenceTemperatureServices[i].updateCharacteristic(Characteristic.CurrentTemperature, value);
-                    }
-                }
-
-                if (this.sensorObjTemperatureServices) {
-                    for (let i = 0; i < this.sensorsObjTemperatureCount; i++) {
-                        const value = this.sensorsObjTemperature[i];
-                        this.sensorObjTemperatureServices[i].updateCharacteristic(Characteristic.CurrentTemperature, value);
-                    }
-                }
-
-                if (this.sensorAmbTemperatureServices) {
-                    for (let i = 0; i < this.sensorsAmbTemperatureCount; i++) {
-                        const value = this.sensorsAmbTemperature[i];
-                        this.sensorAmbTemperatureServices[i].updateCharacteristic(Characteristic.CurrentTemperature, value);
-                    }
-                }
-
-                if (this.sensorDewPointTemperatureServices) {
-                    for (let i = 0; i < this.sensorsDewPointTemperatureCount; i++) {
-                        const value = this.sensorsDewPointTemperature[i];
-                        this.sensorDewPointTemperatureServices[i].updateCharacteristic(Characteristic.CurrentTemperature, value);
-                    }
-                }
-
-                if (this.sensorHumidityServices) {
-                    for (let i = 0; i < this.sensorsHumidityCount; i++) {
-                        const value = this.sensorsHumidity[i];
-                        this.sensorHumidityServices[i].updateCharacteristic(Characteristic.CurrentRelativeHumidity, value);
-                    }
-                }
-
-                if (this.sensorCarbonDioxydeServices) {
-                    for (let i = 0; i < this.sensorsCarbonDioxydeCount; i++) {
-                        const state = this.sensorsCarbonDioxyde[i] > 1000;
-                        const value = this.sensorsCarbonDioxyde[i];
-                        this.sensorCarbonDioxydeServices[i]
-                            .updateCharacteristic(Characteristic.CarbonDioxideDetected, state)
-                            .updateCharacteristic(Characteristic.CarbonDioxideLevel, value)
-                            .updateCharacteristic(Characteristic.CarbonDioxidePeakLevel, value);
-                    }
-                }
-
-                if (this.sensorAmbientLightServices) {
-                    for (let i = 0; i < this.sensorsAmbientLightCount; i++) {
-                        const value = this.sensorsAmbientLight[i];
-                        this.sensorAmbientLightServices[i].updateCharacteristic(Characteristic.CurrentAmbientLightLevel, value);
-                    }
-                }
-
-                if (this.sensorMotionServices) {
-                    for (let i = 0; i < this.sensorsMotionCount; i++) {
-                        const state = this.sensorsMotion[i];
-                        this.sensorMotionServices[i].updateCharacteristic(Characteristic.MotionDetected, state);
-                    }
-                }
-            }
-
             return true;
         } catch (error) {
             throw new Error(`Check state error: ${error}`);
@@ -347,10 +176,9 @@ class Fans extends EventEmitter {
         this.emit('devInfo', `----- ${this.info.deviceName} -----`);
         this.emit('devInfo', `Manufacturer: Tasmota`);
         this.emit('devInfo', `Hardware: ${this.info.modelName}`);
-        this.emit('devInfo', `Serialnr: ${this.info.serialNumber}`)
+        this.emit('devInfo', `Serialnr: ${this.serialNumber}`)
         this.emit('devInfo', `Firmware: ${this.info.firmwareRevision}`);
-        this.emit('devInfo', `Relays: ${this.info.relaysCount}`);
-        this.emit('devInfo', `Sensors: ${this.sensorsCount}`);
+        this.emit('devInfo', `Relays: ${this.relaysCount}`);
         this.emit('devInfo', `----------------------------------`);
         return;
     }
@@ -362,7 +190,7 @@ class Fans extends EventEmitter {
         try {
             //accessory
             const accessoryName = this.info.deviceName;
-            const accessoryUUID = AccessoryUUID.generate(this.info.serialNumber);
+            const accessoryUUID = AccessoryUUID.generate(this.serialNumber);
             const accessoryCategory = Categories.FAN;
             const accessory = new Accessory(accessoryName, accessoryUUID, accessoryCategory);
 
@@ -371,7 +199,7 @@ class Fans extends EventEmitter {
             accessory.getService(Service.AccessoryInformation)
                 .setCharacteristic(Characteristic.Manufacturer, 'Tasmota')
                 .setCharacteristic(Characteristic.Model, this.info.modelName ?? 'Model Name')
-                .setCharacteristic(Characteristic.SerialNumber, this.info.serialNumber ?? 'Serial Number')
+                .setCharacteristic(Characteristic.SerialNumber, this.serialNumber ?? 'Serial Number')
                 .setCharacteristic(Characteristic.FirmwareRevision, this.info.firmwareRevision.replace(/[a-zA-Z]/g, '') ?? '0')
                 .setCharacteristic(Characteristic.ConfiguredName, accessoryName);
 

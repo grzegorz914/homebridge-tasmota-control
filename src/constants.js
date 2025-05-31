@@ -229,8 +229,7 @@ export const SensorKeys = [
     "TC74",
     "VEML7700",
     "PIR",
-    "ENERGY",
-    "MiElHVAC"
+    "ENERGY"
 ];
 
 export const SensorPropertiesKeys = [
