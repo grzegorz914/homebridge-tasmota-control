@@ -324,7 +324,7 @@ class MiElHvac extends EventEmitter {
                     break;
                 default:
                     this.emit('warn', `Unknown operating mode: ${operationMode}`);
-                    return
+                    return;
             }
 
             obj.currentOperationMode = !power ? 0 : obj.currentOperationMode;
