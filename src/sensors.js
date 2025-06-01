@@ -94,6 +94,7 @@ class Sensors extends EventEmitter {
                         return obj;
                     }, {});
 
+                let i = 0;
                 for (const [key, value] of Object.entries(sensorData)) {
                     const sensorData = value;
 
@@ -119,8 +120,22 @@ class Sensors extends EventEmitter {
                         obj.tempUnit = '°C';
                     }
 
+                    //update characteristics
+                    this.sensorTemperatureServices?.[i]?.Characteristic?.CurrentTemperature?.updateCharacteristic(Characteristic.CurrentTemperature, obj.temperature);
+                    this.sensorReferenceTemperatureServices?.[i]?.Characteristic?.CurrentTemperature?.updateCharacteristic(Characteristic.CurrentTemperature, obj.referenceTemperature);
+                    this.sensorObjTemperatureServices?.[i]?.Characteristic?.CurrentTemperature?.updateCharacteristic(Characteristic.CurrentTemperature, obj.objTemperature);
+                    this.sensorAmbTemperatureServices?.[i]?.Characteristic?.CurrentTemperature?.updateCharacteristic(Characteristic.CurrentTemperature, obj.ambTemperature);
+                    this.sensorDewPointTemperatureServices?.[i]?.Characteristic?.CurrentTemperature?.updateCharacteristic(Characteristic.CurrentTemperature, obj.dewPointTemperature);
+                    this.sensorHumidityServices?.[i]?.Characteristic?.CurrentRelativeHumidity?.updateCharacteristic(Characteristic.CurrentRelativeHumidity, obj.humidity);
+                    this.sensorCarbonDioxydeServices?.[i]?.Characteristic?.CarbonDioxideDetected?.updateCharacteristic(Characteristic.CarbonDioxideDetected, obj.carbonDioxyde > 1000);
+                    this.sensorCarbonDioxydeServices?.[i]?.Characteristic?.CarbonDioxideLevel?.updateCharacteristic(Characteristic.CarbonDioxideLevel, obj.carbonDioxyde);
+                    this.sensorCarbonDioxydeServices?.[i]?.Characteristic?.CarbonDioxidePeakLevel?.updateCharacteristic(Characteristic.CarbonDioxidePeakLevel, obj.carbonDioxyde);
+                    this.sensorAmbientLightServices?.[i]?.Characteristic?.CurrentAmbientLightLevel?.updateCharacteristic(Characteristic.CurrentAmbientLightLevel, obj.ambientLight);
+                    this.sensorMotionServices?.[i]?.Characteristic?.MotionDetected?.updateCharacteristic(Characteristic.MotionDetected, obj.motion);
+
                     //energy
-                    const obj1 = {
+                    const isEnergy = key === 'ENERGY';
+                    const energy = {
                         power: sensorData.Power,
                         apparentPower: sensorData.ApparentPower,
                         reactivePower: sensorData.ReactivePower,
@@ -135,47 +150,30 @@ class Sensors extends EventEmitter {
                         frequency: sensorData.Frequency,
                         load: sensorData.Load,
                     }
-                    const sensor = key === 'ENERGY' ? { ...obj, ...obj1 } : obj;
+
+                    if (isEnergy) {
+                        //update characteristics
+                        this.sensorEnergyServices?.[i]?.Characteristic?.Power?.updateCharacteristic(Characteristic.Power, energy.power);
+                        this.sensorEnergyServices?.[i]?.Characteristic?.ApparentPower?.updateCharacteristic(Characteristic.ApparentPower, energy.apparentPower);
+                        this.sensorEnergyServices?.[i]?.Characteristic?.ReactivePower?.updateCharacteristic(Characteristic.ReactivePower, energy.reactivePower);
+                        this.sensorEnergyServices?.[i]?.Characteristic?.EnergyToday?.updateCharacteristic(Characteristic.EnergyToday, energy.energyToday);
+                        this.sensorEnergyServices?.[i]?.Characteristic?.EnergyLastDay?.updateCharacteristic(Characteristic.EnergyLastDay, energy.energyLastDay);
+                        this.sensorEnergyServices?.[i]?.Characteristic?.EnergyLifetime?.updateCharacteristic(Characteristic.EnergyLifetime, energy.energyLifetime);
+                        this.sensorEnergyServices?.[i]?.Characteristic?.Current?.updateCharacteristic(Characteristic.Current, energy.current);
+                        this.sensorEnergyServices?.[i]?.Characteristic?.Voltage?.updateCharacteristic(Characteristic.Voltage, energy.voltage);
+                        this.sensorEnergyServices?.[i]?.Characteristic?.Factor?.updateCharacteristic(Characteristic.Factor, energy.factor);
+                        this.sensorEnergyServices?.[i]?.Characteristic?.Frequency?.updateCharacteristic(Characteristic.Frequency, energy.frequency);
+                        this.sensorEnergyServices?.[i]?.Characteristic?.ReadingTime?.updateCharacteristic(Characteristic.ReadingTime, energy.time);
+                    }
+
+                    const sensor = isEnergy ? { ...obj, ...energy } : obj;
                     const debug1 = this.enableDebugMode ? this.emit('debug', `Sensor: ${JSON.stringify(sensor, null, 2)}`) : false;
 
                     //push to array
                     this.sensors.push(sensor);
+                    i++;
                 }
                 this.sensorsCount = this.sensors.length;
-
-                //update characteristics
-                if (this.sensorsCount > 0) {
-                    for (let i = 0; i < this.sensorsCount; i++) {
-                        const sensor = this.sensors[i];
-
-                        this.sensorTemperatureServices?.[i]?.updateCharacteristic(Characteristic.CurrentTemperature, sensor.temperature);
-                        this.sensorReferenceTemperatureServices?.[i]?.updateCharacteristic(Characteristic.CurrentTemperature, sensor.referenceTemperature);
-                        this.sensorObjTemperatureServices?.[i]?.updateCharacteristic(Characteristic.CurrentTemperature, sensor.objTemperature);
-                        this.sensorAmbTemperatureServices?.[i]?.updateCharacteristic(Characteristic.CurrentTemperature, sensor.ambTemperature);
-                        this.sensorDewPointTemperatureServices?.[i]?.updateCharacteristic(Characteristic.CurrentTemperature, sensor.dewPointTemperature);
-                        this.sensorHumidityServices?.[i]?.updateCharacteristic(Characteristic.CurrentRelativeHumidity, sensor.humidity);
-
-                        const co2Service = this.sensorCarbonDioxydeServices?.[i];
-                        co2Service?.updateCharacteristic(Characteristic.CarbonDioxideDetected, sensor.carbonDioxyde > 1000);
-                        co2Service?.updateCharacteristic(Characteristic.CarbonDioxideLevel, sensor.carbonDioxyde);
-                        co2Service?.updateCharacteristic(Characteristic.CarbonDioxidePeakLevel, sensor.carbonDioxyde);
-
-                        this.sensorAmbientLightServices?.[i]?.updateCharacteristic(Characteristic.CurrentAmbientLightLevel, sensor.ambientLight);
-                        this.sensorMotionServices?.[i]?.updateCharacteristic(Characteristic.MotionDetected, sensor.motion);
-
-
-                        //energy
-                        const fields = [
-                            'Power', 'ApparentPower', 'ReactivePower', 'EnergyToday', 'EnergyLastDay',
-                            'EnergyLifetime', 'Current', 'Voltage', 'Factor', 'Frequency', 'ReadingTime'
-                        ];
-                        const characteristic = this.sensorEnergyServices?.[i]?.Characteristic;
-                        for (const key of fields) {
-                            characteristic?.[key]?.updateCharacteristic(Characteristic[key], sensor[key.toLowerCase()]);
-                        }
-
-                    }
-                }
             }
 
             return true;
@@ -249,6 +247,16 @@ class Sensors extends EventEmitter {
             //Prepare services 
             if (this.sensorsCount > 0) {
                 const debug = this.enableDebugMode ? this.emit('debug', `Prepare Sensor Services`) : false;
+                this.sensorTemperatureServices = [];
+                this.sensorReferenceTemperatureServices = [];
+                this.sensorObjTemperatureServices = [];
+                this.sensorAmbTemperatureServices = [];
+                this.sensorDewPointTemperatureServices = [];
+                this.sensorHumidityServices = [];
+                this.sensorCarbonDioxydeServices = [];
+                this.sensorAmbientLightServices = [];
+                this.sensorMotionServices = [];
+                this.sensorEnergyServices = [];
 
                 //temperature
                 let i = 0;
@@ -256,7 +264,6 @@ class Sensors extends EventEmitter {
                     const sensorName = sensor.name;
                     if (sensor.temperature) {
                         const debug = this.enableDebugMode ? this.emit('debug', `Prepare Temperature Sensor Services`) : false;
-                        this.sensorTemperatureServices = [];
                         const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Temperature` : `${sensorName} Temperature`;
                         const sensorTemperatureService = accessory.addService(Service.TemperatureSensor, serviceName, `Temperature Sensor ${i}`);
                         sensorTemperatureService.addOptionalCharacteristic(Characteristic.ConfiguredName);
@@ -273,7 +280,6 @@ class Sensors extends EventEmitter {
                     //reference temperature
                     if (sensor.referenceTemperature) {
                         const debug = this.enableDebugMode ? this.emit('debug', `Prepare Reference Temperature Sensor Services`) : false;
-                        this.sensorReferenceTemperatureServices = [];
                         const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Reference Temperature` : `${sensorName} Reference Temperature`;
                         const sensorReferenceTemperatureService = accessory.addService(Service.TemperatureSensor, serviceName, `Reference Temperature Sensor ${i}`);
                         sensorReferenceTemperatureService.addOptionalCharacteristic(Characteristic.ConfiguredName);
@@ -290,7 +296,6 @@ class Sensors extends EventEmitter {
                     //object temperature
                     if (sensor.objTemperature) {
                         const debug = this.enableDebugMode ? this.emit('debug', `Prepare Obj Temperature Sensor Services`) : false;
-                        this.sensorObjTemperatureServices = [];
                         const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Obj Temperature` : `${sensorName} Obj Temperature`;
                         const sensorObjTemperatureService = accessory.addService(Service.TemperatureSensor, serviceName, `Obj Temperature Sensor ${i}`);
                         sensorObjTemperatureService.addOptionalCharacteristic(Characteristic.ConfiguredName);
@@ -307,7 +312,6 @@ class Sensors extends EventEmitter {
                     //ambient temperature
                     if (sensor.ambTemperature) {
                         const debug = this.enableDebugMode ? this.emit('debug', `Prepare Amb Temperature Sensor Services`) : false;
-                        this.sensorAmbTemperatureServices = [];
                         const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Amb Temperature` : `${sensorName} Amb Temperature`;
                         const sensorAmbTemperatureService = accessory.addService(Service.TemperatureSensor, serviceName, `Amb Temperature Sensor ${i}`);
                         sensorAmbTemperatureService.addOptionalCharacteristic(Characteristic.ConfiguredName);
@@ -324,7 +328,6 @@ class Sensors extends EventEmitter {
                     //dew point temperature
                     if (sensor.dewPointTemperature) {
                         const debug = this.enableDebugMode ? this.emit('debug', `Prepare Dew Point Temperature Sensor Services`) : false;
-                        this.sensorDewPointTemperatureServices = [];
                         const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Dew Point` : `${sensorName} Dew Point`;
                         const sensorDewPointTemperatureService = accessory.addService(Service.TemperatureSensor, serviceName, `Dew Point Temperature Sensor ${i}`);
                         sensorDewPointTemperatureService.addOptionalCharacteristic(Characteristic.ConfiguredName);
@@ -341,7 +344,6 @@ class Sensors extends EventEmitter {
                     //humidity
                     if (sensor.humidity) {
                         const debug = this.enableDebugMode ? this.emit('debug', `Prepare Humidity Sensor Services`) : false;
-                        this.sensorHumidityServices = [];
                         const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Humidity` : `${sensorName} Humidity`;
                         const sensorHumidityService = accessory.addService(Service.HumiditySensor, serviceName, `Humidity Sensor ${i}`);
                         sensorHumidityService.addOptionalCharacteristic(Characteristic.ConfiguredName);
@@ -362,7 +364,6 @@ class Sensors extends EventEmitter {
                     //carbon dioxyde
                     if (sensor.carbonDioxyde) {
                         const debug = this.enableDebugMode ? this.emit('debug', `Prepare Carbon Dioxyde Sensor Services`) : false;
-                        this.sensorCarbonDioxydeServices = [];
                         const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Carbon Dioxyde` : `${sensorName} Carbon Dioxyde`;
                         const sensorCarbonDioxydeService = accessory.addService(Service.CarbonDioxideSensor, serviceName, `Carbon Dioxyde Sensor ${i}`);
                         sensorCarbonDioxydeService.addOptionalCharacteristic(Characteristic.ConfiguredName);
@@ -391,7 +392,6 @@ class Sensors extends EventEmitter {
                     //ambient light
                     if (sensor.ambientLight) {
                         const debug = this.enableDebugMode ? this.emit('debug', `Prepare Ambient Light Sensor Services`) : false;
-                        this.sensorAmbientLightServices = [];
                         const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Ambient Light` : `${sensorName} Ambient Light`;
                         const sensorAmbientLightService = accessory.addService(Service.LightSensor, serviceName, `Ambient Light Sensor ${i}`);
                         sensorAmbientLightService.addOptionalCharacteristic(Characteristic.ConfiguredName);
@@ -408,7 +408,6 @@ class Sensors extends EventEmitter {
                     //motion
                     if (sensor.motion) {
                         const debug = this.enableDebugMode ? this.emit('debug', `Prepare Motion Sensor Services`) : false;
-                        this.sensorMotionServices = [];
                         const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Motion` : `${sensorName} Motion`;
                         const sensorMotionService = accessory.addService(Service.MotionSensor, serviceName, `Motion Sensor ${i}`);
                         sensorMotionService.addOptionalCharacteristic(Characteristic.ConfiguredName);
@@ -425,8 +424,7 @@ class Sensors extends EventEmitter {
                     //energy
                     if (sensor.name === 'ENERGY') {
                         const debug4 = this.enableDebugMode ? this.emit('debug', `Prepare Power And Energy Service`) : false;
-                        this.sensorEnergyServices = [];
-                        const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName}` : `${sensorName} Sensor`;
+                        const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName}` : `${sensorName}`;
                         const energyService = accessory.addService(Service.PowerAndEnergyService, serviceName, `Energy Sensor ${i}`);
                         energyService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
                         if (sensor.power) {
