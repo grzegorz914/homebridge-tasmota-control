@@ -175,7 +175,7 @@ export default (api) => {
     Characteristic.ReadingTime = ReadingTime;
 
     //power production service
-    class PowerAndEnergyService extends Service {
+    class PowerAndEnergy extends Service {
         constructor(displayName, subtype) {
             super(displayName, '00000004-000A-1000-8000-0026BB765291', subtype);
             // Mandatory Characteristics
@@ -194,5 +194,5 @@ export default (api) => {
             this.addOptionalCharacteristic(Characteristic.ConfiguredName);
         }
     }
-    Service.PowerAndEnergyService = PowerAndEnergyService;
+    Service.PowerAndEnergy = PowerAndEnergy;
 };

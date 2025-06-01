@@ -101,8 +101,9 @@ class Fans extends EventEmitter {
                     this.lights.push(light);
 
                     //update characteristics
-                    if (this.lightServices) {
-                        this.lightServices[i].updateCharacteristic(Characteristic.On, power);
+                    const lightService = this.lightServices?.[i];
+                    if (lightService) {
+                        lightService.updateCharacteristic(Characteristic.On, power);
                     }
 
                     //fan
@@ -119,11 +120,13 @@ class Fans extends EventEmitter {
                     this.fans.push(fan);
 
                     //update characteristics
-                    if (this.fanServices) {
-                        this.fanServices[i].updateCharacteristic(Characteristic.On, powerFan)
-                            //.updateCharacteristic(Characteristic.Direction, direction)
+                    const fanService = this.fanServices?.[i];
+                    if (fanService) {
+                        fanService.updateCharacteristic(Characteristic.On, powerFan)
+                            // .updateCharacteristic(Characteristic.Direction, direction)
                             .updateCharacteristic(Characteristic.RotationSpeed, speed);
                     }
+
 
                     //log info
                     if (!this.disableLogInfo) {

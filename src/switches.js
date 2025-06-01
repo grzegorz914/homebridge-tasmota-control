@@ -84,8 +84,9 @@ class Switches extends EventEmitter {
                     this.switchesOutlets.push(switchOutlet);
 
                     //update characteristics
-                    if (this.switchOutletServices) {
-                        this.switchOutletServices[i].updateCharacteristic(Characteristic.On, power);
+                    const service = this.lightServices?.[i];
+                    if (service) {
+                        service.updateCharacteristic(Characteristic.On, power);
                     }
 
                     //log info

@@ -118,22 +118,24 @@ class Lights extends EventEmitter {
                     this.lights.push(light);
 
                     //update characteristics
-                    if (this.lightServices) {
-                        this.lightServices[i].updateCharacteristic(Characteristic.On, power);
+                    const service = this.lightServices?.[i];
+                    if (service) {
+                        service.updateCharacteristic(Characteristic.On, power);
 
                         if (brightnessType > 0) {
-                            this.lightServices[i].updateCharacteristic(Characteristic.Brightness, bright);
+                            service.updateCharacteristic(Characteristic.Brightness, bright);
                         }
                         if (colorTemperature !== false) {
-                            this.lightServices[i].updateCharacteristic(Characteristic.ColorTemperature, colorTemperature);
+                            service.updateCharacteristic(Characteristic.ColorTemperature, colorTemperature);
                         }
                         if (hue !== false) {
-                            this.lightServices[i].updateCharacteristic(Characteristic.Hue, hue);
+                            service.updateCharacteristic(Characteristic.Hue, hue);
                         }
                         if (saturation !== false) {
-                            this.lightServices[i].updateCharacteristic(Characteristic.Saturation, saturation);
+                            service.updateCharacteristic(Characteristic.Saturation, saturation);
                         }
                     }
+
 
                     //log info
                     if (!this.disableLogInfo) {

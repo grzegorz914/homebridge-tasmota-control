@@ -152,10 +152,14 @@ class Sensors extends EventEmitter {
                     ];
 
                     for (const [service, charType, value] of servicesMap) {
-                        service?.getCharacteristic(charType)?.updateValue(value);
+                        const characteristic = service?.getCharacteristic(charType);
+                        if (!characteristic) {
+                            continue;
+                        }
+                        service.updateCharacteristic(charType, value);
                     }
 
-                    //energy
+                    // energy
                     if (isEnergy) {
                         const energyMap = [
                             [this.sensorEnergyServices?.[i], Characteristic.Power, sensor.power],
@@ -172,9 +176,14 @@ class Sensors extends EventEmitter {
                         ];
 
                         for (const [service, charType, value] of energyMap) {
-                            service?.getCharacteristic(charType)?.updateValue(value);
+                            const characteristic = service?.getCharacteristic(charType);
+                            if (!characteristic) {
+                                continue;
+                            }
+                            service.updateCharacteristic(charType, value);
                         }
                     }
+
                     const debug1 = this.enableDebugMode ? this.emit('debug', `Sensor: ${JSON.stringify(sensor, null, 2)}`) : false;
                     i++;
                 }
@@ -431,7 +440,7 @@ class Sensors extends EventEmitter {
                     if (sensor.name === 'ENERGY') {
                         const debug4 = this.enableDebugMode ? this.emit('debug', `Prepare Power And Energy Service`) : false;
                         const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName}` : `${sensorName}`;
-                        const energyService = accessory.addService(Service.PowerAndEnergyService, serviceName, `Energy Sensor ${i}`);
+                        const energyService = accessory.addService(Service.PowerAndEnergy, serviceName, `Energy Sensor ${i}`);
                         energyService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
                         if (sensor.power) {
                             energyService.getCharacteristic(Characteristic.Power)
