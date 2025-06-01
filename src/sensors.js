@@ -129,10 +129,10 @@ class Sensors extends EventEmitter {
                     const servicesMap = [
                         [this.temperatureServices?.[i], Characteristic.CurrentTemperature, sensor.temperature],
                         [this.temperatureReferenceServices?.[i], Characteristic.CurrentTemperature, sensor.referenceTemperature],
-                        [this.temperatureObjService?.[i], Characteristic.CurrentTemperature, sensor.objTemperature],
-                        [this.temperatureAmbService?.[i], Characteristic.CurrentTemperature, sensor.ambTemperature],
-                        [this.temperatureDewPointService?.[i], Characteristic.CurrentTemperature, sensor.dewPointTemperature],
-                        [this.humidityService?.[i], Characteristic.CurrentRelativeHumidity, sensor.humidity],
+                        [this.temperatureObjServices?.[i], Characteristic.CurrentTemperature, sensor.objTemperature],
+                        [this.temperatureAmbServices?.[i], Characteristic.CurrentTemperature, sensor.ambTemperature],
+                        [this.temperatureDewPointServices?.[i], Characteristic.CurrentTemperature, sensor.dewPointTemperature],
+                        [this.humidityServices?.[i], Characteristic.CurrentRelativeHumidity, sensor.humidity],
                         [this.carbonDioxydeServices?.[i], Characteristic.CarbonDioxideDetected, sensor.carbonDioxyde > 1000],
                         [this.carbonDioxydeServices?.[i], Characteristic.CarbonDioxideLevel, sensor.carbonDioxyde],
                         [this.carbonDioxydeServices?.[i], Characteristic.CarbonDioxidePeakLevel, sensor.carbonDioxyde],
@@ -310,7 +310,7 @@ class Sensors extends EventEmitter {
                                 const logInfo = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} obj temperature: ${value} °${sensor.tempUnit}`);
                                 return value;
                             });
-                        this.temperatureObjService.push(temperatureObjService);
+                        this.temperatureObjServices.push(temperatureObjService);
                     }
 
                     //ambient temperature
@@ -326,7 +326,7 @@ class Sensors extends EventEmitter {
                                 const logInfo = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} amb temperature: ${value} °${sensor.tempUnit}`);
                                 return value;
                             });
-                        this.temperatureAmbService.push(temperatureAmbService);
+                        this.temperatureAmbServices.push(temperatureAmbService);
                     }
 
                     //dew point temperature
@@ -342,7 +342,7 @@ class Sensors extends EventEmitter {
                                 const logInfo = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} dew point: ${value} °${sensor.tempUnit}`);
                                 return value;
                             });
-                        this.temperatureDewPointService.push(temperatureDewPointService);
+                        this.temperatureDewPointServices.push(temperatureDewPointService);
                     }
 
                     //humidity
@@ -358,7 +358,7 @@ class Sensors extends EventEmitter {
                                 const logInfo = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} humidity: ${value} %`);
                                 return value;
                             });
-                        this.humidityService.push(humidityService);
+                        this.humidityServices.push(humidityService);
                     }
 
                     //pressure
