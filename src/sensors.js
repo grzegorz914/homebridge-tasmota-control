@@ -98,11 +98,10 @@ class Sensors extends EventEmitter {
                 for (const [key, value] of Object.entries(sensorData)) {
                     const sensorData = value;
 
-                    //sensor
                     const obj = {
                         name: key,
                         time: statusSns.Time,
-                        tempUnit: statusSns.TempUnit,
+                        tempUnit: statusSns.TempUnit === 'C' ? '°C' : statusSns.TempUnit,
                         pressureUnit: statusSns.PressureUnit,
                         temperature: sensorData.Temperature,
                         referenceTemperature: sensorData.ReferenceTemperature,
@@ -114,27 +113,9 @@ class Sensors extends EventEmitter {
                         gas: sensorData.Gas,
                         carbonDioxyde: sensorData.CarbonDioxyde,
                         ambientLight: sensorData.Ambient,
-                        motion: sensorData.Motion
-                    }
-                    if (obj.tempUnit === 'C') {
-                        obj.tempUnit = '°C';
-                    }
+                        motion: sensorData.Motion,
+                    };
 
-                    //update characteristics
-                    this.sensorTemperatureServices?.[i]?.Characteristic?.CurrentTemperature?.updateCharacteristic(Characteristic.CurrentTemperature, obj.temperature);
-                    this.sensorReferenceTemperatureServices?.[i]?.Characteristic?.CurrentTemperature?.updateCharacteristic(Characteristic.CurrentTemperature, obj.referenceTemperature);
-                    this.sensorObjTemperatureServices?.[i]?.Characteristic?.CurrentTemperature?.updateCharacteristic(Characteristic.CurrentTemperature, obj.objTemperature);
-                    this.sensorAmbTemperatureServices?.[i]?.Characteristic?.CurrentTemperature?.updateCharacteristic(Characteristic.CurrentTemperature, obj.ambTemperature);
-                    this.sensorDewPointTemperatureServices?.[i]?.Characteristic?.CurrentTemperature?.updateCharacteristic(Characteristic.CurrentTemperature, obj.dewPointTemperature);
-                    this.sensorHumidityServices?.[i]?.Characteristic?.CurrentRelativeHumidity?.updateCharacteristic(Characteristic.CurrentRelativeHumidity, obj.humidity);
-                    this.sensorCarbonDioxydeServices?.[i]?.Characteristic?.CarbonDioxideDetected?.updateCharacteristic(Characteristic.CarbonDioxideDetected, obj.carbonDioxyde > 1000);
-                    this.sensorCarbonDioxydeServices?.[i]?.Characteristic?.CarbonDioxideLevel?.updateCharacteristic(Characteristic.CarbonDioxideLevel, obj.carbonDioxyde);
-                    this.sensorCarbonDioxydeServices?.[i]?.Characteristic?.CarbonDioxidePeakLevel?.updateCharacteristic(Characteristic.CarbonDioxidePeakLevel, obj.carbonDioxyde);
-                    this.sensorAmbientLightServices?.[i]?.Characteristic?.CurrentAmbientLightLevel?.updateCharacteristic(Characteristic.CurrentAmbientLightLevel, obj.ambientLight);
-                    this.sensorMotionServices?.[i]?.Characteristic?.MotionDetected?.updateCharacteristic(Characteristic.MotionDetected, obj.motion);
-
-                    //energy
-                    const isEnergy = key === 'ENERGY';
                     const energy = {
                         power: sensorData.Power,
                         apparentPower: sensorData.ApparentPower,
@@ -148,31 +129,56 @@ class Sensors extends EventEmitter {
                         voltage: sensorData.Voltage,
                         factor: sensorData.Factor,
                         frequency: sensorData.Frequency,
-                        load: sensorData.Load,
-                    }
+                        load: sensorData.Load
+                    };
 
-                    if (isEnergy) {
-                        //update characteristics
-                        this.sensorEnergyServices?.[i]?.Characteristic?.Power?.updateCharacteristic(Characteristic.Power, energy.power);
-                        this.sensorEnergyServices?.[i]?.Characteristic?.ApparentPower?.updateCharacteristic(Characteristic.ApparentPower, energy.apparentPower);
-                        this.sensorEnergyServices?.[i]?.Characteristic?.ReactivePower?.updateCharacteristic(Characteristic.ReactivePower, energy.reactivePower);
-                        this.sensorEnergyServices?.[i]?.Characteristic?.EnergyToday?.updateCharacteristic(Characteristic.EnergyToday, energy.energyToday);
-                        this.sensorEnergyServices?.[i]?.Characteristic?.EnergyLastDay?.updateCharacteristic(Characteristic.EnergyLastDay, energy.energyLastDay);
-                        this.sensorEnergyServices?.[i]?.Characteristic?.EnergyLifetime?.updateCharacteristic(Characteristic.EnergyLifetime, energy.energyLifetime);
-                        this.sensorEnergyServices?.[i]?.Characteristic?.Current?.updateCharacteristic(Characteristic.Current, energy.current);
-                        this.sensorEnergyServices?.[i]?.Characteristic?.Voltage?.updateCharacteristic(Characteristic.Voltage, energy.voltage);
-                        this.sensorEnergyServices?.[i]?.Characteristic?.Factor?.updateCharacteristic(Characteristic.Factor, energy.factor);
-                        this.sensorEnergyServices?.[i]?.Characteristic?.Frequency?.updateCharacteristic(Characteristic.Frequency, energy.frequency);
-                        this.sensorEnergyServices?.[i]?.Characteristic?.ReadingTime?.updateCharacteristic(Characteristic.ReadingTime, energy.time);
-                    }
-
+                    const isEnergy = key === 'ENERGY';
                     const sensor = isEnergy ? { ...obj, ...energy } : obj;
-                    const debug1 = this.enableDebugMode ? this.emit('debug', `Sensor: ${JSON.stringify(sensor, null, 2)}`) : false;
-
-                    //push to array
                     this.sensors.push(sensor);
+
+                    //update characteristics
+                    const servicesMap = [
+                        [this.sensorTemperatureServices?.[i], Characteristic.CurrentTemperature, sensor.temperature],
+                        [this.sensorReferenceTemperatureServices?.[i], Characteristic.CurrentTemperature, sensor.referenceTemperature],
+                        [this.sensorObjTemperatureServices?.[i], Characteristic.CurrentTemperature, sensor.objTemperature],
+                        [this.sensorAmbTemperatureServices?.[i], Characteristic.CurrentTemperature, sensor.ambTemperature],
+                        [this.sensorDewPointTemperatureServices?.[i], Characteristic.CurrentTemperature, sensor.dewPointTemperature],
+                        [this.sensorHumidityServices?.[i], Characteristic.CurrentRelativeHumidity, sensor.humidity],
+                        [this.sensorCarbonDioxydeServices?.[i], Characteristic.CarbonDioxideDetected, sensor.carbonDioxyde > 1000],
+                        [this.sensorCarbonDioxydeServices?.[i], Characteristic.CarbonDioxideLevel, sensor.carbonDioxyde],
+                        [this.sensorCarbonDioxydeServices?.[i], Characteristic.CarbonDioxidePeakLevel, sensor.carbonDioxyde],
+                        [this.sensorAmbientLightServices?.[i], Characteristic.CurrentAmbientLightLevel, sensor.ambientLight],
+                        [this.sensorMotionServices?.[i], Characteristic.MotionDetected, sensor.motion],
+                    ];
+
+                    for (const [service, charType, value] of servicesMap) {
+                        service?.getCharacteristic(charType)?.updateValue(value);
+                    }
+
+                    //energy
+                    if (isEnergy) {
+                        const energyMap = [
+                            [this.sensorEnergyServices?.[i], Characteristic.Power, sensor.power],
+                            [this.sensorEnergyServices?.[i], Characteristic.ApparentPower, sensor.apparentPower],
+                            [this.sensorEnergyServices?.[i], Characteristic.ReactivePower, sensor.reactivePower],
+                            [this.sensorEnergyServices?.[i], Characteristic.EnergyToday, sensor.energyToday],
+                            [this.sensorEnergyServices?.[i], Characteristic.EnergyLastDay, sensor.energyLastDay],
+                            [this.sensorEnergyServices?.[i], Characteristic.EnergyLifetime, sensor.energyLifetime],
+                            [this.sensorEnergyServices?.[i], Characteristic.Current, sensor.current],
+                            [this.sensorEnergyServices?.[i], Characteristic.Voltage, sensor.voltage],
+                            [this.sensorEnergyServices?.[i], Characteristic.Factor, sensor.factor],
+                            [this.sensorEnergyServices?.[i], Characteristic.Frequency, sensor.frequency],
+                            [this.sensorEnergyServices?.[i], Characteristic.ReadingTime, sensor.time],
+                        ];
+
+                        for (const [service, charType, value] of energyMap) {
+                            service?.getCharacteristic(charType)?.updateValue(value);
+                        }
+                    }
+                    const debug1 = this.enableDebugMode ? this.emit('debug', `Sensor: ${JSON.stringify(sensor, null, 2)}`) : false;
                     i++;
                 }
+
                 this.sensorsCount = this.sensors.length;
             }
 
