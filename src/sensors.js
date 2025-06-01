@@ -251,7 +251,7 @@ class Sensors extends EventEmitter {
             //Prepare services 
             if (this.sensorsCount > 0) {
                 const debug = this.enableDebugMode ? this.emit('debug', `Prepare Sensor Services`) : false;
-                this.emperatureServices = [];
+                this.temperatureServices = [];
                 this.temperatureReferenceServices = [];
                 this.temperatureObjServices = [];
                 this.temperatureAmbServices = [];
