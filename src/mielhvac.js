@@ -814,7 +814,7 @@ class MiElHvac extends EventEmitter {
         this.emit('devInfo', `Hardware: ${this.info.modelName}`);
         this.emit('devInfo', `Serialnr: ${this.serialNumber}`)
         this.emit('devInfo', `Firmware: ${this.info.firmwareRevision}`);
-        this.emit('devInfo', `Sensor: MiELHVAC`);
+        this.emit('devInfo', `Device: MiELHVAC`);
         this.emit('devInfo', `----------------------------------`);
         return;
     }

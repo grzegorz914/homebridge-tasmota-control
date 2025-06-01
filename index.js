@@ -8,6 +8,7 @@ import Fans from './src/fans.js';
 import Sensors from './src/sensors.js';
 import ImpulseGenerator from './src/impulsegenerator.js';
 import { PluginName, PlatformName } from './src/constants.js';
+import CustomCharacteristics from './src/customcharacteristics.js';
 
 class tasmotaPlatform {
   constructor(log, config, api) {
@@ -56,7 +57,7 @@ class tasmotaPlatform {
         const disableLogSuccess = device.disableLogSuccess || false;
         const disableLogWarn = device.disableLogWarn || false;
         const disableLogError = device.disableLogError || false;
-        const debug = enableDebugMode ? log.info(`Device: ${host} ${deviceName}, debug: Did finish launching.`) : false;
+        const debug = !enableDebugMode ? false : log.info(`Device: ${host} ${deviceName}, debug: Did finish launching.`);
         const newConfig = {
           ...device,
           user: 'removed',
@@ -70,6 +71,9 @@ class tasmotaPlatform {
           deviceInfo.on('debug', (debug) => {
             const emitLog = !enableDebugMode ? false : log.info(`Device: ${host} ${deviceName}, debug: ${debug}.`);
           })
+            .on('debug', (debug) => {
+              const emitLog = !enableDebugMode ? false : log.info(`Device: ${host} ${deviceName}, debug: ${debug}.`);
+            })
             .on('warn', (warn) => {
               const emitLog = disableLogWarn ? false : log.warn(`Device: ${host} ${deviceName}, ${warn}.`);
             })
@@ -186,5 +190,6 @@ class tasmotaPlatform {
 }
 
 export default (api) => {
+  CustomCharacteristics(api);
   api.registerPlatform(PluginName, PlatformName, tasmotaPlatform);
 }

@@ -87,19 +87,22 @@ class Sensors extends EventEmitter {
             //status SNS
             if (statusSnsSupported) {
                 this.sensors = [];
-                const sensor = Object.entries(statusSns)
+                const sensorData = Object.entries(statusSns)
                     .filter(([key]) => SensorKeys.some(type => key.includes(type)))
                     .reduce((obj, [key, value]) => {
                         obj[key] = value;
                         return obj;
                     }, {});
 
-                for (const [key, value] of Object.entries(sensor)) {
+                for (const [key, value] of Object.entries(sensorData)) {
                     const sensorData = value;
 
                     //sensor
                     const obj = {
-                        name: key ?? `Sensor`,
+                        name: key,
+                        time: statusSns.Time,
+                        tempUnit: statusSns.TempUnit,
+                        pressureUnit: statusSns.PressureUnit,
                         temperature: sensorData.Temperature,
                         referenceTemperature: sensorData.ReferenceTemperature,
                         objTemperature: sensorData.OBJTMP,
@@ -110,27 +113,33 @@ class Sensors extends EventEmitter {
                         gas: sensorData.Gas,
                         carbonDioxyde: sensorData.CarbonDioxyde,
                         ambientLight: sensorData.Ambient,
-                        motion: sensorData === 'ON',
-                        //energy
-                        energyTotalStartTime: sensorData.TotalStartTime ?? '',
-                        energyTotal: sensorData.Total ?? 0,
-                        energyPeriod: sensorData.Period ?? 0,
-                        energyYesterday: sensorData.Yesterday ?? 0,
-                        energyToday: sensorData.Today ?? 0,
-                        power: sensorData.Power ?? 0,
-                        apparentPower: sensorData.ApparentPower ?? 0,
-                        reactivePower: sensorData.ReactivePower ?? 0,
-                        factor: sensorData.Factor ?? 0,
-                        voltage: sensorData.Voltage ?? 0,
-                        current: sensorData.Current ?? 0,
-                        load: sensorData.Load ?? 0,
-                        time: sensorStatus.Time ?? '',
-                        tempUnit: sensorStatus.TempUnit === 'C' ? '°C' : 'F',
-                        pressureUnit: sensorStatus.PressureUnit ?? 'hPa'
+                        motion: sensorData.Motion
+                    }
+                    if (obj.tempUnit === 'C') {
+                        obj.tempUnit = '°C';
                     }
 
+                    //energy
+                    const obj1 = {
+                        power: sensorData.Power,
+                        apparentPower: sensorData.ApparentPower,
+                        reactivePower: sensorData.ReactivePower,
+                        energyToday: sensorData.Today,
+                        energyLastDay: sensorData.Yesterday,
+                        energyLifetime: sensorData.Total,
+                        energyLifeTimeStartTime: sensorData.TotalStartTime,
+                        energyPeriod: sensorData.Period,
+                        current: sensorData.Current,
+                        voltage: sensorData.Voltage,
+                        factor: sensorData.Factor,
+                        frequency: sensorData.Frequency,
+                        load: sensorData.Load,
+                    }
+                    const sensor = key === 'ENERGY' ? { ...obj, ...obj1 } : obj;
+                    const debug1 = this.enableDebugMode ? this.emit('debug', `Sensor: ${JSON.stringify(sensor, null, 2)}`) : false;
+
                     //push to array
-                    this.sensors.push(obj);
+                    this.sensors.push(sensor);
                 }
                 this.sensorsCount = this.sensors.length;
 
@@ -138,18 +147,33 @@ class Sensors extends EventEmitter {
                 if (this.sensorsCount > 0) {
                     for (let i = 0; i < this.sensorsCount; i++) {
                         const sensor = this.sensors[i];
+
                         this.sensorTemperatureServices?.[i]?.updateCharacteristic(Characteristic.CurrentTemperature, sensor.temperature);
                         this.sensorReferenceTemperatureServices?.[i]?.updateCharacteristic(Characteristic.CurrentTemperature, sensor.referenceTemperature);
                         this.sensorObjTemperatureServices?.[i]?.updateCharacteristic(Characteristic.CurrentTemperature, sensor.objTemperature);
                         this.sensorAmbTemperatureServices?.[i]?.updateCharacteristic(Characteristic.CurrentTemperature, sensor.ambTemperature);
                         this.sensorDewPointTemperatureServices?.[i]?.updateCharacteristic(Characteristic.CurrentTemperature, sensor.dewPointTemperature);
                         this.sensorHumidityServices?.[i]?.updateCharacteristic(Characteristic.CurrentRelativeHumidity, sensor.humidity);
-                        this.sensorCarbonDioxydeServices?.[i]
-                            ?.updateCharacteristic(Characteristic.CarbonDioxideDetected, sensor.carbonDioxyde > 1000)
-                            .updateCharacteristic(Characteristic.CarbonDioxideLevel, sensor.carbonDioxyde)
-                            .updateCharacteristic(Characteristic.CarbonDioxidePeakLevel, sensor.carbonDioxyde);
+
+                        const co2Service = this.sensorCarbonDioxydeServices?.[i];
+                        co2Service?.updateCharacteristic(Characteristic.CarbonDioxideDetected, sensor.carbonDioxyde > 1000);
+                        co2Service?.updateCharacteristic(Characteristic.CarbonDioxideLevel, sensor.carbonDioxyde);
+                        co2Service?.updateCharacteristic(Characteristic.CarbonDioxidePeakLevel, sensor.carbonDioxyde);
+
                         this.sensorAmbientLightServices?.[i]?.updateCharacteristic(Characteristic.CurrentAmbientLightLevel, sensor.ambientLight);
                         this.sensorMotionServices?.[i]?.updateCharacteristic(Characteristic.MotionDetected, sensor.motion);
+
+
+                        //energy
+                        const fields = [
+                            'Power', 'ApparentPower', 'ReactivePower', 'EnergyToday', 'EnergyLastDay',
+                            'EnergyLifetime', 'Current', 'Voltage', 'Factor', 'Frequency', 'ReadingTime'
+                        ];
+                        const characteristic = this.sensorEnergyServices?.[i]?.Characteristic;
+                        for (const key of fields) {
+                            characteristic?.[key]?.updateCharacteristic(Characteristic[key], sensor[key.toLowerCase()]);
+                        }
+
                     }
                 }
             }
@@ -197,7 +221,7 @@ class Sensors extends EventEmitter {
         this.emit('devInfo', `Hardware: ${this.info.modelName}`);
         this.emit('devInfo', `Serialnr: ${this.serialNumber}`)
         this.emit('devInfo', `Firmware: ${this.info.firmwareRevision}`);
-        this.emit('devInfo', `Sensors: ${this.sensorsCount}`);
+        this.emit('devInfo', `Sensor: ${this.info.sensorName}`);
         this.emit('devInfo', `----------------------------------`);
         return;
     }
@@ -230,7 +254,7 @@ class Sensors extends EventEmitter {
                 let i = 0;
                 for (const sensor of this.sensors) {
                     const sensorName = sensor.name;
-                    if (sensor.temperature !== undefined) {
+                    if (sensor.temperature) {
                         const debug = this.enableDebugMode ? this.emit('debug', `Prepare Temperature Sensor Services`) : false;
                         this.sensorTemperatureServices = [];
                         const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Temperature` : `${sensorName} Temperature`;
@@ -247,7 +271,7 @@ class Sensors extends EventEmitter {
                     }
 
                     //reference temperature
-                    if (sensor.referenceTemperature !== undefined) {
+                    if (sensor.referenceTemperature) {
                         const debug = this.enableDebugMode ? this.emit('debug', `Prepare Reference Temperature Sensor Services`) : false;
                         this.sensorReferenceTemperatureServices = [];
                         const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Reference Temperature` : `${sensorName} Reference Temperature`;
@@ -264,7 +288,7 @@ class Sensors extends EventEmitter {
                     }
 
                     //object temperature
-                    if (sensor.objTemperature !== undefined) {
+                    if (sensor.objTemperature) {
                         const debug = this.enableDebugMode ? this.emit('debug', `Prepare Obj Temperature Sensor Services`) : false;
                         this.sensorObjTemperatureServices = [];
                         const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Obj Temperature` : `${sensorName} Obj Temperature`;
@@ -281,7 +305,7 @@ class Sensors extends EventEmitter {
                     }
 
                     //ambient temperature
-                    if (sensor.ambTemperature !== undefined) {
+                    if (sensor.ambTemperature) {
                         const debug = this.enableDebugMode ? this.emit('debug', `Prepare Amb Temperature Sensor Services`) : false;
                         this.sensorAmbTemperatureServices = [];
                         const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Amb Temperature` : `${sensorName} Amb Temperature`;
@@ -298,7 +322,7 @@ class Sensors extends EventEmitter {
                     }
 
                     //dew point temperature
-                    if (sensor.dewPointTemperature !== undefined) {
+                    if (sensor.dewPointTemperature) {
                         const debug = this.enableDebugMode ? this.emit('debug', `Prepare Dew Point Temperature Sensor Services`) : false;
                         this.sensorDewPointTemperatureServices = [];
                         const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Dew Point` : `${sensorName} Dew Point`;
@@ -315,7 +339,7 @@ class Sensors extends EventEmitter {
                     }
 
                     //humidity
-                    if (sensor.humidity !== undefined) {
+                    if (sensor.humidity) {
                         const debug = this.enableDebugMode ? this.emit('debug', `Prepare Humidity Sensor Services`) : false;
                         this.sensorHumidityServices = [];
                         const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Humidity` : `${sensorName} Humidity`;
@@ -336,7 +360,7 @@ class Sensors extends EventEmitter {
                     //gas
 
                     //carbon dioxyde
-                    if (sensor.carbonDioxyde !== undefined) {
+                    if (sensor.carbonDioxyde) {
                         const debug = this.enableDebugMode ? this.emit('debug', `Prepare Carbon Dioxyde Sensor Services`) : false;
                         this.sensorCarbonDioxydeServices = [];
                         const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Carbon Dioxyde` : `${sensorName} Carbon Dioxyde`;
@@ -365,7 +389,7 @@ class Sensors extends EventEmitter {
                     }
 
                     //ambient light
-                    if (sensor.ambientLight !== undefined) {
+                    if (sensor.ambientLight) {
                         const debug = this.enableDebugMode ? this.emit('debug', `Prepare Ambient Light Sensor Services`) : false;
                         this.sensorAmbientLightServices = [];
                         const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Ambient Light` : `${sensorName} Ambient Light`;
@@ -382,7 +406,7 @@ class Sensors extends EventEmitter {
                     }
 
                     //motion
-                    if (sensor.motion !== undefined) {
+                    if (sensor.motion) {
                         const debug = this.enableDebugMode ? this.emit('debug', `Prepare Motion Sensor Services`) : false;
                         this.sensorMotionServices = [];
                         const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Motion` : `${sensorName} Motion`;
@@ -396,6 +420,104 @@ class Sensors extends EventEmitter {
                                 return state;
                             });
                         this.sensorMotionServices.push(sensorMotionService);
+                    }
+
+                    //energy
+                    if (sensor.name === 'ENERGY') {
+                        const debug4 = this.enableDebugMode ? this.emit('debug', `Prepare Power And Energy Service`) : false;
+                        this.sensorEnergyServices = [];
+                        const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName}` : `${sensorName} Sensor`;
+                        const energyService = accessory.addService(Service.PowerAndEnergyService, serviceName, `Energy Sensor ${i}`);
+                        energyService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
+                        if (sensor.power) {
+                            energyService.getCharacteristic(Characteristic.Power)
+                                .onGet(async () => {
+                                    const value = sensor.power;
+                                    const info = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} power: ${value} W`);
+                                    return value;
+                                });
+                        }
+                        if (sensor.apparentPower) {
+                            energyService.getCharacteristic(Characteristic.ApparentPower)
+                                .onGet(async () => {
+                                    const value = sensor.apparentPower;
+                                    const info = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} apparent power: ${value} VA`);
+                                    return value;
+                                });
+                        }
+                        if (sensor.reactivePower) {
+                            energyService.getCharacteristic(Characteristic.ReactivePower)
+                                .onGet(async () => {
+                                    const value = sensor.reactivePower;
+                                    const info = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} reactive power: ${value} VAr`);
+                                    return value;
+                                });
+                        }
+                        if (sensor.energyToday) {
+                            energyService.getCharacteristic(Characteristic.EnergyToday)
+                                .onGet(async () => {
+                                    const value = sensor.energyToday;
+                                    const info = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} energy today: ${value} kWh`);
+                                    return value;
+                                });
+                        }
+                        if (sensor.energyLastDay) {
+                            energyService.getCharacteristic(Characteristic.EnergyLastDay)
+                                .onGet(async () => {
+                                    const value = sensor.energyLastDay;
+                                    const info = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} energy last day: ${value} kWh`);
+                                    return value;
+                                });
+                        }
+                        if (sensor.energyLifetime) {
+                            energyService.getCharacteristic(Characteristic.EnergyLifetime)
+                                .onGet(async () => {
+                                    const value = sensor.energyLifetime;
+                                    const info = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} energy lifetime: ${value} kWh`);
+                                    return value;
+                                });
+                        }
+                        if (sensor.current) {
+                            energyService.getCharacteristic(Characteristic.Current)
+                                .onGet(async () => {
+                                    const value = sensor.current;
+                                    const info = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} current: ${value} A`);
+                                    return value;
+                                });
+                        }
+                        if (sensor.voltage) {
+                            energyService.getCharacteristic(Characteristic.Voltage)
+                                .onGet(async () => {
+                                    const value = sensor.voltage;
+                                    const info = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} voltage: ${value} V`);
+                                    return value;
+                                });
+                        }
+                        if (sensor.factor) {
+                            energyService.getCharacteristic(Characteristic.Factor)
+                                .onGet(async () => {
+                                    const value = sensor.factor;
+                                    const info = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} power factor: ${value} cos φ`);
+                                    return value;
+                                });
+                        }
+                        if (sensor.frequency) {
+                            energyService.getCharacteristic(Characteristic.Freqency)
+                                .onGet(async () => {
+                                    const value = sensor.frequency;
+                                    const info = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} frequency: ${value} Hz`);
+                                    return value;
+                                });
+                        }
+                        if (sensor.time) {
+                            energyService.getCharacteristic(Characteristic.ReadingTime)
+                                .onGet(async () => {
+                                    const value = sensor.time;
+                                    const info = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} last report: ${value}`);
+                                    return value;
+                                });
+                        }
+                        this.sensorEnergyServices.push(energyService);
                     }
                     i++;
                 }

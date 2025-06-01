@@ -84,6 +84,12 @@ Homebridge plugin for Tasmota flashed devices.
   * Carbon Dioxyde
   * Ambient Light
   * Motion
+  * Power
+  * Energy
+  * Current
+  * Voltage
+  * Power Factor
+  * Frequency
 
 ### Configuration
 

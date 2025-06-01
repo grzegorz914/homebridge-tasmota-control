@@ -66,14 +66,17 @@ class DeviceInfo extends EventEmitter {
             const fans = statusStsKeys.includes('FanSpeed') ? types.push(3) : false;
             const switches = !mielhvac && !lights && !fans ? types.push(1) : false
             const sensors = statusSnsKeys.some(key => SensorKeys.includes(key)) ? types.push(4) : false;
+            const sensorName = Object.entries(statusSns).filter(([key]) => SensorKeys.some(type => key.includes(type))).reduce((obj, [key, value]) => { return key; }, {});
             const obj = {
                 deviceTypes: types,
                 deviceName: deviceName,
+                sensorName: sensorName,
                 friendlyNames: friendlyNames,
                 modelName: modelName,
                 serialNumber: addressMac,
                 firmwareRevision: firmwareRevision
             };
+            this.emit('debug', `Sensor: ${JSON.stringify(obj, null, 2)}`)
             return obj;
         } catch (error) {
             throw new Error(`Check info error: ${error}`);
