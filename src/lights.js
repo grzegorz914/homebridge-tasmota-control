@@ -120,6 +120,8 @@ class Lights extends EventEmitter {
                     //update characteristics
                     const service = this.lightServices?.[i];
                     if (service) {
+                        const serviceName = this.lightsNamePrefix ? `${this.info.deviceName} ${friendlyName}` : friendlyName;
+                        service.updateCharacteristic(Characteristic.ConfiguredName, serviceName);
                         service.updateCharacteristic(Characteristic.On, power);
 
                         if (brightnessType > 0) {

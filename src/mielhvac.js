@@ -849,6 +849,8 @@ class MiElHvac extends EventEmitter {
             //services
             this.miElHvacService = new Service.HeaterCooler(accessoryName, `HeaterCooler ${this.serialNumber}`);
             this.miElHvacService.setPrimaryService(true);
+            this.miElHvacService.addOptionalCharacteristic(Characteristic.ConfiguredName);
+            this.miElHvacService.setCharacteristic(Characteristic.ConfiguredName, accessoryName);
             this.miElHvacService.getCharacteristic(Characteristic.Active)
                 .onGet(async () => {
                     const state = this.mielHvac.power;
