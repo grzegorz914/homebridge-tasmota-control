@@ -1,7 +1,7 @@
 {
   "displayName": "Tasmota Control",
   "name": "homebridge-tasmota-control",
-  "version": "1.6.9",
+  "version": "1.6.10",
   "description": "Homebridge plugin to control Tasmota flashed devices.",
   "license": "MIT",
   "author": "grzegorz914",
@@ -30,7 +30,7 @@
     "LICENSE"
   ],
   "engines": {
-    "homebridge": "^1.9.0 || ^2.0.0 || ^2.0.0-beta.297",
+    "homebridge": "^1.9.0 || ^2.0.0 || ^2.0.0-beta.29",
     "node": "^18.20.4 || ^20.15.1 || ^22.7.0 || ^23.2.0 || ^24.0.0"
   },
   "dependencies": {
