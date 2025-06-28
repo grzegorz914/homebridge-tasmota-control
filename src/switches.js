@@ -45,13 +45,19 @@ class Switches extends EventEmitter {
         });
 
         //impulse generator
+        this.call = false;
         this.impulseGenerator = new ImpulseGenerator();
         this.impulseGenerator.on('checkDeviceState', async () => {
+            if (this.call) return;
+
             try {
+                this.call = true;
                 await this.checkDeviceState();
+                this.call = false;
             } catch (error) {
-                this.emit('error', `Impulse generator error: ${error}`);
-            }
+                this.call = false;
+                this.emit('error', `Inpulse generator error: ${error}`);
+            };
         }).on('state', (state) => {
             const emitState = state ? this.emit('success', `Impulse generator started`) : this.emit('warn', `Impulse generator stopped`);
         });

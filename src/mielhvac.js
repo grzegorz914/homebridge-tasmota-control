@@ -151,17 +151,28 @@ class MiElHvac extends EventEmitter {
         }
 
         //impulse generator
+        this.call = false;
+        this.call1 = false;
         this.impulseGenerator = new ImpulseGenerator();
         this.impulseGenerator.on('checkDeviceState', async () => {
+            if (this.call) return;
+
             try {
+                this.call = true;
                 await this.checkDeviceState();
+                this.call = false;
             } catch (error) {
-                this.emit('error', `Impulse generator error: ${error}`);
-            }
+                this.call = false;
+                this.emit('error', `Inpulse generator error: ${error}`);
+            };
         }).on('updateRemoteTemp', async () => {
+            if (this.call1) return;
+
             try {
+                this.call1 = true;
                 await this.updateRemoteTemp();
             } catch (error) {
+                this.call1 = false;
                 this.emit('error', `Impulse generator error: ${error}`);
             }
         }).on('state', (state) => {
