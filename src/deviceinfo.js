@@ -13,7 +13,7 @@ class DeviceInfo extends EventEmitter {
         this.axiosInstance = axios.create({
             method: 'GET',
             baseURL: url,
-            timeout: refreshInterval > 10000 ? 10000 : refreshInterval,
+            timeout: 10000,
             withCredentials: auth,
             auth: {
                 username: user,

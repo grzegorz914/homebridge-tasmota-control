@@ -35,7 +35,7 @@ class Lights extends EventEmitter {
         this.axiosInstance = axios.create({
             method: 'GET',
             baseURL: url,
-            timeout: refreshInterval > 10000 ? 10000 : refreshInterval,
+            timeout: 6000,
             withCredentials: config.auth,
             auth: {
                 username: config.user,
