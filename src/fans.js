@@ -100,7 +100,7 @@ class Fans extends EventEmitter {
 
                     //light
                     const light = {
-                        friendlyName: friendlyName,
+                        friendlyName: `Light ${friendlyName}`,
                         power: power,
                         power1: power1
                     };
@@ -119,7 +119,7 @@ class Fans extends EventEmitter {
                     const direction = statusSts.FanDirection ?? 0;
                     const speed = statusSts.FanSpeed;
                     const fan = {
-                        friendlyName: friendlyName,
+                        friendlyName: `Fan ${friendlyName}`,
                         power: powerFan,
                         direction: direction,
                         speed: speed,

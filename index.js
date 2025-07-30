@@ -67,10 +67,10 @@ class tasmotaPlatform {
 
         try {
           //get device info
-          const deviceInfo = new DeviceInfo(url, auth, user, passwd, deviceName, loadNameFromDevice, enableDebugMode, refreshInterval);
-          deviceInfo.on('debug', (debug) => {
-            const emitLog = !enableDebugMode ? false : log.info(`Device: ${host} ${deviceName}, debug: ${debug}.`);
-          })
+          const deviceInfo = new DeviceInfo(url, auth, user, passwd, deviceName, loadNameFromDevice, enableDebugMode, refreshInterval)
+            .on('debug', (debug) => {
+              const emitLog = !enableDebugMode ? false : log.info(`Device: ${host} ${deviceName}, debug: ${debug}.`);
+            })
             .on('debug', (debug) => {
               const emitLog = !enableDebugMode ? false : log.info(`Device: ${host} ${deviceName}, debug: ${debug}.`);
             })

@@ -112,7 +112,7 @@ class Lights extends EventEmitter {
 
                     //push to array
                     const light = {
-                        friendlyName: friendlyName,
+                        friendlyName: `Light ${friendlyName}`,
                         power: power,
                         brightness: bright,
                         colorTemperature: colorTemperature,
