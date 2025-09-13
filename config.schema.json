@@ -400,6 +400,12 @@
                         "default": "swing",
                         "oneOf": [
                           {
+                            "title": "AIR DIRECTION",
+                            "enum": [
+                              "airdirection"
+                            ]
+                          },
+                          {
                             "title": "LEFT",
                             "enum": [
                               "left"
@@ -412,9 +418,21 @@
                             ]
                           },
                           {
+                            "title": "LEFT CENTER",
+                            "enum": [
+                              "left_center"
+                            ]
+                          },
+                          {
                             "title": "CENTER",
                             "enum": [
                               "center"
+                            ]
+                          },
+                          {
+                            "title": "RIGHT CENTER",
+                            "enum": [
+                              "right_center"
                             ]
                           },
                           {
@@ -519,7 +537,7 @@
                         "title": "Mode",
                         "type": "integer",
                         "minimum": 0,
-                        "maximum": 53,
+                        "maximum": 63,
                         "default": 0,
                         "description": "Here select function.",
                         "oneOf": [
@@ -560,25 +578,19 @@
                             ]
                           },
                           {
-                            "title": "MODE PURIFY (not implemented)",
-                            "enum": [
-                              6
-                            ]
-                          },
-                          {
-                            "title": "VANE H AUTO",
+                            "title": "VANE H LEFT",
                             "enum": [
                               10
                             ]
                           },
                           {
-                            "title": "VANE H LEFT",
+                            "title": "VANE H LEFT MIDDLE",
                             "enum": [
                               11
                             ]
                           },
                           {
-                            "title": "VANE H LEFT MIDDLE",
+                            "title": "VANE H LEFT CENTER",
                             "enum": [
                               12
                             ]
@@ -590,27 +602,33 @@
                             ]
                           },
                           {
-                            "title": "VANE H RIGHT MIDDLE",
+                            "title": "VANE H RIGHT CENTER",
                             "enum": [
                               14
                             ]
                           },
                           {
-                            "title": "VANE H RIGHT",
+                            "title": "VANE H RIGHT MIDDLE",
                             "enum": [
                               15
                             ]
                           },
                           {
-                            "title": "VANE H SPLIT",
+                            "title": "VANE H RIGHT",
                             "enum": [
                               16
                             ]
                           },
                           {
-                            "title": "VANE H SWING",
+                            "title": "VANE H SPLIT",
                             "enum": [
                               17
+                            ]
+                          },
+                          {
+                            "title": "VANE H SWING",
+                            "enum": [
+                              18
                             ]
                           },
                           {
@@ -692,45 +710,69 @@
                             ]
                           },
                           {
-                            "title": "AIR DIRECTION EVEN (only as sensor now)",
+                            "title": "AIR DIRECTION INDIRECT",
                             "enum": [
                               40
                             ]
                           },
                           {
-                            "title": "AIR DIRECTION INDIRECT (only as sensor now)",
+                            "title": "AIR DIRECTION DIRECT",
                             "enum": [
                               41
                             ]
                           },
                           {
-                            "title": "AIR DIRECTION DIRECT (only as sensor now)",
+                            "title": "AIR DIRECTION EVEN",
                             "enum": [
                               42
                             ]
                           },
                           {
-                            "title": "LOCK CONTROL All (only as sensor now)",
+                            "title": "LOCK CONTROL All",
                             "enum": [
                               50
                             ]
                           },
                           {
-                            "title": "LOCK CONTROL POWER (only as sensor now)",
+                            "title": "LOCK CONTROL POWER",
                             "enum": [
                               51
                             ]
                           },
                           {
-                            "title": "LOCK CONTROL MODE (only as sensor now)",
+                            "title": "LOCK CONTROL MODE",
                             "enum": [
                               52
                             ]
                           },
                           {
-                            "title": "LOCK CONTROL TEMPERATURE (only as sensor now)",
+                            "title": "LOCK CONTROL TEMPERATURE",
                             "enum": [
                               53
+                            ]
+                          },
+                          {
+                            "title": "PURIFY",
+                            "enum": [
+                              60
+                            ]
+                          },
+                          {
+                            "title": "ECONO COOL",
+                            "enum": [
+                              61
+                            ]
+                          },
+                          {
+                            "title": "POWER FULL",
+                            "enum": [
+                              62
+                            ]
+                          },
+                          {
+                            "title": "NIGHT MODE",
+                            "enum": [
+                              63
                             ]
                           }
                         ],
@@ -833,25 +875,25 @@
                             ]
                           },
                           {
-                            "title": "MODE PURIFY (not implemented)",
+                            "title": "PURIFY",
                             "enum": [
                               6
                             ]
                           },
                           {
-                            "title": "VANE H AUTO",
+                            "title": "VANE H LEFT",
                             "enum": [
                               10
                             ]
                           },
                           {
-                            "title": "VANE H LEFT",
+                            "title": "VANE H LEFT MIDDLE",
                             "enum": [
                               11
                             ]
                           },
                           {
-                            "title": "VANE H LEFT MIDDLE",
+                            "title": "VANE H LEFT CENTER",
                             "enum": [
                               12
                             ]
@@ -863,27 +905,39 @@
                             ]
                           },
                           {
-                            "title": "VANE H RIGHT MIDDLE",
+                            "title": "VANE H RIGHT CENTER",
                             "enum": [
                               14
                             ]
                           },
                           {
-                            "title": "VANE H RIGHT",
+                            "title": "VANE H RIGHT MIDDLE",
                             "enum": [
                               15
                             ]
                           },
                           {
-                            "title": "VANE H SPLIT",
+                            "title": "VANE H RIGHT",
                             "enum": [
                               16
                             ]
                           },
                           {
-                            "title": "VANE H SWING",
+                            "title": "VANE H SPLIT",
                             "enum": [
                               17
+                            ]
+                          },
+                          {
+                            "title": "VANE H SWING",
+                            "enum": [
+                              18
+                            ]
+                          },
+                          {
+                            "title": "VANE H AIR DIRECTION",
+                            "enum": [
+                              19
                             ]
                           },
                           {
@@ -1013,97 +1067,103 @@
                             ]
                           },
                           {
-                            "title": "OPERATION STAGE NORMAL",
+                            "title": "OPERATION STATUS NORMAL",
                             "enum": [
                               70
                             ]
                           },
                           {
-                            "title": "OPERATION STAGE DEFROST",
+                            "title": "OPERATION STATUS FILTER",
                             "enum": [
                               71
                             ]
                           },
                           {
-                            "title": "OPERATION STAGE PREHEAT",
+                            "title": "OPERATION STATUS DEFROST",
                             "enum": [
                               72
                             ]
                           },
                           {
-                            "title": "OPERATION STAGE STANDBY",
+                            "title": "OPERATION STATUS STANDBY",
                             "enum": [
                               73
                             ]
                           },
                           {
-                            "title": "FAN STAGE OFF",
+                            "title": "OPERATION STATUS PREHEAT",
+                            "enum": [
+                              74
+                            ]
+                          },
+                          {
+                            "title": "FAN STATUS OFF",
                             "enum": [
                               80
                             ]
                           },
                           {
-                            "title": "FAN STAGE QUIET",
+                            "title": "FAN STATUS QUIET",
                             "enum": [
                               81
                             ]
                           },
                           {
-                            "title": "FAN STAGE 1",
+                            "title": "FAN STATUS 1",
                             "enum": [
                               82
                             ]
                           },
                           {
-                            "title": "FAN STAGE 2",
+                            "title": "FAN STATUS 2",
                             "enum": [
                               83
                             ]
                           },
                           {
-                            "title": "FAN STAGE 3",
+                            "title": "FAN STATUS 3",
                             "enum": [
                               84
                             ]
                           },
                           {
-                            "title": "FAN STAGE 4",
+                            "title": "FAN STATUS 4",
                             "enum": [
                               85
                             ]
                           },
                           {
-                            "title": "FAN STAGE 5",
+                            "title": "FAN STATUS 5",
                             "enum": [
                               86
                             ]
                           },
                           {
-                            "title": "MODE STAGE AUTO OFF",
+                            "title": "MODE STATUS AUTO OFF",
                             "enum": [
                               90
                             ]
                           },
                           {
-                            "title": "MODE STAGE AUTO FAN",
+                            "title": "MODE STATUS AUTO FAN",
                             "enum": [
                               91
                             ]
                           },
                           {
-                            "title": "MODE STAGE AUTO HEAT",
+                            "title": "MODE STATUS AUTO HEAT",
                             "enum": [
                               92
                             ]
                           },
                           {
-                            "title": "MODE STAGE AUTO COOL",
+                            "title": "MODE STATUS AUTO COOL",
                             "enum": [
                               93
                             ]
                           },
                           {
-                            "title": "MODE STAGE AUTO LEADER",
+                            "title": "MODE STATUS AUTO LEADER",
                             "enum": [
                               94
                             ]

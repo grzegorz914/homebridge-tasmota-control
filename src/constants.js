@@ -34,7 +34,6 @@ export const MiElHVAC = {
         "cool": "HVACSetMode%20cool",
         "fan": "HVACSetMode%20fan",
         "auto": "HVACSetMode%20auto",
-        "purify": "HVACSetMode%20purify"
     },
     "SetFanSpeed": {
         "auto": "HVACSetFanSpeed%20auto",
@@ -55,19 +54,20 @@ export const MiElHVAC = {
         "swing": "HVACSetSwingV%20swing"
     },
     "SetSwingH": {
-        "auto": "HVACSetSwingH%20auto",
         "left": "HVACSetSwingH%20left",
         "left_middle": "HVACSetSwingH%20left_middle",
+        "left_center": "HVACSetSwingH%20left_center",
         "center": "HVACSetSwingH%20center",
+        "right_center": "HVACSetSwingH%20right_center",
         "right_middle": "HVACSetSwingH%20right_middle",
         "right": "HVACSetSwingH%20right",
         "split": "HVACSetSwingH%20split",
-        "swing": "HVACSetSwingH%20swing"
+        "swing": "HVACSetSwingH%20swing",
     },
     "SetAirDirection": {
-        "even": "HVACSetAirDirection%20even",
         "indirect": "HVACSetAirDirection%20indirect",
-        "direct": "HVACSetAirDirection%20direct"
+        "direct": "HVACSetAirDirection%20direct",
+        "even": "HVACSetAirDirection%20even",
     },
     "SetProhibit": {
         "off": "HVACSetProhibit%20off",
@@ -83,8 +83,20 @@ export const MiElHVAC = {
         "c": "HVACSetDisplayUnit%20c",
         "f": "HVACSetDisplayUnit%20f"
     },
-    "RemoteTemp": "HVACRemoteTemp%20",
-    "RemoteTempClearTime": "HVACRemoteTempClearTime%20",
+    "SetPurify": {
+        "purify": "HVACSetPurify%20on"
+    },
+    "SetEconoCool": {
+        "econocool": "HVACSetEconoCool%20on"
+    },
+    "SetPowerFull": {
+        "powerfull": "HVACSetPowerFull%20on"
+    },
+    "SetNightMode": {
+        "nightmode": "HVACSetNightMode%20on"
+    },
+    "SetRemoteTemp": "HVACSetRemoteTemp%20",
+    "SetRemoteTempClearTime": "HVACSetRemoteTempClearTime%20",
     "OperationMode": [
         "AUTO",
         "HEAT",
@@ -107,7 +119,7 @@ export const MiElHVAC = {
         "1": "WEAK",
         "2": "NORMAL",
         "3": "STRONG",
-        "4": "ERY STRONG",
+        "4": "VERY STRONG",
         "6": "OFF"
     },
     "VerticalVane": {
@@ -120,10 +132,12 @@ export const MiElHVAC = {
         "swing": "SWING"
     },
     "HorizontalVane": {
-        "auto": "AUTO",
+        "airdirection": "AIR DIRECTION",
         "left_middle": "LEFT",
         "left": "LEFT MIDDLE",
+        "left_center": "LEFT CENTER",
         "center": "CENTER",
+        "right_center": "RIGHT CENTER",
         "right_middle": "RIGHT MIDDLE",
         "right": "RIGHT",
         "split": "SPLIT",

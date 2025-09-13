@@ -1,7 +1,7 @@
-import { promises as fsPromises } from 'fs';
 import axios from 'axios';
 import EventEmitter from 'events';
 import ImpulseGenerator from './impulsegenerator.js';
+import Functions from './functions.js';
 import { ApiCommands, MiElHVAC, TemperatureDisplayUnits } from './constants.js';
 let Accessory, Characteristic, Service, Categories, AccessoryUUID;
 
@@ -40,8 +40,8 @@ class MiElHvac extends EventEmitter {
         const presets = miElHvac.presets || [];
         this.presetsConfigured = [];
         for (const preset of presets) {
-            const displayType = preset.displayType ?? 0;
-            if (displayType === 0) {
+            const displayType = preset.displayType;
+            if (!displayType) {
                 continue;
             }
 
@@ -60,8 +60,8 @@ class MiElHvac extends EventEmitter {
         const buttons = miElHvac.buttons || [];
         this.buttonsConfigured = [];
         for (const button of buttons) {
-            const displayType = button.displayType ?? 0;
-            if (displayType === 0) {
+            const displayType = button.displayType;
+            if (!displayType) {
                 continue;
             }
 
@@ -80,8 +80,8 @@ class MiElHvac extends EventEmitter {
         const sensors = miElHvac.sensors || [];
         this.sensorsConfigured = [];
         for (const sensor of sensors) {
-            const displayType = sensor.displayType ?? 0;
-            if (displayType === 0) {
+            const displayType = sensor.displayType;
+            if (!displayType) {
                 continue;
             }
 
@@ -114,20 +114,17 @@ class MiElHvac extends EventEmitter {
         this.disableLogDeviceInfo = config.disableLogDeviceInfo || false;
         this.refreshInterval = refreshInterval;
 
-        //variable
-        this.startPrepareAccessory = true;
-
         //mielhvac
         this.mielHvac = {};
         this.previousStateSwingV = 'auto';
         this.previousStateSwingH = 'center';
+        this.functions = new Functions();
 
         //axios instance
         const url = `http://${config.host}/cm?cmnd=`;
         this.axiosInstance = axios.create({
-            method: 'GET',
             baseURL: url,
-            timeout: 6000,
+            timeout: 15000,
             withCredentials: config.auth,
             auth: {
                 username: config.user,
@@ -137,11 +134,9 @@ class MiElHvac extends EventEmitter {
 
         //axios instance remote temp
         if (remoteTemperatureSensorEnable) {
-            const path = remoteTemperatureSensorPath;
             this.axiosInstanceRemoteTemp = axios.create({
-                method: 'GET',
-                baseURL: path,
-                timeout: remoteTemperatureSensorRefreshInterval > 10000 ? 10000 : remoteTemperatureSensorRefreshInterval,
+                baseURL: remoteTemperatureSensorPath,
+                timeout: 10000,
                 withCredentials: remoteTemperatureSensorAuth,
                 auth: {
                     username: remoteTemperatureSensorUser,
@@ -150,48 +145,48 @@ class MiElHvac extends EventEmitter {
             });
         }
 
-        //impulse generator
-        this.call = false;
-        this.call1 = false;
-        this.impulseGenerator = new ImpulseGenerator();
-        this.impulseGenerator.on('checkDeviceState', async () => {
-            if (this.call) return;
-
-            try {
-                this.call = true;
-                await this.checkDeviceState();
-                this.call = false;
-            } catch (error) {
-                this.call = false;
-                this.emit('error', `Inpulse generator error: ${error}`);
-            };
-        }).on('updateRemoteTemp', async () => {
-            if (this.call1) return;
-
-            try {
-                this.call1 = true;
-                await this.updateRemoteTemp();
-            } catch (error) {
-                this.call1 = false;
-                this.emit('error', `Impulse generator error: ${error}`);
-            }
-        }).on('state', (state) => {
-            const emitState = state ? this.emit('success', `Impulse generator started`) : this.emit('warn', `Impulse generator stopped`);
-        });
+        //lock flags
+        this.locks = {
+            checkState: false,
+            updateRemoteTemp: false,
+        };
+        this.impulseGenerator = new ImpulseGenerator()
+            .on('checkState', () => this.handleWithLock('checkState', async () => {
+                await this.checkState();
+            }))
+            .on('updateRemoteTemp', () => this.handleWithLock('updateRemoteTemp', async () => {
+                await this.checkState();
+            }))
+            .on('state', (state) => {
+                this.emit('success', `Impulse generator ${state ? 'started' : 'stopped'}.`);
+            });
     }
 
-    async checkDeviceState() {
-        const debug = this.enableDebugMode ? this.emit('debug', `Requesting status`) : false;
+    async handleWithLock(lockKey, fn) {
+        if (this.locks[lockKey]) return;
+
+        this.locks[lockKey] = true;
+        try {
+            await fn();
+        } catch (error) {
+            this.emit('error', `Inpulse generator error: ${error}`);
+        } finally {
+            this.locks[lockKey] = false;
+        }
+    }
+
+    async checkState() {
+        if (this.enableDebugMode) this.emit('debug', `Requesting status`);
         try {
             //power status
-            const powerStatusData = await this.axiosInstance(ApiCommands.PowerStatus);
+            const powerStatusData = await this.axiosInstance.get(ApiCommands.PowerStatus);
             const powerStatus = powerStatusData.data ?? {};
-            const debug = this.enableDebugMode ? this.emit('debug', `Power status: ${JSON.stringify(powerStatus, null, 2)}`) : false;
+            if (this.enableDebugMode) this.emit('debug', `Power status: ${JSON.stringify(powerStatus, null, 2)}`);
 
             //sensor status
-            const sensorStatusData = await this.axiosInstance(ApiCommands.Status);
+            const sensorStatusData = await this.axiosInstance.get(ApiCommands.Status);
             const sensorStatus = sensorStatusData.data ?? {};
-            const debug1 = this.enableDebugMode ? this.emit('debug', `Sensors status: ${JSON.stringify(sensorStatus, null, 2)}`) : false;
+            if (this.enableDebugMode) this.emit('debug', `Sensors status: ${JSON.stringify(sensorStatus, null, 2)}`);
 
             //sensor status keys
             const sensorStatusKeys = Object.keys(sensorStatus);
@@ -200,35 +195,44 @@ class MiElHvac extends EventEmitter {
             const statusSnsSupported = sensorStatusKeys.includes('StatusSNS');
             const statusSns = statusSnsSupported ? sensorStatus.StatusSNS : {};
 
-            //power
-            const power1 = powerStatus.POWER == 'ON' ? 1 : 0;
-
             //status SNS
             const time = statusSns.Time ?? '';
             const temperatureUnit = statusSns.TempUnit === 'C' ? '°C' : 'F';
 
             //mielhvac
-            const miElHvac = statusSns.MiElHVAC ?? {};
+            const miElHvac = statusSns.MiElHVAC;
+
+            if (!miElHvac || Object.keys(miElHvac).length === 0) {
+                this.emit('warn', "Empty data received");
+                return null;
+            }
+
             const power = miElHvac.Power === 'on' ? 1 : 0;
             const roomTemperature = miElHvac.Temperature ?? null;
+            if (!roomTemperature) return null;
+
             const outdoorTemperature = miElHvac.OutdoorTemperature ?? null;
             const setTemperature = miElHvac.SetTemperature;
             const operationMode = miElHvac.Mode ?? 'Unknown';
-            const operationModeStage = miElHvac.ModeStage ?? 'Unknown';
+            const operationModeStatus = miElHvac.ModeStatus ?? 'Unknown';
             const fanSpeed = miElHvac.FanSpeed ?? 'Unknown';
-            const fanSpeedStage = miElHvac.FanStage ?? 'Unknown';
+            const fanSpeedStatus = miElHvac.FanStatus ?? 'Unknown';
             const vaneVerticalDirection = miElHvac.SwingV ?? 'Unknown';
             const vaneHorizontalDirection = miElHvac.SwingH ?? 'Unknown';
             const prohibit = miElHvac.Prohibit ?? 'Unknown';
+            const purify = miElHvac.Purify ?? 'Unknown';
+            const econoCool = miElHvac.EonoCool ?? 'Unknown';
+            const powerFull = miElHvac.PowerFull ?? 'Unknown';
+            const nightMode = miElHvac.NightMode ?? 'Unknown';
             const airDirection = miElHvac.AirDirection ?? 'Unknown';
             const compressor = miElHvac.Compressor ?? 'Unknown';
             const compressorFrequency = miElHvac.CompressorFrequency ?? 0;
             const operationPower = miElHvac.OperationPower ?? 0;
             const operationEnergy = miElHvac.OperationEnergy ?? 0;
-            const operationStage = miElHvac.OperationStage ?? 'Unknown';
+            const operationStatus = miElHvac.OperationStatus ?? 'Unknown';
             const swingMode = vaneVerticalDirection === 'swing' && vaneHorizontalDirection === 'swing' ? 1 : 0;
-            const defaultCoolingSetTemperature = parseFloat(await this.readData(this.info.defaultCoolingSetTemperatureFile));
-            const defaultHeatingSetTemperature = parseFloat(await this.readData(this.info.defaultHeatingSetTemperatureFile));
+            const defaultCoolingSetTemperature = parseFloat(await this.functions.readData(this.info.defaultCoolingSetTemperatureFile));
+            const defaultHeatingSetTemperature = parseFloat(await this.functions.readData(this.info.defaultHeatingSetTemperatureFile));
             const remoteTemperatureSensorState = miElHvac.RemoteTemperatureSensorState ?? false; //ON, OFF
             const remoteTemperatureSensorAutoClearTime = miElHvac.RemoteTemperatureSensorAutoClearTime ?? 0; //time in ms
 
@@ -253,19 +257,23 @@ class MiElHvac extends EventEmitter {
                 outdoorTemperature: outdoorTemperature,
                 setTemperature: setTemperature,
                 operationMode: operationMode,
-                operationModeStage: operationModeStage,
+                operationModeStatus: operationModeStatus,
                 currentOperationMode: 0,
                 targetOperationMode: 0,
                 vaneVerticalDirection: vaneVerticalDirection,
                 vaneHorizontalDirection: vaneHorizontalDirection,
                 prohibit: prohibit,
+                purify: purify,
+                econoCool: econoCool,
+                powerFull: powerFull,
+                nightMode: nightMode,
                 airDirection: airDirection,
                 swingMode: swingMode,
                 compressor: compressor,
                 compressorFrequency: compressorFrequency,
                 operationPower: operationPower,
                 operationEnergy: operationEnergy,
-                operationStage: operationStage,
+                operationStatus: operationStatus,
                 defaultCoolingSetTemperature: defaultCoolingSetTemperature,
                 defaultHeatingSetTemperature: defaultHeatingSetTemperature,
                 remoteTemperatureSensorState: remoteTemperatureSensorState,
@@ -285,8 +293,8 @@ class MiElHvac extends EventEmitter {
                 hideVaneControls: hideVaneControls
             };
 
-            //operation mode
-            const operationModeStageMap = {
+            // Map status to index safely, fallback to 0 if not found
+            const operationModeStatusMap = {
                 'manual': 0,
                 'heat': 2,
                 'dry': 1,
@@ -300,51 +308,56 @@ class MiElHvac extends EventEmitter {
                 'auto_cool': 3,
                 'auto_leader': 4
             };
+
+            const statusIndex = operationModeStatusMap[operationModeStatus] ?? 0;
             switch (operationMode) {
                 case 'heat':
-                    obj.currentOperationMode = [2, 1, 2, 3, 0][operationModeStageMap[operationModeStage]]; //INACTIVE, IDLE, HEATING, COOLING
-                    obj.targetOperationMode = 1; //AUTO, HEAT, COOL
+                    obj.currentOperationMode = [2, 1, 2, 3, 0][statusIndex]; // INACTIVE, IDLE, HEATING, COOLING
+                    obj.targetOperationMode = 1; // AUTO, HEAT, COOL
                     break;
                 case 'dry':
-                    obj.currentOperationMode = [1, 1, 2, 3, 0][operationModeStageMap[operationModeStage]];
+                    obj.currentOperationMode = [1, 1, 2, 3, 0][statusIndex];
                     obj.targetOperationMode = this.autoDryFanMode === 2 ? 0 : this.heatDryFanMode === 2 ? 1 : this.coolDryFanMode === 2 ? 2 : obj.targetOperationMode;
                     break;
                 case 'cool':
-                    obj.currentOperationMode = [3, 1, 2, 3, 0][operationModeStageMap[operationModeStage]];
+                    obj.currentOperationMode = [3, 1, 2, 3, 0][statusIndex];
                     obj.targetOperationMode = 2;
                     break;
                 case 'fan':
-                    obj.currentOperationMode = [1, 1, 2, 3, 0][operationModeStageMap[operationModeStage]];
+                    obj.currentOperationMode = [1, 1, 2, 3, 0][statusIndex];
                     obj.targetOperationMode = this.autoDryFanMode === 3 ? 0 : this.heatDryFanMode === 3 ? 1 : this.coolDryFanMode === 3 ? 2 : obj.targetOperationMode;
                     break;
                 case 'auto':
-                    obj.currentOperationMode = [2, 1, 2, 3, 0][operationModeStageMap[operationModeStage]];
+                    obj.currentOperationMode = [2, 1, 2, 3, 0][statusIndex];
                     obj.targetOperationMode = 0;
                     break;
                 case 'heat_isee':
-                    obj.currentOperationMode = [2, 1, 2, 3, 0][operationModeStageMap[operationModeStage]];
+                    obj.currentOperationMode = [2, 1, 2, 3, 0][statusIndex];
                     obj.targetOperationMode = 1;
                     break;
                 case 'dry_isee':
-                    obj.currentOperationMode = [1, 1, 2, 3, 0][operationModeStageMap[operationModeStage]];
+                    obj.currentOperationMode = [1, 1, 2, 3, 0][statusIndex];
                     obj.targetOperationMode = this.autoDryFanMode === 2 ? 0 : this.heatDryFanMode === 2 ? 1 : this.coolDryFanMode === 2 ? 2 : obj.targetOperationMode;
                     break;
                 case 'cool_isee':
-                    obj.currentOperationMode = [3, 1, 2, 3, 0][operationModeStageMap[operationModeStage]];
+                    obj.currentOperationMode = [3, 1, 2, 3, 0][statusIndex];
                     obj.targetOperationMode = 2;
                     break;
                 default:
                     this.emit('warn', `Unknown operating mode: ${operationMode}`);
-                    return;
+                    return null;
             }
 
+            // If power is off, force currentOperationMode to 0 (inactive)
             obj.currentOperationMode = !power ? 0 : obj.currentOperationMode;
+
+            // Set min/max/valid values for operation mode controls
             obj.operationModeSetPropsMinValue = modelSupportsAuto && modelSupportsHeat ? 0 : !modelSupportsAuto && modelSupportsHeat ? 1 : modelSupportsAuto && !modelSupportsHeat ? 0 : 2;
-            obj.operationModeSetPropsMaxValue = 2
+            obj.operationModeSetPropsMaxValue = 2;
             obj.operationModeSetPropsValidValues = modelSupportsAuto && modelSupportsHeat ? [0, 1, 2] : !modelSupportsAuto && modelSupportsHeat ? [1, 2] : modelSupportsAuto && !modelSupportsHeat ? [0, 2] : [2];
 
+
             if (modelSupportsFanSpeed) {
-                //fan speed mode
                 const fanSpeedMap = {
                     'auto': 0,
                     'quiet': 1,
@@ -354,379 +367,299 @@ class MiElHvac extends EventEmitter {
                     '4': 5
                 };
 
-                switch (numberOfFanSpeeds) {
-                    case 2: //Fan speed mode 2
-                        obj.fanSpeed = hasAutomaticFanSpeed ? [3, 1, 2][fanSpeedMap[fanSpeed]] : [0, 1, 2][fanSpeedMap[fanSpeed]];
-                        obj.fanSpeedSetPropsMaxValue = hasAutomaticFanSpeed ? 3 : 2;
-                        break;
-                    case 3: //Fan speed mode 3
-                        obj.fanSpeed = hasAutomaticFanSpeed ? [4, 1, 2, 3][fanSpeedMap[fanSpeed]] : [0, 1, 2, 3][fanSpeedMap[fanSpeed]];
-                        obj.fanSpeedSetPropsMaxValue = hasAutomaticFanSpeed ? 4 : 3;
-                        break;
-                    case 4: //Fan speed mode 4
-                        obj.fanSpeed = hasAutomaticFanSpeed ? [5, 1, 2, 3, 4][fanSpeedMap[fanSpeed]] : [0, 1, 2, 3, 4][fanSpeedMap[fanSpeed]];
-                        obj.fanSpeedSetPropsMaxValue = hasAutomaticFanSpeed ? 5 : 4;
-                        break;
-                    case 5: //Fan speed mode 5
-                        obj.fanSpeed = hasAutomaticFanSpeed ? [6, 1, 2, 3, 4, 5][fanSpeedMap[fanSpeed]] : [0, 1, 2, 3, 4, 5][fanSpeedMap[fanSpeed]];
-                        obj.fanSpeedSetPropsMaxValue = hasAutomaticFanSpeed ? 6 : 5;
-                        break;
+                const fanIndex = fanSpeedMap[fanSpeed];
+                obj.fanSpeed = 0;
+                obj.fanSpeedSetPropsMaxValue = 0;
+
+                if (typeof fanIndex === 'number') {
+                    switch (numberOfFanSpeeds) {
+                        case 2:
+                            obj.fanSpeed = hasAutomaticFanSpeed ? [3, 1, 2][fanIndex] ?? 1 : [0, 1, 2][fanIndex] ?? 1;
+                            obj.fanSpeedSetPropsMaxValue = hasAutomaticFanSpeed ? 3 : 2;
+                            break;
+                        case 3:
+                            obj.fanSpeed = hasAutomaticFanSpeed ? [4, 1, 2, 3][fanIndex] ?? 1 : [0, 1, 2, 3][fanIndex] ?? 1;
+                            obj.fanSpeedSetPropsMaxValue = hasAutomaticFanSpeed ? 4 : 3;
+                            break;
+                        case 4:
+                            obj.fanSpeed = hasAutomaticFanSpeed ? [5, 1, 2, 3, 4][fanIndex] ?? 1 : [0, 1, 2, 3, 4][fanIndex] ?? 1;
+                            obj.fanSpeedSetPropsMaxValue = hasAutomaticFanSpeed ? 5 : 4;
+                            break;
+                        case 5:
+                            obj.fanSpeed = hasAutomaticFanSpeed ? [6, 1, 2, 3, 4, 5][fanIndex] ?? 1 : [0, 1, 2, 3, 4, 5][fanIndex] ?? 1;
+                            obj.fanSpeedSetPropsMaxValue = hasAutomaticFanSpeed ? 6 : 5;
+                            break;
+                        default:
+                            this.emit('warn', `Unknown fan speeds: ${numberOfFanSpeeds}`);
+                    }
+
+                    // Cap value to max
+                    if (obj.fanSpeed > obj.fanSpeedSetPropsMaxValue) {
+                        obj.fanSpeed = obj.fanSpeedSetPropsMaxValue;
+                    }
                 }
             }
+
             this.mielHvac = obj;
 
             //update characteristics
             if (this.miElHvacService) {
-                this.miElHvacService
-                    .updateCharacteristic(Characteristic.Active, power)
+                const svc = this.miElHvacService;
+
+                svc.updateCharacteristic(Characteristic.Active, power)
                     .updateCharacteristic(Characteristic.CurrentHeaterCoolerState, obj.currentOperationMode)
                     .updateCharacteristic(Characteristic.TargetHeaterCoolerState, obj.targetOperationMode)
                     .updateCharacteristic(Characteristic.CurrentTemperature, roomTemperature)
                     .updateCharacteristic(Characteristic.LockPhysicalControls, lockPhysicalControl)
                     .updateCharacteristic(Characteristic.TemperatureDisplayUnits, useFahrenheit)
                     .updateCharacteristic(Characteristic.SwingMode, swingMode);
-                const updateDefCool = obj.targetOperationMode === 0 || obj.targetOperationMode === 2 ? this.miElHvacService.updateCharacteristic(Characteristic.CoolingThresholdTemperature, obj.targetOperationMode === 0 ? defaultCoolingSetTemperature : setTemperature) : false;
-                const updateDefHeat = obj.targetOperationMode === 0 || obj.targetOperationMode === 1 ? this.miElHvacService.updateCharacteristic(Characteristic.HeatingThresholdTemperature, obj.targetOperationMode === 0 ? defaultHeatingSetTemperature : setTemperature) : false;
-                const updateRS = modelSupportsFanSpeed ? this.miElHvacService.updateCharacteristic(Characteristic.RotationSpeed, obj.fanSpeed) : false;
+
+                if (obj.targetOperationMode === 0 || obj.targetOperationMode === 2) {
+                    svc.updateCharacteristic(
+                        Characteristic.CoolingThresholdTemperature,
+                        obj.targetOperationMode === 0 ? defaultCoolingSetTemperature : setTemperature
+                    );
+                }
+
+                if (obj.targetOperationMode === 0 || obj.targetOperationMode === 1) {
+                    svc.updateCharacteristic(
+                        Characteristic.HeatingThresholdTemperature,
+                        obj.targetOperationMode === 0 ? defaultHeatingSetTemperature : setTemperature
+                    );
+                }
+
+                if (modelSupportsFanSpeed) {
+                    svc.updateCharacteristic(Characteristic.RotationSpeed, obj.fanSpeed);
+                }
 
                 if (this.frostProtectEnable) {
                     if (roomTemperature <= this.frostProtectLowTemp && !power) {
-                        this.miElHvacService
-                            .setCharacteristic(Characteristic.Active, true)
+                        svc.setCharacteristic(Characteristic.Active, true)
                             .setCharacteristic(Characteristic.TargetHeaterCoolerState, 1)
                             .setCharacteristic(Characteristic.HeatingThresholdTemperature, this.frostProtectHighTemp);
                         this.frostProtectActive = true;
-
                     }
 
                     if (roomTemperature >= this.frostProtectHighTemp && this.frostProtectActive) {
-                        this.miElHvacService.setCharacteristic(Characteristic.Active, false);
+                        svc.setCharacteristic(Characteristic.Active, false);
                         this.frostProtectActive = false;
                     }
                 }
             }
 
-            //update presets state
+            // Update presets state
             if (this.presetsConfiguredCount > 0) {
                 this.presetsConfigured.forEach((preset, index) => {
-
                     let iseeMode = operationMode;
-                    iseeMode = (operationMode === 'heat' || operationMode === 'heat_isee') ? 'heat' : iseeMode;
-                    iseeMode = (operationMode === 'dry' || operationMode === 'dry_isee') ? 'dry' : iseeMode;
-                    iseeMode = (operationMode === 'cool' || operationMode === 'cool_isee') ? 'cool' : iseeMode;
+                    if (iseeMode === 'heat_isee') iseeMode = 'heat';
+                    else if (iseeMode === 'dry_isee') iseeMode = 'dry';
+                    else if (iseeMode === 'cool_isee') iseeMode = 'cool';
 
-                    preset.state = power ? (preset.mode === iseeMode
-                        && (preset.setTemp).toFixed(1) === parseFloat(setTemperature).toFixed(1)
-                        && preset.fanSpeed === fanSpeed
-                        && preset.swingV === vaneVerticalDirection
-                        && preset.swingH === vaneHorizontalDirection) : false;
+                    const sameTemp = Number(preset.setTemp).toFixed(1) === Number(setTemperature).toFixed(1);
+                    const sameFan = preset.fanSpeed === fanSpeed;
+                    const sameSwingV = preset.swingV === vaneVerticalDirection;
+                    const sameSwingH = preset.swingH === vaneHorizontalDirection;
+                    const sameMode = preset.mode === iseeMode;
+
+                    preset.state = power ? (sameMode && sameTemp && sameFan && sameSwingV && sameSwingH) : false;
 
                     if (this.presetsServices) {
-                        const characteristicType = preset.characteristicType;
                         this.presetsServices[index]
-                            .updateCharacteristic(characteristicType, preset.state);
+                            .updateCharacteristic(preset.characteristicType, preset.state);
                     }
                 });
             }
 
-            //update buttons state
             if (this.buttonsConfiguredCount > 0) {
+                const modeMap = {
+                    0: () => power === 1,
+                    1: () => power && ['heat', 'heat_isee'].includes(operationMode),
+                    2: () => power && ['dry', 'dry_isee'].includes(operationMode),
+                    3: () => power && ['cool', 'cool_isee'].includes(operationMode),
+                    4: () => power && operationMode === 'fan',
+                    5: () => power && operationMode === 'auto',
+                };
+
+                const vaneHMap = {
+                    10: 'left',
+                    11: 'left_middle',
+                    12: 'left_center',
+                    13: 'center',
+                    14: 'right_center',
+                    15: 'right_middle',
+                    16: 'right',
+                    17: 'split',
+                    18: 'swing',
+                    19: 'airdirection',
+                };
+
+                const vaneVMap = {
+                    20: 'auto',
+                    21: 'up',
+                    22: 'up_middle',
+                    23: 'center',
+                    24: 'down_middle',
+                    25: 'down',
+                    26: 'swing',
+                };
+
+                const fanSpeedMap = {
+                    30: 'auto',
+                    31: 'quiet',
+                    32: '1',
+                    33: '2',
+                    34: '3',
+                    35: '4',
+                };
+
+                const airDirMap = {
+                    40: 'indirect',
+                    41: 'direct',
+                    42: 'even',
+                };
+
+                const prohibitMap = {
+                    50: 'all',
+                    51: 'power',
+                    52: 'mode',
+                    53: 'temp',
+                };
+
+                const functionsMap = {
+                    60: 'purify', //purify
+                    61: 'econoCool', //econocool
+                    62: 'powerFull', //powerfull
+                    63: 'noghtMode', //nightmode
+                };
+
+                const functionsStateMap = {
+                    60: 'on', //purify
+                    61: 'on', //econocool
+                    62: 'on', //powerfull
+                    63: 'on', //nightmode
+                };
+
                 this.buttonsConfigured.forEach((button, index) => {
                     const mode = button.mode;
-                    switch (mode) {
-                        case 0: //POWER ON,OFF
-                            button.state = power === 1;
-                            break;
-                        case 1: //OPERATING MODE HEAT
-                            button.state = power ? (operationMode === 'heat' || operationMode === 'heat_isee') : false;
-                            break;
-                        case 2: //OPERATING MODE DRY
-                            button.state = power ? (operationMode === 'dry' || operationMode === 'dry_isee') : false;
-                            break
-                        case 3: //OPERATING MODE COOL
-                            button.state = power ? (operationMode === 'cool' || operationMode === 'cool_isee') : false;
-                            break;
-                        case 4: //OPERATING MODE FAN
-                            button.state = power ? (operationMode === 'fan') : false;
-                            break;
-                        case 5: //OPERATING MODE AUTO
-                            button.state = power ? (operationMode === 'auto') : false;
-                            break;
-                        case 6: //OPERATING MODE PURIFY
-                            button.state = power ? (operationMode === 'purify') : false;
-                            break;
-                        case 10: //VANE H AUTO
-                            button.state = power ? (vaneHorizontalDirection === 'auto') : false;
-                            break;
-                        case 11: //VANE H LEFT
-                            button.state = power ? (vaneHorizontalDirection === 'left') : false;
-                            break;
-                        case 12: //VANE H LEFT MIDDLE
-                            button.state = power ? (vaneHorizontalDirection === 'left_middle') : false;
-                            break;
-                        case 13: //VANE H CENTER
-                            button.state = power ? (vaneHorizontalDirection === 'center') : false;
-                            break;
-                        case 14: //VANE H RIGHT MIDDLE
-                            button.state = power ? (vaneHorizontalDirection === 'right_middle') : false;
-                            break;
-                        case 15: //VANE H RIGHT
-                            button.state = power ? (vaneHorizontalDirection === 'right') : false;
-                            break;
-                        case 16: //VANE H SPLIT
-                            button.state = power ? (vaneHorizontalDirection === 'split') : false;
-                            break;
-                        case 17: //VANE H SWING
-                            button.state = power ? (vaneHorizontalDirection === 'swing') : false;
-                            break;
-                        case 20: //VANE V AUTO
-                            button.state = power ? (vaneVerticalDirection === 'auto') : false;
-                            break;
-                        case 21: //VANE V UP
-                            button.state = power ? (vaneVerticalDirection === 'up') : false;
-                            break;
-                        case 22: //VANE V UP MIDDLE
-                            button.state = power ? (vaneVerticalDirection === 'up_middle') : false;
-                            break;
-                        case 23: //VANE V CENTER
-                            button.state = power ? (vaneVerticalDirection === 'center') : false;
-                            break;
-                        case 24: //VANE V DOWN MIDDLE
-                            button.state = power ? (vaneVerticalDirection === 'down_middle') : false;
-                            break;
-                        case 25: //VANE V DOWN
-                            button.state = power ? (vaneVerticalDirection === 'down') : false;
-                            break;
-                        case 26: //VANE V SWING
-                            button.state = power ? (vaneVerticalDirection === 'swing') : false;
-                            break;
-                        case 30: //FAN SPEED MODE AUTO
-                            button.state = power ? (fanSpeed === 'auto') : false;
-                            break;
-                        case 31: //FAN SPEED MODE 1
-                            button.state = power ? (fanSpeed === 'quiet') : false;
-                            break;
-                        case 32: //FAN SPEED MODE 2
-                            button.state = power ? (fanSpeed === '1') : false;
-                            break;
-                        case 33: //FAN SPEED MODE 3
-                            button.state = power ? (fanSpeed === '2') : false;
-                            break;
-                        case 34: //FAN SPEED MODE 4
-                            button.state = power ? (fanSpeed === '3') : false;
-                            break;
-                        case 35: //FAN SPEED  MODE 5
-                            button.state = power ? (fanSpeed === '4') : false;
-                            break;
-                        case 40: //AIR DIRECTION EVEN
-                            button.state = power ? (airDirection === 'even') : false;
-                            break;
-                        case 41: //AIR DIRECTION INDIRECT
-                            button.state = power ? (airDirection === 'indirect') : false;
-                            break;
-                        case 42: //AIR DIRECTION DIRECT
-                            button.state = power ? (airDirection === 'direct') : false;
-                            break;
-                        case 50: //PHYSICAL LOCK CONTROLS ALL
-                            button.state = prohibit === 'all';
-                            break;
-                        case 51: //PHYSICAL LOCK CONTROLS POWER
-                            button.state = prohibit === 'power';
-                            break;
-                        case 52: //PHYSICAL LOCK CONTROLS MODE
-                            button.state = prohibit === 'mode';
-                            break;
-                        case 53: //PHYSICAL LOCK CONTROLS TEMP
-                            button.state = prohibit === 'temp';
-                            break;
-                        default: //Unknown button
-                            this.emit('warn', `Unknown button mode: ${mode} detected`);
-                            break;
+                    let state = false;
+
+                    if (modeMap[mode]) {
+                        state = modeMap[mode]();
+                    } else if (vaneHMap[mode]) {
+                        state = power && vaneHorizontalDirection === vaneHMap[mode];
+                    } else if (vaneVMap[mode]) {
+                        state = power && vaneVerticalDirection === vaneVMap[mode];
+                    } else if (fanSpeedMap[mode]) {
+                        state = power && fanSpeed === fanSpeedMap[mode];
+                    } else if (airDirMap[mode]) {
+                        state = power && airDirection === airDirMap[mode];
+                    } else if (prohibitMap[mode]) {
+                        state = power && prohibit === prohibitMap[mode];
+                    } else if (functionsStateMap[mode]) {
+                        state = power && functionsMap[mode] === functionsStateMap[mode];
+                    } else {
+                        this.emit('warn', `Unknown button mode: ${mode} detected`);
                     }
 
-                    //update services
+                    button.state = state;
+
                     if (this.buttonsServices) {
                         const characteristicType = button.characteristicType;
                         this.buttonsServices[index]
-                            .updateCharacteristic(characteristicType, button.state);
+                            .updateCharacteristic(characteristicType, state);
                     }
                 });
             }
 
-            //update sensors state
             if (this.sensorsConfiguredCount > 0) {
+                const powerOn = power === 1;
+
+                // Helper: match by value with power check
+                const is = (val, match) => powerOn && val === match;
+                const isOneOf = (val, matches) => powerOn && matches.includes(val);
+
                 this.sensorsConfigured.forEach((sensor, index) => {
                     const mode = sensor.mode;
-                    switch (mode) {
-                        case 0: //POWER ON,OFF
-                            sensor.state = power === 1;
-                            break;
-                        case 1: //OPERATING MODE HEAT
-                            sensor.state = power ? (operationMode === 'heat' || operationMode === 'heat_isee') : false;
-                            break;
-                        case 2: //OPERATING MODE DRY
-                            sensor.state = power ? (operationMode === 'dry' || operationMode === 'dry_isee') : false;
-                            break
-                        case 3: //OPERATING MODE COOL
-                            sensor.state = power ? (operationMode === 'cool' || operationMode === 'cool_isee') : false;
-                            break;
-                        case 4: //OPERATING MODE FAN
-                            sensor.state = power ? (operationMode === 'fan') : false;
-                            break;
-                        case 5: //OPERATING MODE AUTO
-                            sensor.state = power ? (operationMode === 'auto') : false;
-                            break;
-                        case 6: //OPERATING MODE PURIFY
-                            sensor.state = power ? (operationMode === 'purify') : false;
-                            break;
-                        case 10: //VANE H AUTO
-                            sensor.state = power ? (vaneHorizontalDirection === 'auto') : false;
-                            break;
-                        case 11: //VANE H LEFT
-                            sensor.state = power ? (vaneHorizontalDirection === 'left') : false;
-                            break;
-                        case 12: //VANE H LEFT MIDDLE
-                            sensor.state = power ? (vaneHorizontalDirection === 'left_middle') : false;
-                            break;
-                        case 13: //VANE H CENTER
-                            sensor.state = power ? (vaneHorizontalDirection === 'center') : false;
-                            break;
-                        case 14: //VANE H RIGHT MIDDLE
-                            sensor.state = power ? (vaneHorizontalDirection === 'right_middle') : false;
-                            break;
-                        case 15: //VANE H RIGHT
-                            sensor.state = power ? (vaneHorizontalDirection === 'right') : false;
-                            break;
-                        case 16: //VANE H SPLIT
-                            sensor.state = power ? (vaneHorizontalDirection === 'split') : false;
-                            break;
-                        case 17: //VANE H SWING
-                            sensor.state = power ? (vaneHorizontalDirection === 'swing') : false;
-                            break;
-                        case 20: //VANE V AUTO
-                            sensor.state = power ? (vaneVerticalDirection === 'auto') : false;
-                            break;
-                        case 21: //VANE V UP
-                            sensor.state = power ? (vaneVerticalDirection === 'up') : false;
-                            break;
-                        case 22: //VANE V UP MIDDLE
-                            sensor.state = power ? (vaneVerticalDirection === 'up_middle') : false;
-                            break;
-                        case 23: //VANE V CENTER
-                            sensor.state = power ? (vaneVerticalDirection === 'center') : false;
-                            break;
-                        case 24: //VANE V DOWN MIDDLE
-                            sensor.state = power ? (vaneVerticalDirection === 'down_middle') : false;
-                            break;
-                        case 25: //VANE V DOWN
-                            sensor.state = power ? (vaneVerticalDirection === 'down') : false;
-                            break;
-                        case 26: //VANE V SWING
-                            sensor.state = power ? (vaneVerticalDirection === 'swing') : false;
-                            break;
-                        case 27: //VANE H/V CONTROLS HIDE
-                            sensor.state = power ? (hideVaneControls === true) : false;
-                            break;
-                        case 30: //FAN SPEED MODE AUTO
-                            sensor.state = power ? (fanSpeed === 'auto') : false;
-                            break;
-                        case 31: //FAN SPEED MODE 1
-                            sensor.state = power ? (fanSpeed === 'quiet') : false;
-                            break;
-                        case 32: //FAN SPEED MODE 2
-                            sensor.state = power ? (fanSpeed === '1') : false;
-                            break;
-                        case 33: //FAN SPEED MODE 3
-                            sensor.state = power ? (fanSpeed === '2') : false;
-                            break;
-                        case 34: //FAN SPEED MODE 4
-                            sensor.state = power ? (fanSpeed === '3') : false;
-                            break;
-                        case 35: //FAN SPEED  MODE 5
-                            sensor.state = power ? (fanSpeed === '4') : false;
-                            break;
-                        case 40: //AIR DIRECTION EVEN
-                            sensor.state = power ? (airDirection === 'even') : false;
-                            break;
-                        case 41: //AIR DIRECTION INDIRECT
-                            sensor.state = power ? (airDirection === 'indirect') : false;
-                            break;
-                        case 42: //AIR DIRECTION DIRECT
-                            sensor.state = power ? (airDirection === 'direct') : false;
-                            break;
-                        case 50: //PHYSICAL LOCK CONTROLS ALL
-                            sensor.state = prohibit === 'all';
-                            break;
-                        case 51: //PHYSICAL LOCK CONTROLS POWER
-                            sensor.state = prohibit === 'power';
-                            break;
-                        case 52: //PHYSICAL LOCK CONTROLS MODE
-                            sensor.state = prohibit === 'mode';
-                            break;
-                        case 53: //PHYSICAL LOCK CONTROLS TEMP
-                            sensor.state = prohibit === 'temp';
-                            break;
-                        case 60: //REMOTE TEMPERATURE STATE
-                            sensor.state = remoteTemperatureSensorState;
-                            break;
-                        case 70: //OPERATION STAGE NORMAL
-                            sensor.state = operationStage === 'normal';
-                            break;
-                        case 71: //OPERATION STAGE DEFROST
-                            sensor.state = operationStage === 'defrost';
-                            break;
-                        case 72: //OPERATION STAGE PREHEAT
-                            sensor.state = operationStage === 'preheat';
-                            break;
-                        case 73: //OPERATION STAGE STANDBY
-                            sensor.state = operationStage === 'standby';
-                            break;
-                        case 80: //FAN STAGE OFF
-                            sensor.state = fanSpeedStage === 'off';
-                            break;
-                        case 81: //FAN STAGE QUIET
-                            sensor.state = fanSpeedStage === 'quiet';;
-                            break;
-                        case 82: //FAN STAGE 1
-                            sensor.state = fanSpeedStage === '1';;
-                            break;
-                        case 83: //FAN STAGE 2
-                            sensor.state = fanSpeedStage === '2';;
-                            break;
-                        case 84: //FAN STAGE 3
-                            sensor.state = fanSpeedStage === '3';;
-                            break;
-                        case 85: //FAN STAGE 4
-                            sensor.state = fanSpeedStage === '4';;
-                            break;
-                        case 86: //FAN STAGE 5
-                            sensor.state = fanSpeedStage === '5';;
-                            break;
-                        case 90: //MODE STAGE AUTO OFF
-                            sensor.state = operationMode !== 'auto';
-                            break;
-                        case 91: //MODE STAGE AUTO FAN
-                            sensor.state = operationModeStage === 'auto_fan';
-                            break;
-                        case 92: //MODE STAGE AUTO HEAT
-                            sensor.state = operationModeStage === 'auto_heat';
-                            break;
-                        case 93: //MODE STAGE AUTO COOL
-                            sensor.state = operationModeStage === 'auto_cool';;
-                            break;
-                        case 94: //MODE STAGE AUTO LEADER
-                            sensor.state = operationModeStage === 'auto_leader';;
-                            break;
-                        default: //Unknown sensor
-                            this.emit('warn', `Unknown sensor mode: ${mode} detected`);
-                            break;
+
+                    const sensorStates = {
+                        0: powerOn,
+                        1: isOneOf(operationMode, ['heat', 'heat_isee']),
+                        2: isOneOf(operationMode, ['dry', 'dry_isee']),
+                        3: isOneOf(operationMode, ['cool', 'cool_isee']),
+                        4: is(operationMode, 'fan'),
+                        5: is(operationMode, 'auto'),
+                        6: is(purify, 'on'),
+
+                        10: is(vaneHorizontalDirection, 'left'),
+                        11: is(vaneHorizontalDirection, 'left_middle'),
+                        12: is(vaneHorizontalDirection, 'left_center'),
+                        13: is(vaneHorizontalDirection, 'center'),
+                        14: is(vaneHorizontalDirection, 'right_center'),
+                        15: is(vaneHorizontalDirection, 'right_middle'),
+                        16: is(vaneHorizontalDirection, 'right'),
+                        17: is(vaneHorizontalDirection, 'split'),
+                        18: is(vaneHorizontalDirection, 'swing'),
+                        19: is(vaneHorizontalDirection, 'airdirection'),
+
+                        20: is(vaneVerticalDirection, 'auto'),
+                        21: is(vaneVerticalDirection, 'up'),
+                        22: is(vaneVerticalDirection, 'up_middle'),
+                        23: is(vaneVerticalDirection, 'center'),
+                        24: is(vaneVerticalDirection, 'down_middle'),
+                        25: is(vaneVerticalDirection, 'down'),
+                        26: is(vaneVerticalDirection, 'swing'),
+
+                        27: is(hideVaneControls, true),
+
+                        30: is(fanSpeed, 'auto'),
+                        31: is(fanSpeed, 'quiet'),
+                        32: is(fanSpeed, '1'),
+                        33: is(fanSpeed, '2'),
+                        34: is(fanSpeed, '3'),
+                        35: is(fanSpeed, '4'),
+
+                        40: is(airDirection, 'indirect'),
+                        41: is(airDirection, 'direct'),
+                        42: is(airDirection, 'even'),
+
+                        50: prohibit === 'all',
+                        51: prohibit === 'power',
+                        52: prohibit === 'mode',
+                        53: prohibit === 'temp',
+
+                        60: remoteTemperatureSensorState,
+
+                        70: operationStatus === 'normal',
+                        71: operationStatus === 'filter',
+                        72: operationStatus === 'defrost',
+                        73: operationStatus === 'standby',
+                        74: operationStatus === 'preheat',
+
+                        80: fanSpeedStatus === 'off',
+                        81: fanSpeedStatus === 'quiet',
+                        82: fanSpeedStatus === '1',
+                        83: fanSpeedStatus === '2',
+                        84: fanSpeedStatus === '3',
+                        85: fanSpeedStatus === '4',
+                        86: fanSpeedStatus === '5',
+
+                        90: operationMode !== 'auto',
+                        91: operationModeStatus === 'auto_fan',
+                        92: operationModeStatus === 'auto_heat',
+                        93: operationModeStatus === 'auto_cool',
+                        94: operationModeStatus === 'auto_leader',
+                    };
+
+                    if (mode in sensorStates) {
+                        sensor.state = sensorStates[mode];
+                    } else {
+                        this.emit('warn', `Unknown sensor mode: ${mode} detected`);
                     }
 
-                    //update services
+                    // Update characteristic
                     if (this.sensorsServices) {
                         const characteristicType = sensor.characteristicType;
-                        this.sensorsServices[index]
-                            .updateCharacteristic(characteristicType, sensor.state);
+                        this.sensorsServices[index]?.updateCharacteristic(characteristicType, sensor.state);
                     }
                 });
             }
@@ -747,12 +680,12 @@ class MiElHvac extends EventEmitter {
             if (!this.disableLogInfo) {
                 this.emit('info', `Power: ${power ? 'ON' : 'OFF'}`);
                 const info = power ? this.emit('info', `Target operation mode: ${operationMode.toUpperCase()}`) : false;
-                const info1 = power ? this.emit('info', `Current operation mode: ${operationModeStage.toUpperCase()}`) : false;
+                const info1 = power ? this.emit('info', `Current operation mode: ${operationModeStatus.toUpperCase()}`) : false;
                 const info2 = power ? this.emit('info', `Target temperature: ${setTemperature}${temperatureUnit}`) : false;
                 const info3 = power ? this.emit('info', `Current temperature: ${roomTemperature}${temperatureUnit}`) : false;
                 const info4 = power && outdoorTemperature !== null ? this.emit('info', `Outdoor temperature: ${outdoorTemperature}${temperatureUnit}`) : false;
                 const info5 = power && modelSupportsFanSpeed ? this.emit('info', `Target Fan speed: ${fanSpeed.toUpperCase()}`) : false;
-                const info6 = power && modelSupportsFanSpeed ? this.emit('info', `Current Fan speed: ${fanSpeedStage.toUpperCase()}`) : false;
+                const info6 = power && modelSupportsFanSpeed ? this.emit('info', `Current Fan speed: ${fanSpeedStatus.toUpperCase()}`) : false;
                 const info7 = power && vaneHorizontalDirection !== 'Unknown' ? this.emit('info', `Vane horizontal: ${MiElHVAC.HorizontalVane[vaneHorizontalDirection] ?? vaneHorizontalDirection}`) : false;
                 const info8 = power && vaneVerticalDirection !== 'Unknown' ? this.emit('info', `Vane vertical: ${MiElHVAC.VerticalVane[vaneVerticalDirection] ?? vaneVerticalDirection}`) : false;
                 const info9 = power ? this.emit('info', `Swing mode: ${MiElHVAC.SwingMode[swingMode]}`) : false;
@@ -773,13 +706,13 @@ class MiElHvac extends EventEmitter {
     async updateRemoteTemp() {
         try {
             //get remote temp
-            const rmoteTempData = await this.axiosInstanceRemoteTemp();
+            const rmoteTempData = await this.axiosInstanceRemoteTemp.get();
             const remoteTemp = rmoteTempData.data ?? false;
-            const debug = this.enableDebugMode ? this.emit('debug', `Remote temp: ${JSON.stringify(remoteTemp, null, 2)}`) : false;
+            if (this.enableDebugMode) this.emit('debug', `Remote temp: ${JSON.stringify(remoteTemp, null, 2)}`);
 
             //set remote temp
-            const temp = `${MiElHVAC.RemoteTemp}${remoteTemp}`
-            await this.axiosInstance(temp);
+            const temp = `${MiElHVAC.SetRemoteTemp}${remoteTemp}`
+            await this.axiosInstance.get(temp);
 
             return true
         } catch (error) {
@@ -787,31 +720,11 @@ class MiElHvac extends EventEmitter {
         }
     }
 
-    async saveData(path, data) {
-        try {
-            data = JSON.stringify(data, null, 2);
-            await fsPromises.writeFile(path, data);
-            const debug = !this.enableDebugMode ? false : this.emit('debug', `Saved data: ${data}`);
-            return true;
-        } catch (error) {
-            throw new Error(`Save data error: ${error}`);
-        }
-    }
-
-    async readData(path) {
-        try {
-            const data = await fsPromises.readFile(path);
-            return data;
-        } catch (error) {
-            throw new Error(`Read data error: ${error}`);
-        }
-    }
-
     async startImpulseGenerator() {
         try {
             //start impulse generator 
-            const timers = [{ name: 'checkDeviceState', sampling: this.refreshInterval }];
-            const remoteTempSensor = this.remoteTemperatureSensorEnable ? timers.push({ name: 'updateRemoteTemp', sampling: this.remoteTemperatureSensorRefreshInterval }) : false;
+            const timers = [{ name: 'checkState', sampling: this.refreshInterval }];
+            if (this.remoteTemperatureSensorEnable) timers.push({ name: 'updateRemoteTemp', sampling: this.remoteTemperatureSensorRefreshInterval });
             await this.impulseGenerator.start(timers);
             return true;
         } catch (error) {
@@ -832,7 +745,7 @@ class MiElHvac extends EventEmitter {
 
     //prepare accessory
     async prepareAccessory() {
-        const debug = this.enableDebugMode ? this.emit('debug', `Prepare Accessory`) : false;
+        if (this.enableDebugMode) this.emit('debug', `Prepare Accessory`);
 
         try {
             //accessory
@@ -842,7 +755,7 @@ class MiElHvac extends EventEmitter {
             const accessory = new Accessory(accessoryName, accessoryUUID, accessoryCategory);
 
             //Prepare information service
-            const debug1 = this.enableDebugMode ? this.emit('debug', `Prepare Information Service`) : false;
+            if (this.enableDebugMode) this.emit('debug', `Prepare Information Service`);
             accessory.getService(Service.AccessoryInformation)
                 .setCharacteristic(Characteristic.Manufacturer, 'Tasmota')
                 .setCharacteristic(Characteristic.Model, this.info.modelName ?? 'Model Name')
@@ -851,8 +764,8 @@ class MiElHvac extends EventEmitter {
                 .setCharacteristic(Characteristic.ConfiguredName, accessoryName);
 
             //Prepare services 
-            const debug2 = this.enableDebugMode ? this.emit('debug', `Prepare Services`) : false;
-            const debug = this.enableDebugMode ? this.emit('debug', `Prepare mitsubishi hvac service`) : false;
+            if (this.enableDebugMode) this.emit('debug', `Prepare Services`);
+            if (this.enableDebugMode) this.emit('debug', `Prepare mitsubishi hvac service`);
             const autoDryFanMode = [MiElHVAC.SetMode.auto, MiElHVAC.SetMode.auto, MiElHVAC.SetMode.dry, MiElHVAC.SetMode.fan][this.autoDryFanMode]; //NONE, AUTO, DRY, FAN
             const heatDryFanMode = [MiElHVAC.SetMode.heat, MiElHVAC.SetMode.heat, MiElHVAC.SetMode.dry, MiElHVAC.SetMode.fan][this.heatDryFanMode]; //NONE, HEAT, DRY, FAN
             const coolDryFanMode = [MiElHVAC.SetMode.cool, MiElHVAC.SetMode.cool, MiElHVAC.SetMode.dry, MiElHVAC.SetMode.fan][this.coolDryFanMode]; //NONE, COOL, DRY, FAN
@@ -870,8 +783,8 @@ class MiElHvac extends EventEmitter {
                 .onSet(async (state) => {
                     try {
                         const power = [MiElHVAC.PowerOff, MiElHVAC.PowerOn][state];
-                        await this.axiosInstance(power);
-                        const info = this.disableLogInfo ? false : this.emit('info', `Set power: ${state ? 'ON' : 'OFF'}`);
+                        await this.axiosInstance.get(power);
+                        if (!this.disableLogInfo) this.emit('info', `Set power: ${state ? 'ON' : 'OFF'}`);
                     } catch (error) {
                         this.emit('warn', `Set power error: ${error}`);
                     }
@@ -895,17 +808,17 @@ class MiElHvac extends EventEmitter {
                     try {
                         switch (value) {
                             case 0: //AUTO
-                                await this.axiosInstance(autoDryFanMode);
+                                await this.axiosInstance.get(autoDryFanMode);
                                 break;
                             case 1: //HEAT
-                                await this.axiosInstance(heatDryFanMode);
+                                await this.axiosInstance.get(heatDryFanMode);
                                 break;
                             case 2: //COOL
-                                await this.axiosInstance(coolDryFanMode);
+                                await this.axiosInstance.get(coolDryFanMode);
                                 break;
                         };
 
-                        const info = this.disableLogInfo ? false : this.emit('info', `Set operation mode: ${MiElHVAC.OperationMode[value]}`);
+                        if (!this.disableLogInfo) this.emit('info', `Set operation mode: ${MiElHVAC.OperationMode[value]}`);
                     } catch (error) {
                         this.emit('warn', `Set operation mode error: ${error}`);
                     }
@@ -951,8 +864,8 @@ class MiElHvac extends EventEmitter {
 
                             //fan speed mode
                             const fanSpeedMap = ['auto', 'quiet', '1', '2', '3', '4'][fanSpeed];
-                            await this.axiosInstance(MiElHVAC.SetFanSpeed[fanSpeedMap]);
-                            const info = this.disableLogInfo ? false : this.emit('info', `Set fan speed mode: ${MiElHVAC.FanSpeed[fanSpeedModeText]}`);
+                            await this.axiosInstance.get(MiElHVAC.SetFanSpeed[fanSpeedMap]);
+                            if (!this.disableLogInfo) this.emit('info', `Set fan speed mode: ${MiElHVAC.FanSpeed[fanSpeedModeText]}`);
                         } catch (error) {
                             this.emit('warn', `Set fan speed mode error: ${error}`);
                         }
@@ -968,20 +881,20 @@ class MiElHvac extends EventEmitter {
                         try {
                             switch (value) {
                                 case 0:
-                                    await this.axiosInstance(MiElHVAC.SetSwingV[this.previousStateSwingV]);
-                                    await this.axiosInstance(MiElHVAC.SetSwingH[this.previousStateSwingH]);
+                                    await this.axiosInstance.get(MiElHVAC.SetSwingV[this.previousStateSwingV]);
+                                    await this.axiosInstance.get(MiElHVAC.SetSwingH[this.previousStateSwingH]);
                                     break;
                                 case 1:
                                     //set vane v
                                     this.previousStateSwingV = this.mielHvac.vaneVerticalDirection;
-                                    await this.axiosInstance(MiElHVAC.SetSwingV.swing);
+                                    await this.axiosInstance.get(MiElHVAC.SetSwingV.swing);
 
                                     //set vane h
                                     this.previousStateSwingH = this.mielHvac.vaneHorizontalDirection;
-                                    await this.axiosInstance(MiElHVAC.SetSwingH.swing);
+                                    await this.axiosInstance.get(MiElHVAC.SetSwingH.swing);
                                     break;
                             }
-                            const info = this.disableLogInfo ? false : this.emit('info', `Set air direction mode: ${MiElHVAC.SwingMode[value]}`);
+                            if (!this.disableLogInfo) this.emit('info', `Set air direction mode: ${MiElHVAC.SwingMode[value]}`);
                         } catch (error) {
                             this.emit('warn', `Set vane swing mode error: ${error}`);
                         }
@@ -1000,13 +913,13 @@ class MiElHvac extends EventEmitter {
                 .onSet(async (value) => {
                     try {
                         if (this.mielHvac.targetOperationMode === 0) {
-                            await this.saveData(this.info.defaultCoolingSetTemperatureFile, value);
+                            await this.functions.saveData(this.info.defaultCoolingSetTemperatureFile, value);
                             value = (value + this.info.mielHvac.defaultHeatingSetTemperature) / 2;
                         }
 
                         const temp = `${MiElHVAC.SetTemp}${value}`
-                        await this.axiosInstance(temp);
-                        const info = this.disableLogInfo ? false : this.emit('info', `Set ${this.mielHvac.targetOperationMode === 2 ? 'temperature' : 'cooling threshold temperature'}: ${value}${this.mielHvac.temperatureUnit}`);
+                        await this.axiosInstance.get(temp);
+                        if (!this.disableLogInfo) this.emit('info', `Set ${this.mielHvac.targetOperationMode === 2 ? 'temperature' : 'cooling threshold temperature'}: ${value}${this.mielHvac.temperatureUnit}`);
                     } catch (error) {
                         this.emit('warn', `Set cooling threshold temperature error: ${error}`);
                     }
@@ -1025,13 +938,13 @@ class MiElHvac extends EventEmitter {
                     .onSet(async (value) => {
                         try {
                             if (this.mielHvac.targetOperationMode === 0) {
-                                await this.saveData(this.info.defaultHeatingSetTemperatureFile, value);
+                                await this.functions.saveData(this.info.defaultHeatingSetTemperatureFile, value);
                                 value = (value + this.info.mielHvac.defaultCoolingSetTemperature) / 2;
                             }
 
                             const temp = `${MiElHVAC.SetTemp}${value}`
-                            await this.axiosInstance(temp);
-                            const info = this.disableLogInfo ? false : this.emit('info', `Set ${this.mielHvac.targetOperationMode === 1 ? 'temperature' : 'heating threshold temperature'}: ${value}${this.mielHvac.temperatureUnit}`);
+                            await this.axiosInstance.get(temp);
+                            if (!this.disableLogInfo) this.emit('info', `Set ${this.mielHvac.targetOperationMode === 1 ? 'temperature' : 'heating threshold temperature'}: ${value}${this.mielHvac.temperatureUnit}`);
                         } catch (error) {
                             this.emit('warn', `Set heating threshold temperature error: ${error}`);
                         }
@@ -1045,8 +958,8 @@ class MiElHvac extends EventEmitter {
                 .onSet(async (value) => {
                     try {
                         const lock = [MiElHVAC.SetProhibit.off, MiElHVAC.SetProhibit.all][value];
-                        await this.axiosInstance(lock);
-                        const info = this.disableLogInfo ? false : this.emit('info', `Set local physical controls: ${value ? 'LOCK' : 'UNLOCK'}`);
+                        await this.axiosInstance.get(lock);
+                        if (!this.disableLogInfo) this.emit('info', `Set local physical controls: ${value ? 'LOCK' : 'UNLOCK'}`);
                     } catch (error) {
                         this.emit('warn', `Set lock physical controls error: ${error}`);
                     }
@@ -1059,8 +972,8 @@ class MiElHvac extends EventEmitter {
                 .onSet(async (value) => {
                     try {
                         const unit = [MiElHVAC.SetDisplayUnit.c, MiElHVAC.SetDisplayUnit.f][value];
-                        //await this.axiosInstance(unit);
-                        const info = this.disableLogInfo ? false : this.emit('info', `Set temperature display unit: ${TemperatureDisplayUnits[value]}`);
+                        //await this.axiosInstance.get(unit);
+                        if (!this.disableLogInfo) this.emit('info', `Set temperature display unit: ${TemperatureDisplayUnits[value]}`);
                     } catch (error) {
                         this.emit('warn', `Set temperature display unit error: ${error}`);
                     }
@@ -1069,249 +982,184 @@ class MiElHvac extends EventEmitter {
 
             //presets services
             if (this.presetsConfiguredCount > 0) {
-                const debug = this.enableDebugMode ? this.emit('debug', `Prepare presets services`) : false;
+                if (this.enableDebugMode) this.emit('debug', 'Prepare presets services');
                 this.presetsServices = [];
 
                 this.presetsConfigured.forEach((preset, index) => {
-                    //get preset name
-                    const presetName = preset.name;
+                    const { name: presetName, namePrefix, serviceType, characteristicType, mode, setTemp, fanSpeed, swingV, swingH } = preset;
+                    const serviceName = namePrefix ? `${accessoryName} ${presetName}` : presetName;
 
-                    //get preset name prefix
-                    const presetNamePrefix = preset.namePrefix;
-
-                    const serviceName = presetNamePrefix ? `${accessoryName} ${presetName}` : presetName;
-                    const serviceType = preset.serviceType;
-                    const characteristicType = preset.characteristicType;
                     const presetService = new serviceType(serviceName, `Preset ${index}`);
                     presetService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                     presetService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
+
                     presetService.getCharacteristic(characteristicType)
-                        .onGet(async () => {
-                            const state = preset.state;
-                            return state;
-                        })
+                        .onGet(async () => preset.state)
                         .onSet(async (state) => {
                             try {
-                                let data = '';
-                                switch (state) {
-                                    case true:
-                                        const setPower = !this.mielHvac.power ? await this.axiosInstance(MiElHVAC.PowerOn) : false;
-                                        data = MiElHVAC.SetMode[preset.mode];
-                                        await this.axiosInstance(data);
-                                        data = `${MiElHVAC.SetTemp}${preset.setTemp}`;
-                                        await this.axiosInstance(data);
-                                        data = MiElHVAC.SetFanSpeed[preset.fanSpeed];
-                                        await this.axiosInstance(data);
-                                        data = MiElHVAC.SetSwingV[preset.swingV];
-                                        await this.axiosInstance(data);
-                                        data = MiElHVAC.SetSwingH[preset.swingH];
-                                        await this.axiosInstance(data);
-                                        break;
-                                    case false:
-                                        break;
-                                }
+                                if (state) {
+                                    // Power on if needed
+                                    if (!this.mielHvac.power) {
+                                        await this.axiosInstance.get(MiElHVAC.PowerOn);
+                                    }
 
-                                const info = this.disableLogInfo || !state ? false : this.emit('info', `Set: ${presetName}`);
-                                await new Promise(resolve => setTimeout(resolve, 250));
+                                    // Apply preset commands in sequence
+                                    const commands = [
+                                        MiElHVAC.SetMode[mode],
+                                        `${MiElHVAC.SetTemp}${setTemp}`,
+                                        MiElHVAC.SetFanSpeed[fanSpeed],
+                                        MiElHVAC.SetSwingV[swingV],
+                                        MiElHVAC.SetSwingH[swingH]
+                                    ];
+
+                                    for (const cmd of commands) {
+                                        await this.axiosInstance.get(cmd);
+                                    }
+
+                                    if (!this.disableLogInfo) {
+                                        this.emit('info', `Set: ${presetName}`);
+                                    }
+
+                                    await new Promise(resolve => setTimeout(resolve, 250));
+                                }
                             } catch (error) {
                                 this.emit('warn', `Set preset error: ${error}`);
                             }
                         });
+
                     this.presetsServices.push(presetService);
                     accessory.addService(presetService);
                 });
             }
 
-            //buttons services
+
             if (this.buttonsConfiguredCount > 0) {
-                const debug = this.enableDebugMode ? this.emit('debug', `Prepare buttons services`) : false;
+                if (this.enableDebugMode) this.emit('debug', 'Prepare buttons services');
                 this.buttonsServices = [];
 
                 this.buttonsConfigured.forEach((button, index) => {
-                    //get button mode
-                    const mode = button.mode;
+                    const { mode, name: buttonName, namePrefix, serviceType, characteristicType } = button;
+                    const serviceName = namePrefix ? `${accessoryName} ${buttonName}` : buttonName;
 
-                    //get button name
-                    const buttonName = button.name;
-
-                    //get button name prefix
-                    const buttonNamePrefix = button.namePrefix;
-
-                    const serviceName = buttonNamePrefix ? `${accessoryName} ${buttonName}` : buttonName;
-                    const serviceType = button.serviceType;
-                    const characteristicType = button.characteristicType;
                     const buttonService = new serviceType(serviceName, `Button ${index}`);
                     buttonService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                     buttonService.setCharacteristic(Characteristic.ConfiguredName, serviceName);
+
                     buttonService.getCharacteristic(characteristicType)
-                        .onGet(async () => {
-                            const state = button.state;
-                            return state;
-                        })
+                        .onGet(async () => button.state)
                         .onSet(async (state) => {
                             try {
-                                let data = '';
-                                switch (mode) {
-                                    case 0: //POWER ON,OFF
-                                        data = state ? MiElHVAC.PowerOn : MiElHVAC.PowerOff;
-                                        break;
-                                    case 1: //OPERATING MODE HEAT
-                                        button.previousValue = state ? MiElHVAC.SetMode[this.mielHvac.operationMode] : button.previousValue;
-                                        data = state ? MiElHVAC.SetMode.heat : button.previousValue;
-                                        break;
-                                    case 2: //OPERATING MODE DRY
-                                        button.previousValue = state ? MiElHVAC.SetMode[this.mielHvac.operationMode] : button.previousValue;
-                                        data = state ? MiElHVAC.SetMode.dry : button.previousValue;
-                                        break
-                                    case 3: //OPERATING MODE COOL
-                                        button.previousValue = state ? MiElHVAC.SetMode[this.mielHvac.operationMode] : button.previousValue;
-                                        data = state ? MiElHVAC.SetMode.cool : button.previousValue;
-                                        break;
-                                    case 4: //OPERATING MODE FAN
-                                        button.previousValue = state ? MiElHVAC.SetMode[this.mielHvac.operationMode] : button.previousValue;
-                                        data = state ? MiElHVAC.SetMode.fan : button.previousValue;
-                                        break;
-                                    case 5: //OPERATING MODE AUTO
-                                        button.previousValue = state ? MiElHVAC.SetMode[this.mielHvac.operationMode] : button.previousValue;
-                                        data = state ? MiElHVAC.SetMode.auto : button.previousValue;
-                                        break;
-                                    case 6: //OPERATING MODE PURIFY
-                                        button.previousValue = state ? MiElHVAC.SetMode[this.mielHvac.operationMode] : button.previousValue;
-                                        data = state ? MiElHVAC.SetMode.purify : button.previousValue;
-                                        break;
-                                    case 10: //VANE H AUTO
-                                        button.previousValue = state ? MiElHVAC.SetSwingH[this.mielHvac.vaneHorizontalDirection] : button.previousValue;
-                                        data = state ? MiElHVAC.SetSwingH.auto : button.previousValue;
-                                        break;
-                                    case 11: //VANE H LEFT
-                                        button.previousValue = state ? MiElHVAC.SetSwingH[this.mielHvac.vaneHorizontalDirection] : button.previousValue;
-                                        data = state ? MiElHVAC.SetSwingH.left : button.previousValue;
-                                        break;
-                                    case 12: //VANE H LEFT MIDDLE
-                                        button.previousValue = state ? MiElHVAC.SetSwingH[this.mielHvac.vaneHorizontalDirection] : button.previousValue;
-                                        data = state ? MiElHVAC.SetSwingH.left_middle : button.previousValue;
-                                        break;
-                                    case 13: //VANE H CENTER
-                                        button.previousValue = state ? MiElHVAC.SetSwingH[this.mielHvac.vaneHorizontalDirection] : button.previousValue;
-                                        data = state ? MiElHVAC.SetSwingH.center : button.previousValue;
-                                        break;
-                                    case 14: //VANE H RIGHT MIDDLE
-                                        button.previousValue = state ? MiElHVAC.SetSwingH[this.mielHvac.vaneHorizontalDirection] : button.previousValue;
-                                        data = state ? MiElHVAC.SetSwingH.right_middle : button.previousValue;
-                                        break;
-                                    case 15: //VANE H RIGHT
-                                        button.previousValue = state ? MiElHVAC.SetSwingH[this.mielHvac.vaneHorizontalDirection] : button.previousValue;
-                                        data = state ? MiElHVAC.SetSwingH.right : button.previousValue;
-                                        break;
-                                    case 16: //VANE H SPLIT
-                                        button.previousValue = state ? MiElHVAC.SetSwingH[this.mielHvac.vaneHorizontalDirection] : button.previousValue;
-                                        data = state ? MiElHVAC.SetSwingH.split : button.previousValue;
-                                        break;
-                                    case 17: //VANE H SWING
-                                        button.previousValue = state ? MiElHVAC.SetSwingH[this.mielHvac.vaneHorizontalDirection] : button.previousValue;
-                                        data = state ? MiElHVAC.SetSwingH.swing : button.previousValue;
-                                        break;
-                                    case 20: //VANE V AUTO
-                                        button.previousValue = state ? MiElHVAC.SetSwingV[this.mielHvac.vaneVerticalDirection] : button.previousValue;
-                                        data = state ? MiElHVAC.SetSwingV.auto : button.previousValue;
-                                        break;
-                                    case 21: //VANE V UP
-                                        button.previousValue = state ? MiElHVAC.SetSwingV[this.mielHvac.vaneVerticalDirection] : button.previousValue;
-                                        data = state ? MiElHVAC.SetSwingV.up : button.previousValue;
-                                        break;
-                                    case 22: //VANE V UP MIDDLE
-                                        button.previousValue = state ? MiElHVAC.SetSwingV[this.mielHvac.vaneVerticalDirection] : button.previousValue;
-                                        data = state ? MiElHVAC.SetSwingV.up_middle : button.previousValue;
-                                        break;
-                                    case 23: //VANE V CENTER
-                                        button.previousValue = state ? MiElHVAC.SetSwingV[this.mielHvac.vaneVerticalDirection] : button.previousValue;
-                                        data = state ? MiElHVAC.SetSwingV.center : button.previousValue;
-                                        break;
-                                    case 24: //VANE V DOWN MIDDLE
-                                        button.previousValue = state ? MiElHVAC.SetSwingV[this.mielHvac.vaneVerticalDirection] : button.previousValue;
-                                        data = state ? MiElHVAC.SetSwingV.down_middle : button.previousValue;
-                                        break;
-                                    case 25: //VANE V DOWN
-                                        button.previousValue = state ? MiElHVAC.SetSwingV[this.mielHvac.vaneVerticalDirection] : button.previousValue;
-                                        data = state ? MiElHVAC.SetSwingV.down : button.previousValue;
-                                        break;
-                                    case 26: //VANE V SWING
-                                        button.previousValue = state ? MiElHVAC.SetSwingV[this.mielHvac.vaneVerticalDirection] : button.previousValue;
-                                        data = state ? MiElHVAC.SetSwingV.swing : button.previousValue;
-                                        break;
-                                    case 30: //FAN SPEED AUTO
-                                        button.previousValue = state ? MiElHVAC.SetFanSpeed[this.mielHvac.fanSpeed] : button.previousValue;
-                                        data = state ? MiElHVAC.SetFanSpeed.auto : button.previousValue;
-                                        break;
-                                    case 31: //FAN SPEED QUIET
-                                        button.previousValue = state ? MiElHVAC.SetFanSpeed[this.mielHvac.fanSpeed] : button.previousValue;
-                                        data = state ? MiElHVAC.SetFanSpeed.quiet : button.previousValue;
-                                        break;
-                                    case 32: //FAN SPEED 1
-                                        button.previousValue = state ? MiElHVAC.SetFanSpeed[this.mielHvac.fanSpeed] : button.previousValue;
-                                        data = state ? MiElHVAC.SetFanSpeed['1'] : button.previousValue;
-                                        break;
-                                    case 33: //FAN SPEED 2
-                                        button.previousValue = state ? MiElHVAC.SetFanSpeed[this.mielHvac.fanSpeed] : button.previousValue;
-                                        data = state ? MiElHVAC.SetFanSpeed['2'] : button.previousValue;
-                                        break;
-                                    case 34: //FAN 3
-                                        button.previousValue = state ? MiElHVAC.SetFanSpeed[this.mielHvac.fanSpeed] : button.previousValue;
-                                        data = state ? MiElHVAC.SetFanSpeed['3'] : button.previousValue;
-                                        break;
-                                    case 35: //FAN SPEED 4
-                                        button.previousValue = state ? MiElHVAC.SetFanSpeed[this.mielHvac.fanSpeed] : button.previousValue;
-                                        data = state ? MiElHVAC.SetFanSpeed['4'] : button.previousValue;
-                                        break;
-                                    case 40: //AIR DIRECTION EVEN
-                                        button.previousValue = state ? MiElHVAC.SetAirDirection[this.mielHvac.airDirection] : button.previousValue;
-                                        data = state ? MiElHVAC.SetAirDirection.even : button.previousValue;
-                                        break;
-                                    case 41: //AIR DIRECTION INDIRECT
-                                        button.previousValue = state ? MiElHVAC.SetAirDirection[this.mielHvac.airDirection] : button.previousValue;
-                                        data = state ? MiElHVAC.SetAirDirection.indirect : button.previousValue;
-                                        break;
-                                    case 42: //AIR DIRECTION DIRECT
-                                        button.previousValue = state ? MiElHVAC.SetAirDirection[this.mielHvac.airDirection] : button.previousValue;
-                                        data = state ? MiElHVAC.SetAirDirection.direct : button.previousValue;
-                                        break;
-                                    case 50: //PHYSICAL LOCK CONTROLS
-                                        button.previousValue = state ? MiElHVAC.SetProhibit[this.mielHvac.prohibit] : button.previousValue;
-                                        data = state ? MiElHVAC.SetProhibit.all : button.previousValue;
-                                        break;
-                                    case 51: //PHYSICAL LOCK CONTROLS POWER
-                                        button.previousValue = state ? MiElHVAC.SetProhibit[this.mielHvac.prohibit] : button.previousValue;
-                                        data = state ? MiElHVAC.SetProhibit.power : button.previousValue;
-                                        break;
-                                    case 52: //PHYSICAL LOCK CONTROLS MODE
-                                        button.previousValue = state ? MiElHVAC.SetProhibit[this.mielHvac.prohibit] : button.previousValue;
-                                        data = state ? MiElHVAC.SetProhibit.mode : button.previousValue;
-                                        break;
-                                    case 53: //PHYSICAL LOCK CONTROLS TEMP
-                                        button.previousValue = state ? MiElHVAC.SetProhibit[this.mielHvac.prohibit] : button.previousValue;
-                                        data = state ? MiElHVAC.SetProhibit.temp : button.previousValue;
-                                        break;
-                                    default:
-                                        this.emit('warn', `Unknown button mode: ${mode}`);
-                                        return;
+                                let data;
+                                const mappings = {
+                                    0: () => state ? MiElHVAC.PowerOn : MiElHVAC.PowerOff,
+
+                                    // Modes
+                                    1: () => getCommand('SetMode', 'heat'),
+                                    2: () => getCommand('SetMode', 'dry'),
+                                    3: () => getCommand('SetMode', 'cool'),
+                                    4: () => getCommand('SetMode', 'fan'),
+                                    5: () => getCommand('SetMode', 'auto'),
+
+                                    // Horizontal Swing
+                                    10: () => getCommand('SetSwingH', 'left'),
+                                    11: () => getCommand('SetSwingH', 'left_middle'),
+                                    12: () => getCommand('SetSwingH', 'left_center'),
+                                    13: () => getCommand('SetSwingH', 'center'),
+                                    14: () => getCommand('SetSwingH', 'right_center'),
+                                    15: () => getCommand('SetSwingH', 'right_middle'),
+                                    16: () => getCommand('SetSwingH', 'right'),
+                                    17: () => getCommand('SetSwingH', 'split'),
+                                    18: () => getCommand('SetSwingH', 'swing'),
+
+                                    // Vertical Swing
+                                    20: () => getCommand('SetSwingV', 'auto'),
+                                    21: () => getCommand('SetSwingV', 'up'),
+                                    22: () => getCommand('SetSwingV', 'up_middle'),
+                                    23: () => getCommand('SetSwingV', 'center'),
+                                    24: () => getCommand('SetSwingV', 'down_middle'),
+                                    25: () => getCommand('SetSwingV', 'down'),
+                                    26: () => getCommand('SetSwingV', 'swing'),
+
+                                    // Fan Speeds
+                                    30: () => getCommand('SetFanSpeed', 'auto'),
+                                    31: () => getCommand('SetFanSpeed', 'quiet'),
+                                    32: () => getCommand('SetFanSpeed', '1'),
+                                    33: () => getCommand('SetFanSpeed', '2'),
+                                    34: () => getCommand('SetFanSpeed', '3'),
+                                    35: () => getCommand('SetFanSpeed', '4'),
+
+                                    // Air Direction
+                                    40: () => getCommand('SetAirDirection', 'indirect'),
+                                    41: () => getCommand('SetAirDirection', 'direct'),
+                                    42: () => getCommand('SetAirDirection', 'even'),
+
+                                    // Prohibit
+                                    50: () => getCommand('SetProhibit', 'all'),
+                                    51: () => getCommand('SetProhibit', 'power'),
+                                    52: () => getCommand('SetProhibit', 'mode'),
+                                    53: () => getCommand('SetProhibit', 'temp'),
+
+                                    // Purify
+                                    60: () => getCommand('SetPurify', 'purify'),
+                                    61: () => getCommand('SetEconoCool', 'econocool'),
+                                    62: () => getCommand('SetPowerFull', 'powerfull'),
+                                    63: () => getCommand('SetNightMode', 'nightmode'),
+                                };
+
+                                const getCommand = (type, target) => {
+                                    const current = this.mielHvac[getCurrentKey(type)];
+                                    button.previousValue = state ? MiElHVAC[type][current] : button.previousValue;
+                                    return state ? MiElHVAC[type][target] : button.previousValue;
+                                };
+
+                                const getCurrentKey = (type) => {
+                                    switch (type) {
+                                        case 'SetMode': return 'operationMode';
+                                        case 'SetSwingH': return 'vaneHorizontalDirection';
+                                        case 'SetSwingV': return 'vaneVerticalDirection';
+                                        case 'SetFanSpeed': return 'fanSpeed';
+                                        case 'SetAirDirection': return 'airDirection';
+                                        case 'SetProhibit': return 'prohibit';
+                                        case 'SetPurify': return 'purify';
+                                        case 'SetEconoCool': return 'econoCool';
+                                        case 'SetPowerFull': return 'powerFull';
+                                        case 'SetNightMode': return 'nightMode';
+                                        default: return '';
+                                    }
+                                };
+
+                                if (!mappings.hasOwnProperty(mode)) {
+                                    this.emit('warn', `Unknown button mode: ${mode}`);
+                                    return;
                                 }
 
-                                const setPower = !this.mielHvac.power && state && (mode > 0 && mode < 50) ? await this.axiosInstance(MiElHVAC.PowerOn) : false;
-                                await this.axiosInstance(data);
-                                const info = this.disableLogInfo ? false : mode > 0 ? this.emit('info', `${state ? `Set: ${buttonName}` : `Unset: ${buttonName}, Set: ${button.previousValue}`}`) : `Set: ${buttonName}`;
+                                data = mappings[mode]();
+                                if (!this.mielHvac.power && state && mode > 0 && mode <= 63) {
+                                    await this.axiosInstance.get(MiElHVAC.PowerOn);
+                                }
+
+                                await this.axiosInstance.get(data);
+
+                                if (!this.disableLogInfo) {
+                                    const action = state ? `Set: ${buttonName}` : `Unset: ${buttonName}, Set: ${button.previousValue}`;
+                                    if (mode > 0) this.emit('info', action);
+                                }
+
                                 await new Promise(resolve => setTimeout(resolve, 250));
                             } catch (error) {
                                 this.emit('warn', `Set button error: ${error}`);
                             }
                         });
+
                     this.buttonsServices.push(buttonService);
                     accessory.addService(buttonService);
                 });
             }
 
+
             //sensors services
             if (this.sensorsConfiguredCount > 0) {
-                const debug = this.enableDebugMode ? this.emit('debug', `Prepare sensors services`) : false;
+                if (this.enableDebugMode) this.emit('debug', `Prepare sensors services`);
                 this.sensorsServices = [];
 
                 this.sensorsConfigured.forEach((sensor, index) => {
@@ -1339,7 +1187,7 @@ class MiElHvac extends EventEmitter {
 
             //room temperature sensor service
             if (this.temperatureSensor && this.mielHvac.roomTemperature !== null) {
-                const debug = this.enableDebugMode ? this.emit('debug', `Prepare room temperature sensor service`) : false;
+                if (this.enableDebugMode) this.emit('debug', `Prepare room temperature sensor service`);
                 this.roomTemperatureSensorService = new Service.TemperatureSensor(`${serviceName} Room`, `Room Temperature Sensor`);
                 this.roomTemperatureSensorService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                 this.roomTemperatureSensorService.setCharacteristic(Characteristic.ConfiguredName, `${accessoryName} Room`);
@@ -1358,7 +1206,7 @@ class MiElHvac extends EventEmitter {
 
             //outdoor temperature sensor service
             if (this.temperatureSensorOutdoor && this.mielHvac.hasOutdoorTemperature && this.mielHvac.outdoorTemperature !== null) {
-                const debug = this.enableDebugMode ? this.emit('debug', `Prepare outdoor temperature sensor service`) : false;
+                if (this.enableDebugMode) this.emit('debug', `Prepare outdoor temperature sensor service`);
                 this.outdoorTemperatureSensorService = new Service.TemperatureSensor(`${serviceName} Outdoor`, `Outdoor Temperature Sensor`);
                 this.outdoorTemperatureSensorService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                 this.outdoorTemperatureSensorService.setCharacteristic(Characteristic.ConfiguredName, `${accessoryName} Outdoor`);
@@ -1385,22 +1233,18 @@ class MiElHvac extends EventEmitter {
     async start() {
         try {
             //check device state 
-            await this.checkDeviceState();
+            const checkState = await this.checkState();
+            if (!checkState) return null;
 
             //connect to deice success
             this.emit('success', `Connect Success`)
 
             //check device info 
-            const devInfo = !this.disableLogDeviceInfo ? await this.deviceInfo() : false;
+            if (!this.disableLogDeviceInfo) await this.deviceInfo();
 
             //start prepare accessory
-            if (this.startPrepareAccessory) {
-                const accessory = await this.prepareAccessory();
-                const publishAccessory = this.emit('publishAccessory', accessory);
-                this.startPrepareAccessory = false;
-            }
-
-            return true;
+            const accessory = await this.prepareAccessory();
+            return accessory;
         } catch (error) {
             throw new Error(`Start error: ${error}`);
         }

@@ -3,7 +3,7 @@ import EventEmitter from 'events';
 import { ApiCommands, LightKeys, SensorKeys } from './constants.js';
 
 class DeviceInfo extends EventEmitter {
-    constructor(url, auth, user, passwd, deviceName, loadNameFromDevice, enableDebugMode, refreshInterval) {
+    constructor(url, auth, user, passwd, deviceName, loadNameFromDevice, enableDebugMode) {
         super();
         this.name = deviceName
         this.loadNameFromDevice = loadNameFromDevice;
@@ -11,7 +11,6 @@ class DeviceInfo extends EventEmitter {
 
         //axios instance
         this.axiosInstance = axios.create({
-            method: 'GET',
             baseURL: url,
             timeout: 10000,
             withCredentials: auth,
@@ -24,11 +23,11 @@ class DeviceInfo extends EventEmitter {
     }
 
     async getInfo() {
-        const debug = this.enableDebugMode ? this.emit('debug', `Requesting info`) : false;
+        if (this.enableDebugMode) this.emit('debug', `Requesting info`);
         try {
-            const deviceInfoData = await this.axiosInstance(ApiCommands.Status);
+            const deviceInfoData = await this.axiosInstance.get(ApiCommands.Status);
             const deviceInfo = deviceInfoData.data ?? {};
-            const debug = this.enableDebugMode ? this.emit('debug', `Info: ${JSON.stringify(deviceInfo, null, 2)}`) : false;
+            if (this.enableDebugMode) this.emit('debug', `Info: ${JSON.stringify(deviceInfo, null, 2)}`);
             await new Promise(resolve => setTimeout(resolve, 250));
 
             //status

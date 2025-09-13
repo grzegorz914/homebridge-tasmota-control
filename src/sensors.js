@@ -1,7 +1,7 @@
-import { promises as fsPromises } from 'fs';
 import axios from 'axios';
 import EventEmitter from 'events';
 import ImpulseGenerator from './impulsegenerator.js';
+import Functions from './functions.js';
 import { ApiCommands, SensorKeys } from './constants.js';
 let Accessory, Characteristic, Service, Categories, AccessoryUUID;
 
@@ -25,19 +25,16 @@ class Sensors extends EventEmitter {
         this.disableLogInfo = config.disableLogInfo || false;
         this.disableLogDeviceInfo = config.disableLogDeviceInfo || false;
         this.refreshInterval = refreshInterval;
+        this.functions = new Functions();
 
         //sensors
         this.sensorsCount = 0;
 
-        //variable
-        this.startPrepareAccessory = true;
-
         //axios instance
         const url = `http://${config.host}/cm?cmnd=`;
         this.axiosInstance = axios.create({
-            method: 'GET',
             baseURL: url,
-            timeout: 6000,
+            timeout: 15000,
             withCredentials: config.auth,
             auth: {
                 username: config.user,
@@ -45,32 +42,39 @@ class Sensors extends EventEmitter {
             }
         });
 
-        //impulse generator
-        this.call = false;
-        this.impulseGenerator = new ImpulseGenerator();
-        this.impulseGenerator.on('checkDeviceState', async () => {
-            if (this.call) return;
-
-            try {
-                this.call = true;
-                await this.checkDeviceState();
-                this.call = false;
-            } catch (error) {
-                this.call = false;
-                this.emit('error', `Inpulse generator error: ${error}`);
-            };
-        }).on('state', (state) => {
-            const emitState = state ? this.emit('success', `Impulse generator started`) : this.emit('warn', `Impulse generator stopped`);
-        });
+        //lock flags
+        this.locks = {
+            checkState: false,
+        };
+        this.impulseGenerator = new ImpulseGenerator()
+            .on('checkState', () => this.handleWithLock('checkState', async () => {
+                await this.checkState();
+            }))
+            .on('state', (state) => {
+                this.emit('success', `Impulse generator ${state ? 'started' : 'stopped'}.`);
+            });
     }
 
-    async checkDeviceState() {
-        const debug = this.enableDebugMode ? this.emit('debug', `Requesting status`) : false;
+    async handleWithLock(lockKey, fn) {
+        if (this.locks[lockKey]) return;
+
+        this.locks[lockKey] = true;
+        try {
+            await fn();
+        } catch (error) {
+            this.emit('error', `Inpulse generator error: ${error}`);
+        } finally {
+            this.locks[lockKey] = false;
+        }
+    }
+
+    async checkState() {
+        if (this.enableDebugMode) this.emit('debug', `Requesting status`);
         try {
             //sensor status
-            const sensorStatusData = await this.axiosInstance(ApiCommands.Status);
+            const sensorStatusData = await this.axiosInstance.get(ApiCommands.Status);
             const sensorStatus = sensorStatusData.data ?? {};
-            const debug1 = this.enableDebugMode ? this.emit('debug', `Sensors status: ${JSON.stringify(sensorStatus, null, 2)}`) : false;
+            if (this.enableDebugMode) this.emit('debug', `Sensors status: ${JSON.stringify(sensorStatus, null, 2)}`);
 
             //sensor status keys
             const sensorStatusKeys = Object.keys(sensorStatus);
@@ -179,7 +183,7 @@ class Sensors extends EventEmitter {
                         }
                     }
 
-                    const debug1 = this.enableDebugMode ? this.emit('debug', `Sensor: ${JSON.stringify(sensor, null, 2)}`) : false;
+                    if (this.enableDebugMode) this.emit('debug', `Sensor: ${JSON.stringify(sensor, null, 2)}`);
                     i++;
                 }
 
@@ -192,30 +196,10 @@ class Sensors extends EventEmitter {
         }
     }
 
-    async saveData(path, data) {
-        try {
-            data = JSON.stringify(data, null, 2);
-            await fsPromises.writeFile(path, data);
-            const debug = !this.enableDebugMode ? false : this.emit('debug', `Saved data: ${data}`);
-            return true;
-        } catch (error) {
-            throw new Error(`Save data error: ${error}`);
-        }
-    }
-
-    async readData(path) {
-        try {
-            const data = await fsPromises.readFile(path);
-            return data;
-        } catch (error) {
-            throw new Error(`Read data error: ${error}`);
-        }
-    }
-
     async startImpulseGenerator() {
         try {
             //start impulse generator 
-            const timers = [{ name: 'checkDeviceState', sampling: this.refreshInterval }];
+            const timers = [{ name: 'checkState', sampling: this.refreshInterval }];
             await this.impulseGenerator.start(timers);
             return true;
         } catch (error) {
@@ -236,7 +220,7 @@ class Sensors extends EventEmitter {
 
     //prepare accessory
     async prepareAccessory() {
-        const debug = this.enableDebugMode ? this.emit('debug', `Prepare Accessory`) : false;
+        if (this.enableDebugMode) this.emit('debug', `Prepare Accessory`);
 
         try {
             //accessory
@@ -246,7 +230,7 @@ class Sensors extends EventEmitter {
             const accessory = new Accessory(accessoryName, accessoryUUID, accessoryCategory);
 
             //Prepare information service
-            const debug1 = this.enableDebugMode ? this.emit('debug', `Prepare Information Service`) : false;
+            if (this.enableDebugMode) this.emit('debug', `Prepare Information Service`);
             accessory.getService(Service.AccessoryInformation)
                 .setCharacteristic(Characteristic.Manufacturer, 'Tasmota')
                 .setCharacteristic(Characteristic.Model, this.info.modelName ?? 'Model Name')
@@ -256,7 +240,7 @@ class Sensors extends EventEmitter {
 
             //Prepare services 
             if (this.sensorsCount > 0) {
-                const debug = this.enableDebugMode ? this.emit('debug', `Prepare Sensor Services`) : false;
+                if (this.enableDebugMode) this.emit('debug', `Prepare Sensor Services`);
                 this.temperatureServices = [];
                 this.temperatureReferenceServices = [];
                 this.temperatureObjServices = [];
@@ -273,7 +257,7 @@ class Sensors extends EventEmitter {
                 for (const sensor of this.sensors) {
                     const sensorName = sensor.name;
                     if (sensor.temperature) {
-                        const debug = this.enableDebugMode ? this.emit('debug', `Prepare Temperature Sensor Services`) : false;
+                        if (this.enableDebugMode) this.emit('debug', `Prepare Temperature Sensor Services`);
                         const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Temperature` : `${sensorName} Temperature`;
                         const temperatureService = accessory.addService(Service.TemperatureSensor, serviceName, `Temperature Sensor ${i}`);
                         temperatureService.addOptionalCharacteristic(Characteristic.ConfiguredName);
@@ -281,7 +265,7 @@ class Sensors extends EventEmitter {
                         temperatureService.getCharacteristic(Characteristic.CurrentTemperature)
                             .onGet(async () => {
                                 const value = sensor.temperature;
-                                const logInfo = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} temperature: ${value} °${sensor.tempUnit}`);
+                                if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} temperature: ${value} °${sensor.tempUnit}`);
                                 return value;
                             });
                         this.temperatureServices.push(temperatureService);
@@ -289,7 +273,7 @@ class Sensors extends EventEmitter {
 
                     //reference temperature
                     if (sensor.referenceTemperature) {
-                        const debug = this.enableDebugMode ? this.emit('debug', `Prepare Reference Temperature Sensor Services`) : false;
+                        if (this.enableDebugMode) this.emit('debug', `Prepare Reference Temperature Sensor Services`);
                         const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Reference Temperature` : `${sensorName} Reference Temperature`;
                         const temperatureReferenceService = accessory.addService(Service.TemperatureSensor, serviceName, `Reference Temperature Sensor ${i}`);
                         temperatureReferenceService.addOptionalCharacteristic(Characteristic.ConfiguredName);
@@ -297,7 +281,7 @@ class Sensors extends EventEmitter {
                         temperatureReferenceService.getCharacteristic(Characteristic.CurrentTemperature)
                             .onGet(async () => {
                                 const value = sensor.referenceTemperature;
-                                const logInfo = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} reference temperature: ${value} °${sensor.tempUnit}`);
+                                if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} reference temperature: ${value} °${sensor.tempUnit}`);
                                 return value;
                             });
                         this.temperatureReferenceServices.push(temperatureReferenceService);
@@ -305,7 +289,7 @@ class Sensors extends EventEmitter {
 
                     //object temperature
                     if (sensor.objTemperature) {
-                        const debug = this.enableDebugMode ? this.emit('debug', `Prepare Obj Temperature Sensor Services`) : false;
+                        if (this.enableDebugMode) this.emit('debug', `Prepare Obj Temperature Sensor Services`);
                         const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Obj Temperature` : `${sensorName} Obj Temperature`;
                         const temperatureObjService = accessory.addService(Service.TemperatureSensor, serviceName, `Obj Temperature Sensor ${i}`);
                         temperatureObjService.addOptionalCharacteristic(Characteristic.ConfiguredName);
@@ -313,7 +297,7 @@ class Sensors extends EventEmitter {
                         temperatureObjService.getCharacteristic(Characteristic.CurrentTemperature)
                             .onGet(async () => {
                                 const value = sensor.objTemperature;
-                                const logInfo = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} obj temperature: ${value} °${sensor.tempUnit}`);
+                                if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} obj temperature: ${value} °${sensor.tempUnit}`);
                                 return value;
                             });
                         this.temperatureObjServices.push(temperatureObjService);
@@ -321,7 +305,7 @@ class Sensors extends EventEmitter {
 
                     //ambient temperature
                     if (sensor.ambTemperature) {
-                        const debug = this.enableDebugMode ? this.emit('debug', `Prepare Amb Temperature Sensor Services`) : false;
+                        if (this.enableDebugMode) this.emit('debug', `Prepare Amb Temperature Sensor Services`);
                         const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Amb Temperature` : `${sensorName} Amb Temperature`;
                         const temperatureAmbService = accessory.addService(Service.TemperatureSensor, serviceName, `Amb Temperature Sensor ${i}`);
                         temperatureAmbService.addOptionalCharacteristic(Characteristic.ConfiguredName);
@@ -329,7 +313,7 @@ class Sensors extends EventEmitter {
                         temperatureAmbService.getCharacteristic(Characteristic.CurrentTemperature)
                             .onGet(async () => {
                                 const value = sensor.ambTemperature;
-                                const logInfo = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} amb temperature: ${value} °${sensor.tempUnit}`);
+                                if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} amb temperature: ${value} °${sensor.tempUnit}`);
                                 return value;
                             });
                         this.temperatureAmbServices.push(temperatureAmbService);
@@ -337,7 +321,7 @@ class Sensors extends EventEmitter {
 
                     //dew point temperature
                     if (sensor.dewPointTemperature) {
-                        const debug = this.enableDebugMode ? this.emit('debug', `Prepare Dew Point Temperature Sensor Services`) : false;
+                        if (this.enableDebugMode) this.emit('debug', `Prepare Dew Point Temperature Sensor Services`);
                         const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Dew Point` : `${sensorName} Dew Point`;
                         const temperatureDewPointService = accessory.addService(Service.TemperatureSensor, serviceName, `Dew Point Temperature Sensor ${i}`);
                         temperatureDewPointService.addOptionalCharacteristic(Characteristic.ConfiguredName);
@@ -345,7 +329,7 @@ class Sensors extends EventEmitter {
                         temperatureDewPointService.getCharacteristic(Characteristic.CurrentTemperature)
                             .onGet(async () => {
                                 const value = sensor.dewPointTemperature;
-                                const logInfo = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} dew point: ${value} °${sensor.tempUnit}`);
+                                if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} dew point: ${value} °${sensor.tempUnit}`);
                                 return value;
                             });
                         this.temperatureDewPointServices.push(temperatureDewPointService);
@@ -353,7 +337,7 @@ class Sensors extends EventEmitter {
 
                     //humidity
                     if (sensor.humidity) {
-                        const debug = this.enableDebugMode ? this.emit('debug', `Prepare Humidity Sensor Services`) : false;
+                        if (this.enableDebugMode) this.emit('debug', `Prepare Humidity Sensor Services`);
                         const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Humidity` : `${sensorName} Humidity`;
                         const humidityService = accessory.addService(Service.HumiditySensor, serviceName, `Humidity Sensor ${i}`);
                         humidityService.addOptionalCharacteristic(Characteristic.ConfiguredName);
@@ -361,7 +345,7 @@ class Sensors extends EventEmitter {
                         humidityService.getCharacteristic(Characteristic.CurrentRelativeHumidity)
                             .onGet(async () => {
                                 const value = sensor.humidity;
-                                const logInfo = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} humidity: ${value} %`);
+                                if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} humidity: ${value} %`);
                                 return value;
                             });
                         this.humidityServices.push(humidityService);
@@ -373,7 +357,7 @@ class Sensors extends EventEmitter {
 
                     //carbon dioxyde
                     if (sensor.carbonDioxyde) {
-                        const debug = this.enableDebugMode ? this.emit('debug', `Prepare Carbon Dioxyde Sensor Services`) : false;
+                        if (this.enableDebugMode) this.emit('debug', `Prepare Carbon Dioxyde Sensor Services`);
                         const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Carbon Dioxyde` : `${sensorName} Carbon Dioxyde`;
                         const carbonDioxydeService = accessory.addService(Service.CarbonDioxideSensor, serviceName, `Carbon Dioxyde Sensor ${i}`);
                         carbonDioxydeService.addOptionalCharacteristic(Characteristic.ConfiguredName);
@@ -381,19 +365,19 @@ class Sensors extends EventEmitter {
                         carbonDioxydeService.getCharacteristic(Characteristic.CarbonDioxideDetected)
                             .onGet(async () => {
                                 const state = sensor.carbonDioxyde > 1000;
-                                const logInfo = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} carbon dioxyde detected: ${state ? 'Yes' : 'No'}`);
+                                if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} carbon dioxyde detected: ${state ? 'Yes' : 'No'}`);
                                 return state;
                             });
                         carbonDioxydeService.getCharacteristic(Characteristic.CarbonDioxideLevel)
                             .onGet(async () => {
                                 const value = sensor.carbonDioxyde;
-                                const logInfo = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} carbon dioxyde level: ${value} ppm`);
+                                if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} carbon dioxyde level: ${value} ppm`);
                                 return value;
                             });
                         carbonDioxydeService.getCharacteristic(Characteristic.CarbonDioxidePeakLevel)
                             .onGet(async () => {
                                 const value = sensor.carbonDioxyde;
-                                const logInfo = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} carbon dioxyde peak level: ${value} ppm`);
+                                if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} carbon dioxyde peak level: ${value} ppm`);
                                 return value;
                             });
                         this.carbonDioxydeServices.push(carbonDioxydeService);
@@ -401,7 +385,7 @@ class Sensors extends EventEmitter {
 
                     //ambient light
                     if (sensor.ambientLight) {
-                        const debug = this.enableDebugMode ? this.emit('debug', `Prepare Ambient Light Sensor Services`) : false;
+                        if (this.enableDebugMode) this.emit('debug', `Prepare Ambient Light Sensor Services`);
                         const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Ambient Light` : `${sensorName} Ambient Light`;
                         const ambientLightService = accessory.addService(Service.LightSensor, serviceName, `Ambient Light Sensor ${i}`);
                         ambientLightService.addOptionalCharacteristic(Characteristic.ConfiguredName);
@@ -409,7 +393,7 @@ class Sensors extends EventEmitter {
                         ambientLightService.getCharacteristic(Characteristic.CurrentAmbientLightLevel)
                             .onGet(async () => {
                                 const value = sensor.ambientLight;
-                                const logInfo = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} ambient light: ${value} lx`);
+                                if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} ambient light: ${value} lx`);
                                 return value;
                             });
                         this.ambientLightServices.push(ambientLightService);
@@ -417,7 +401,7 @@ class Sensors extends EventEmitter {
 
                     //motion
                     if (sensor.motion) {
-                        const debug = this.enableDebugMode ? this.emit('debug', `Prepare Motion Sensor Services`) : false;
+                        if (this.enableDebugMode) this.emit('debug', `Prepare Motion Sensor Services`);
                         const serviceName = this.sensorsNamePrefix ? `${accessoryName} ${sensorName} Motion` : `${sensorName} Motion`;
                         const motionService = accessory.addService(Service.MotionSensor, serviceName, `Motion Sensor ${i}`);
                         motionService.addOptionalCharacteristic(Characteristic.ConfiguredName);
@@ -425,7 +409,7 @@ class Sensors extends EventEmitter {
                         motionService.getCharacteristic(Characteristic.MotionDetected)
                             .onGet(async () => {
                                 const state = sensor.motion;
-                                const logInfo = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} motion: ${state ? 'ON' : 'OFF'}`);
+                                if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} motion: ${state ? 'ON' : 'OFF'}`);
                                 return state;
                             });
                         this.motionServices.push(motionService);
@@ -441,7 +425,7 @@ class Sensors extends EventEmitter {
                             powerAndEnergyService.getCharacteristic(Characteristic.Power)
                                 .onGet(async () => {
                                     const value = sensor.power;
-                                    const info = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} power: ${value} W`);
+                                    if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} power: ${value} W`);
                                     return value;
                                 });
                         }
@@ -449,7 +433,7 @@ class Sensors extends EventEmitter {
                             powerAndEnergyService.getCharacteristic(Characteristic.ApparentPower)
                                 .onGet(async () => {
                                     const value = sensor.apparentPower;
-                                    const info = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} apparent power: ${value} VA`);
+                                    if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} apparent power: ${value} VA`);
                                     return value;
                                 });
                         }
@@ -457,7 +441,7 @@ class Sensors extends EventEmitter {
                             powerAndEnergyService.getCharacteristic(Characteristic.ReactivePower)
                                 .onGet(async () => {
                                     const value = sensor.reactivePower;
-                                    const info = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} reactive power: ${value} VAr`);
+                                    if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} reactive power: ${value} VAr`);
                                     return value;
                                 });
                         }
@@ -465,7 +449,7 @@ class Sensors extends EventEmitter {
                             powerAndEnergyService.getCharacteristic(Characteristic.EnergyToday)
                                 .onGet(async () => {
                                     const value = sensor.energyToday;
-                                    const info = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} energy today: ${value} kWh`);
+                                    if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} energy today: ${value} kWh`);
                                     return value;
                                 });
                         }
@@ -473,7 +457,7 @@ class Sensors extends EventEmitter {
                             powerAndEnergyService.getCharacteristic(Characteristic.EnergyLastDay)
                                 .onGet(async () => {
                                     const value = sensor.energyLastDay;
-                                    const info = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} energy last day: ${value} kWh`);
+                                    if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} energy last day: ${value} kWh`);
                                     return value;
                                 });
                         }
@@ -481,7 +465,7 @@ class Sensors extends EventEmitter {
                             powerAndEnergyService.getCharacteristic(Characteristic.EnergyLifetime)
                                 .onGet(async () => {
                                     const value = sensor.energyLifetime;
-                                    const info = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} energy lifetime: ${value} kWh`);
+                                    if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} energy lifetime: ${value} kWh`);
                                     return value;
                                 });
                         }
@@ -489,7 +473,7 @@ class Sensors extends EventEmitter {
                             powerAndEnergyService.getCharacteristic(Characteristic.Current)
                                 .onGet(async () => {
                                     const value = sensor.current;
-                                    const info = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} current: ${value} A`);
+                                    if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} current: ${value} A`);
                                     return value;
                                 });
                         }
@@ -497,7 +481,7 @@ class Sensors extends EventEmitter {
                             powerAndEnergyService.getCharacteristic(Characteristic.Voltage)
                                 .onGet(async () => {
                                     const value = sensor.voltage;
-                                    const info = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} voltage: ${value} V`);
+                                    if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} voltage: ${value} V`);
                                     return value;
                                 });
                         }
@@ -505,7 +489,7 @@ class Sensors extends EventEmitter {
                             powerAndEnergyService.getCharacteristic(Characteristic.Factor)
                                 .onGet(async () => {
                                     const value = sensor.factor;
-                                    const info = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} power factor: ${value} cos φ`);
+                                    if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} power factor: ${value} cos φ`);
                                     return value;
                                 });
                         }
@@ -513,7 +497,7 @@ class Sensors extends EventEmitter {
                             powerAndEnergyService.getCharacteristic(Characteristic.Freqency)
                                 .onGet(async () => {
                                     const value = sensor.frequency;
-                                    const info = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} frequency: ${value} Hz`);
+                                    if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} frequency: ${value} Hz`);
                                     return value;
                                 });
                         }
@@ -521,7 +505,7 @@ class Sensors extends EventEmitter {
                             powerAndEnergyService.getCharacteristic(Characteristic.ReadingTime)
                                 .onGet(async () => {
                                     const value = sensor.time;
-                                    const info = this.disableLogInfo ? false : this.emit('info', `sensor: ${sensorName} last report: ${value}`);
+                                    if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} last report: ${value}`);
                                     return value;
                                 });
                         }
@@ -541,22 +525,17 @@ class Sensors extends EventEmitter {
     async start() {
         try {
             //check device state 
-            await this.checkDeviceState();
+            await this.checkState();
 
             //connect to deice success
             this.emit('success', `Connect Success`)
 
             //check device info 
-            const devInfo = !this.disableLogDeviceInfo ? await this.deviceInfo() : false;
+            if (!this.disableLogDeviceInfo) await this.deviceInfo();
 
             //start prepare accessory
-            if (this.startPrepareAccessory) {
-                const accessory = await this.prepareAccessory();
-                const publishAccessory = this.emit('publishAccessory', accessory);
-                this.startPrepareAccessory = false;
-            }
-
-            return true;
+            const accessory = await this.prepareAccessory();
+            return accessory;
         } catch (error) {
             throw new Error(`Start error: ${error}`);
         }

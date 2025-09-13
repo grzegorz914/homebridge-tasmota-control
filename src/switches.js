@@ -1,7 +1,7 @@
-import { promises as fsPromises } from 'fs';
 import axios from 'axios';
 import EventEmitter from 'events';
 import ImpulseGenerator from './impulsegenerator.js';
+import Functions from './functions.js';
 import { ApiCommands } from './constants.js';
 let Accessory, Characteristic, Service, Categories, AccessoryUUID;
 
@@ -27,16 +27,13 @@ class Switches extends EventEmitter {
         this.disableLogInfo = config.disableLogInfo || false;
         this.disableLogDeviceInfo = config.disableLogDeviceInfo || false;
         this.refreshInterval = refreshInterval;
-
-        //variable
-        this.startPrepareAccessory = true;
+        this.functions = new Functions();
 
         //axios instance
         const url = `http://${config.host}/cm?cmnd=`;
         this.axiosInstance = axios.create({
-            method: 'GET',
             baseURL: url,
-            timeout: 6000,
+            timeout: 15000,
             withCredentials: config.auth,
             auth: {
                 username: config.user,
@@ -44,32 +41,39 @@ class Switches extends EventEmitter {
             }
         });
 
-        //impulse generator
-        this.call = false;
-        this.impulseGenerator = new ImpulseGenerator();
-        this.impulseGenerator.on('checkDeviceState', async () => {
-            if (this.call) return;
-
-            try {
-                this.call = true;
-                await this.checkDeviceState();
-                this.call = false;
-            } catch (error) {
-                this.call = false;
-                this.emit('error', `Inpulse generator error: ${error}`);
-            };
-        }).on('state', (state) => {
-            const emitState = state ? this.emit('success', `Impulse generator started`) : this.emit('warn', `Impulse generator stopped`);
-        });
+        //lock flags
+        this.locks = {
+            checkState: false,
+        };
+        this.impulseGenerator = new ImpulseGenerator()
+            .on('checkState', () => this.handleWithLock('checkState', async () => {
+                await this.checkState();
+            }))
+            .on('state', (state) => {
+                this.emit('success', `Impulse generator ${state ? 'started' : 'stopped'}.`);
+            });
     }
 
-    async checkDeviceState() {
-        const debug = this.enableDebugMode ? this.emit('debug', `Requesting status`) : false;
+    async handleWithLock(lockKey, fn) {
+        if (this.locks[lockKey]) return;
+
+        this.locks[lockKey] = true;
+        try {
+            await fn();
+        } catch (error) {
+            this.emit('error', `Inpulse generator error: ${error}`);
+        } finally {
+            this.locks[lockKey] = false;
+        }
+    }
+
+    async checkState() {
+        if (this.enableDebugMode) this.emit('debug', `Requesting status`);
         try {
             //power status
-            const powerStatusData = await this.axiosInstance(ApiCommands.PowerStatus);
+            const powerStatusData = await this.axiosInstance.get(ApiCommands.PowerStatus);
             const powerStatus = powerStatusData.data ?? {};
-            const debug = this.enableDebugMode ? this.emit('debug', `Power status: ${JSON.stringify(powerStatus, null, 2)}`) : false;
+            if (this.enableDebugMode) this.emit('debug', `Power status: ${JSON.stringify(powerStatus, null, 2)}`);
 
             //relays
             const relaysCount = this.relaysCount;
@@ -110,30 +114,10 @@ class Switches extends EventEmitter {
         }
     }
 
-    async saveData(path, data) {
-        try {
-            data = JSON.stringify(data, null, 2);
-            await fsPromises.writeFile(path, data);
-            const debug = !this.enableDebugMode ? false : this.emit('debug', `Saved data: ${data}`);
-            return true;
-        } catch (error) {
-            throw new Error(`Save data error: ${error}`);
-        }
-    }
-
-    async readData(path) {
-        try {
-            const data = await fsPromises.readFile(path);
-            return data;
-        } catch (error) {
-            throw new Error(`Read data error: ${error}`);
-        }
-    }
-
     async startImpulseGenerator() {
         try {
             //start impulse generator 
-            const timers = [{ name: 'checkDeviceState', sampling: this.refreshInterval }];
+            const timers = [{ name: 'checkState', sampling: this.refreshInterval }];
             await this.impulseGenerator.start(timers);
             return true;
         } catch (error) {
@@ -154,7 +138,7 @@ class Switches extends EventEmitter {
 
     //prepare accessory
     async prepareAccessory() {
-        const debug = this.enableDebugMode ? this.emit('debug', `Prepare Accessory`) : false;
+        if (this.enableDebugMode) this.emit('debug', `Prepare Accessory`);
 
         try {
             //accessory
@@ -164,7 +148,7 @@ class Switches extends EventEmitter {
             const accessory = new Accessory(accessoryName, accessoryUUID, accessoryCategory);
 
             //Prepare information service
-            const debug1 = this.enableDebugMode ? this.emit('debug', `Prepare Information Service`) : false;
+            if (this.enableDebugMode) this.emit('debug', `Prepare Information Service`);
             accessory.getService(Service.AccessoryInformation)
                 .setCharacteristic(Characteristic.Manufacturer, 'Tasmota')
                 .setCharacteristic(Characteristic.Model, this.info.modelName ?? 'Model Name')
@@ -173,9 +157,9 @@ class Switches extends EventEmitter {
                 .setCharacteristic(Characteristic.ConfiguredName, accessoryName);
 
             //Prepare services 
-            const debug2 = this.enableDebugMode ? this.emit('debug', `Prepare Services`) : false;
+            if (this.enableDebugMode) this.emit('debug', `Prepare Services`);
             if (this.switchesOutlets.length > 0) {
-                const debug = this.enableDebugMode ? this.emit('debug', `Prepare Switch/Outlet Services`) : false;
+                if (this.enableDebugMode) this.emit('debug', `Prepare Switch/Outlet Services`);
                 this.switchOutletServices = [];
 
                 for (let i = 0; i < this.switchesOutlets.length; i++) {
@@ -198,8 +182,8 @@ class Switches extends EventEmitter {
                                 const powerOff = this.switchesOutlets.length === 1 ? ApiCommands.PowerOff : `${ApiCommands.Power}${relayNr}${ApiCommands.Off}`;
                                 state = state ? powerOn : powerOff;
 
-                                await this.axiosInstance(state);
-                                const logInfo = this.disableLogInfo ? false : this.emit('info', `${friendlyName}, set state: ${state ? 'ON' : 'OFF'}`);
+                                await this.axiosInstance.get(state);
+                                if (!this.disableLogInfo) this.emit('info', `${friendlyName}, set state: ${state ? 'ON' : 'OFF'}`);
                             } catch (error) {
                                 this.emit('warn', `${friendlyName}, set state error: ${error}`);
                             }
@@ -218,22 +202,17 @@ class Switches extends EventEmitter {
     async start() {
         try {
             //check device state 
-            await this.checkDeviceState();
+            await this.checkState();
 
             //connect to deice success
             this.emit('success', `Connect Success`)
 
             //check device info 
-            const devInfo = !this.disableLogDeviceInfo ? await this.deviceInfo() : false;
+            if (!this.disableLogDeviceInfo) await this.deviceInfo();
 
             //start prepare accessory
-            if (this.startPrepareAccessory) {
-                const accessory = await this.prepareAccessory();
-                const publishAccessory = this.emit('publishAccessory', accessory);
-                this.startPrepareAccessory = false;
-            }
-
-            return true;
+            const accessory = await this.prepareAccessory();
+            return accessory;
         } catch (error) {
             throw new Error(`Start error: ${error}`);
         }

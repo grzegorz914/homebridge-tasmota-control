@@ -33,15 +33,13 @@ class tasmotaPlatform {
 
         //check accessory is enabled
         const disableAccessory = device.disableAccessory || false;
-        if (disableAccessory) {
-          continue;
-        }
+        if (disableAccessory) continue;
 
         const deviceName = device.name;
         const host = device.host;
         if (!deviceName || !host) {
           log.warn(`Device Name: ${deviceName ? 'OK' : deviceName}, host: ${host ? 'OK' : host}, in config wrong or missing.`);
-          return;
+          continue;
         }
 
         //log config
@@ -50,71 +48,68 @@ class tasmotaPlatform {
         const user = device.user || '';
         const passwd = device.passwd || '';
         const loadNameFromDevice = device.loadNameFromDevice || false;
-        const refreshInterval = device.refreshInterval * 1000 || 5000;
+        const refreshInterval = Number.isInteger(device.refreshInterval) && device.refreshInterval > 0 ? device.refreshInterval * 1000 : 5000;
         const enableDebugMode = device.enableDebugMode || false;
-        const disableLogDeviceInfo = device.disableLogDeviceInfo || false;
-        const disableLogInfo = device.disableLogInfo || false;
-        const disableLogSuccess = device.disableLogSuccess || false;
-        const disableLogWarn = device.disableLogWarn || false;
-        const disableLogError = device.disableLogError || false;
-        const debug = !enableDebugMode ? false : log.info(`Device: ${host} ${deviceName}, debug: Did finish launching.`);
+        const logLevel = {
+          debug: device.enableDebugMode,
+          info: !device.disableLogInfo,
+          success: !device.disableLogSuccess,
+          warn: !device.disableLogWarn,
+          error: !device.disableLogError,
+          devInfo: !device.disableLogDeviceInfo,
+        };
+
+        if (logLevel.debug) log.info(`Device: ${host} ${deviceName}, debug: Did finish launching.`);
         const newConfig = {
           ...device,
           user: 'removed',
           passwd: 'removed'
         };
-        const debug1 = !enableDebugMode ? false : log.info(`Device: ${host} ${deviceName}, Config: ${JSON.stringify(newConfig, null, 2)}.`);
+        if (logLevel.debug) log.info(`Device: ${host} ${deviceName}, Config: ${JSON.stringify(newConfig, null, 2)}.`);
 
         try {
           //get device info
-          const deviceInfo = new DeviceInfo(url, auth, user, passwd, deviceName, loadNameFromDevice, enableDebugMode, refreshInterval)
-            .on('debug', (debug) => {
-              const emitLog = !enableDebugMode ? false : log.info(`Device: ${host} ${deviceName}, debug: ${debug}.`);
-            })
-            .on('debug', (debug) => {
-              const emitLog = !enableDebugMode ? false : log.info(`Device: ${host} ${deviceName}, debug: ${debug}.`);
-            })
-            .on('warn', (warn) => {
-              const emitLog = disableLogWarn ? false : log.warn(`Device: ${host} ${deviceName}, ${warn}.`);
-            })
-            .on('error', (error) => {
-              const emitLog = disableLogError ? false : log.error(`Device: ${host} ${deviceName}, ${error}.`);
-            });
+          const deviceInfo = new DeviceInfo(url, auth, user, passwd, deviceName, loadNameFromDevice, enableDebugMode)
+            .on('debug', (msg) => logLevel.debug && log.info(`Device: ${host} ${deviceName}, debug: ${msg}`))
+            .on('warn', (msg) => logLevel.warn && log.warn(`Device: ${host} ${deviceName}, ${msg}`))
+            .on('error', (msg) => logLevel.error && log.error(`Device: ${host} ${deviceName}, ${msg}`));
 
           const info = await deviceInfo.getInfo();
           if (!info.serialNumber) {
             log.warn(`Device: ${host} ${deviceName}, serial not found.`);
-            return;
+            continue;
           }
 
           let i = 0;
           for (const type of info.deviceTypes) {
             const serialNumber = i === 0 ? info.serialNumber : `${info.serialNumber}${i}`;
 
+            //check files exists, if not then create it
+            if (type === 0) {
+              try {
+                const postFix = device.host.split('.').join('');
+                info.defaultHeatingSetTemperatureFile = `${prefDir}/defaultHeatingSetTemperature_${postFix}`;
+                info.defaultCoolingSetTemperatureFile = `${prefDir}/defaultCoolingSetTemperature_${postFix}`;
+                const files = [
+                  info.defaultHeatingSetTemperatureFile,
+                  info.defaultCoolingSetTemperatureFile
+                ];
+
+                files.forEach((file, index) => {
+                  if (!existsSync(file)) {
+                    const data = ['20', '23'][index];
+                    writeFileSync(file, data);
+                  }
+                });
+              } catch (error) {
+                if (logLevel.error) log.error(`Device: ${host} ${deviceName}, Prepare files error: ${error}`);
+                continue;
+              }
+            }
+
             let deviceType;
             switch (type) {
               case 0: //mielhvac
-                //check files exists, if not then create it
-                try {
-                  const postFix = device.host.split('.').join('');
-                  info.defaultHeatingSetTemperatureFile = `${prefDir}/defaultHeatingSetTemperature_${postFix}`;
-                  info.defaultCoolingSetTemperatureFile = `${prefDir}/defaultCoolingSetTemperature_${postFix}`;
-                  const files = [
-                    info.defaultHeatingSetTemperatureFile,
-                    info.defaultCoolingSetTemperatureFile
-                  ];
-
-                  files.forEach((file, index) => {
-                    if (!existsSync(file)) {
-                      const data = ['20', '23'][index]
-                      writeFileSync(file, data);
-                    }
-                  });
-                } catch (error) {
-                  log.error(`Device: ${host} ${deviceName}, Prepare files error: ${error}`);
-                  return;
-                }
-
                 deviceType = new MiElHvac(api, device, info, serialNumber, refreshInterval);
                 break;
               case 1: //switches
@@ -130,55 +125,42 @@ class tasmotaPlatform {
                 deviceType = new Sensors(api, device, info, serialNumber, refreshInterval);
                 break;
               default:
-                const emitLog = disableLogWarn ? false : log.warn(`Device: ${host} ${deviceName}, unknown device: ${info.deviceTypes}.`);
-                return;
+                if (logLevel.warn) log.warn(`Device: ${host} ${deviceName}, unknown device: ${info.deviceTypes}.`);
+                continue;
             }
 
-            deviceType.on('publishAccessory', (accessory) => {
-              api.publishExternalAccessories(PluginName, [accessory]);
-              const emitLog = disableLogSuccess ? false : log.success(`Device: ${host} ${deviceName}, Published as external accessory.`);
-            })
-              .on('devInfo', (devInfo) => {
-                const emitLog = disableLogDeviceInfo ? false : log.info(devInfo);
-              })
-              .on('success', (success) => {
-                const emitLog = disableLogSuccess ? false : log.success(`Device: ${host} ${deviceName}, ${success}.`);
-              })
-              .on('info', (info) => {
-                const emitLog = disableLogInfo ? false : log.info(`Device: ${host} ${deviceName}, ${info}.`);
-              })
-              .on('debug', (debug) => {
-                const emitLog = !enableDebugMode ? false : log.info(`Device: ${host} ${deviceName}, debug: ${debug}.`);
-              })
-              .on('warn', (warn) => {
-                const emitLog = disableLogWarn ? false : log.warn(`Device: ${host} ${deviceName}, ${warn}.`);
-              })
-              .on('error', (error) => {
-                const emitLog = disableLogError ? false : log.error(`Device: ${host} ${deviceName}, ${error}.`);
-              });
+            deviceType.on('devInfo', (msg) => logLevel.devInfo && log.info(msg))
+              .on('success', (msg) => logLevel.success && log.success(`Device: ${host} ${deviceName}, ${msg}`))
+              .on('info', (msg) => logLevel.info && log.info(`Device: ${host} ${deviceName}, ${msg}`))
+              .on('debug', (msg) => logLevel.debug && log.info(`Device: ${host} ${deviceName}, debug: ${msg}`))
+              .on('warn', (msg) => logLevel.warn && log.warn(`Device: ${host} ${deviceName}, ${msg}`))
+              .on('error', (msg) => logLevel.error && log.error(`Device: ${host} ${deviceName}, ${msg}`));
 
             //create impulse generator
-            const impulseGenerator = new ImpulseGenerator();
-            impulseGenerator.on('start', async () => {
-              try {
-                const startDone = await deviceType.start();
-                const stopImpulseGenerator = startDone ? await impulseGenerator.stop() : false;
+            const impulseGenerator = new ImpulseGenerator()
+              .on('start', async () => {
+                try {
+                  const accessory = await deviceType.start();
+                  if (accessory) {
+                    api.publishExternalAccessories(PluginName, [accessory]);
+                    if (logLevel.success) log.success(`Device: ${host} ${deviceName}, Published as external accessory.`);
 
-                //start impulse generator 
-                const startImpulseGenerator = stopImpulseGenerator ? await deviceType.startImpulseGenerator() : false
-              } catch (error) {
-                const emitLog = disableLogError ? false : log.error(`Device: ${host} ${deviceName}, ${error}, trying again.`);
-              }
-            }).on('state', (state) => {
-              const emitLog = !enableDebugMode ? false : state ? log.info(`Device: ${host} ${deviceName}, Start impulse generator started.`) : log.info(`Device: ${host} ${deviceName}, Start impulse generator stopped.`);
-            });
+                    await impulseGenerator.stop();
+                    await deviceType.startImpulseGenerator();
+                  }
+                } catch (error) {
+                  if (logLevel.error) log.error(`Device: ${host} ${deviceName}, ${error}, trying again.`);
+                }
+              }).on('state', (state) => {
+                if (logLevel.debug) log.info(`Device: ${host} ${deviceName}, Start impulse generator ${state ? 'started' : 'stopped'}.`);
+              });
 
             //start impulse generator
             await impulseGenerator.start([{ name: 'start', sampling: 45000 }]);
             i++;
           }
         } catch (error) {
-          const emitLog = disableLogError ? false : log.error(`Device: ${host} ${deviceName}, Did finish launching error: ${error}.`);
+          if (logLevel.error) log.error(`Device: ${host} ${deviceName}, Did finish launching error: ${error}.`);
         }
       }
     });
