@@ -42,11 +42,9 @@ class Switches extends EventEmitter {
         });
 
         //lock flags
-        this.locks = {
-            checkState: false,
-        };
+        this.locks = false;
         this.impulseGenerator = new ImpulseGenerator()
-            .on('checkState', () => this.handleWithLock('checkState', async () => {
+            .on('checkState', () => this.handleWithLock(async () => {
                 await this.checkState();
             }))
             .on('state', (state) => {
@@ -54,16 +52,16 @@ class Switches extends EventEmitter {
             });
     }
 
-    async handleWithLock(lockKey, fn) {
-        if (this.locks[lockKey]) return;
+    async handleWithLock(fn) {
+        if (this.locks) return;
 
-        this.locks[lockKey] = true;
+        this.locks = true;
         try {
             await fn();
         } catch (error) {
             this.emit('error', `Inpulse generator error: ${error}`);
         } finally {
-            this.locks[lockKey] = false;
+            this.locks = false;
         }
     }
 

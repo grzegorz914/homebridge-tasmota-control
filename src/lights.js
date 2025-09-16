@@ -41,11 +41,9 @@ class Lights extends EventEmitter {
         });
 
         //lock flags
-        this.locks = {
-            checkState: false,
-        };
+        this.locks = false;
         this.impulseGenerator = new ImpulseGenerator()
-            .on('checkState', () => this.handleWithLock('checkState', async () => {
+            .on('checkState', () => this.handleWithLock(async () => {
                 await this.checkState();
             }))
             .on('state', (state) => {
@@ -53,16 +51,16 @@ class Lights extends EventEmitter {
             });
     }
 
-    async handleWithLock(lockKey, fn) {
-        if (this.locks[lockKey]) return;
+    async handleWithLock(fn) {
+        if (this.locks) return;
 
-        this.locks[lockKey] = true;
+        this.locks = true;
         try {
             await fn();
         } catch (error) {
             this.emit('error', `Inpulse generator error: ${error}`);
         } finally {
-            this.locks[lockKey] = false;
+            this.locks = false;
         }
     }
 
@@ -72,7 +70,6 @@ class Lights extends EventEmitter {
             //power status
             const powerStatusData = await this.axiosInstance(ApiCommands.PowerStatus);
             const powerStatus = powerStatusData.data ?? {};
-            const powerStatusKeys = Object.keys(powerStatus);
             if (this.enableDebugMode) this.emit('debug', `Power status: ${JSON.stringify(powerStatus, null, 2)}`);
 
             //sensor status
