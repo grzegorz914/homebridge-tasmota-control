@@ -414,23 +414,9 @@ class MiElHvac extends EventEmitter {
                     .updateCharacteristic(Characteristic.TemperatureDisplayUnits, useFahrenheit)
                     .updateCharacteristic(Characteristic.SwingMode, swingMode);
 
-                if (obj.targetOperationMode === 0 || obj.targetOperationMode === 2) {
-                    svc.updateCharacteristic(
-                        Characteristic.CoolingThresholdTemperature,
-                        obj.targetOperationMode === 0 ? defaultCoolingSetTemperature : setTemperature
-                    );
-                }
-
-                if (obj.targetOperationMode === 0 || obj.targetOperationMode === 1) {
-                    svc.updateCharacteristic(
-                        Characteristic.HeatingThresholdTemperature,
-                        obj.targetOperationMode === 0 ? defaultHeatingSetTemperature : setTemperature
-                    );
-                }
-
-                if (modelSupportsFanSpeed) {
-                    svc.updateCharacteristic(Characteristic.RotationSpeed, obj.fanSpeed);
-                }
+                if (obj.targetOperationMode === 0 || obj.targetOperationMode === 2) svc.updateCharacteristic(Characteristic.CoolingThresholdTemperature, obj.targetOperationMode === 0 ? defaultCoolingSetTemperature : setTemperature);
+                if (obj.targetOperationMode === 0 || obj.targetOperationMode === 1) svc.updateCharacteristic(Characteristic.HeatingThresholdTemperature, obj.targetOperationMode === 0 ? defaultHeatingSetTemperature : setTemperature);
+                if (modelSupportsFanSpeed) svc.updateCharacteristic(Characteristic.RotationSpeed, obj.fanSpeed);
 
                 if (this.frostProtectEnable) {
                     if (roomTemperature <= this.frostProtectLowTemp && !power) {
@@ -462,11 +448,7 @@ class MiElHvac extends EventEmitter {
                     const sameMode = preset.mode === iseeMode;
 
                     preset.state = power ? (sameMode && sameTemp && sameFan && sameSwingV && sameSwingH) : false;
-
-                    if (this.presetsServices) {
-                        this.presetsServices[index]
-                            .updateCharacteristic(preset.characteristicType, preset.state);
-                    }
+                    this.presetsServices?.[index]?.updateCharacteristic(preset.characteristicType, preset.state);
                 });
             }
 
@@ -563,11 +545,8 @@ class MiElHvac extends EventEmitter {
 
                     button.state = state;
 
-                    if (this.buttonsServices) {
-                        const characteristicType = button.characteristicType;
-                        this.buttonsServices[index]
-                            .updateCharacteristic(characteristicType, state);
-                    }
+                    const characteristicType = button.characteristicType;
+                    this.buttonsServices?.[index]?.updateCharacteristic(characteristicType, state);
                 });
             }
 
@@ -656,25 +635,17 @@ class MiElHvac extends EventEmitter {
                         this.emit('warn', `Unknown sensor mode: ${mode} detected`);
                     }
 
-                    // Update characteristic
-                    if (this.sensorsServices) {
-                        const characteristicType = sensor.characteristicType;
-                        this.sensorsServices[index]?.updateCharacteristic(characteristicType, sensor.state);
-                    }
+                    // Update characteristic{
+                    const characteristicType = sensor.characteristicType;
+                    this.sensorsServices?.[index]?.updateCharacteristic(characteristicType, sensor.state);
                 });
             }
 
             //update room temperature sensor
-            if (this.roomTemperatureSensorService) {
-                this.roomTemperatureSensorService
-                    .updateCharacteristic(Characteristic.CurrentTemperature, roomTemperature);
-            }
+            this.roomTemperatureSensorService?.updateCharacteristic(Characteristic.CurrentTemperature, roomTemperature);
 
             //update outdoor temperature sensor
-            if (this.outdoorTemperatureSensorService) {
-                this.outdoorTemperatureSensorService
-                    .updateCharacteristic(Characteristic.CurrentTemperature, outdoorTemperature);
-            }
+            this.outdoorTemperatureSensorService?.updateCharacteristic(Characteristic.CurrentTemperature, outdoorTemperature);
 
             //log current state
             if (!this.disableLogInfo) {

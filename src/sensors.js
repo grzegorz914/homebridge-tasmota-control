@@ -135,49 +135,47 @@ class Sensors extends EventEmitter {
 
                     //update characteristics
                     const servicesMap = [
-                        [this.temperatureServices?.[i], Characteristic.CurrentTemperature, sensor.temperature],
-                        [this.temperatureReferenceServices?.[i], Characteristic.CurrentTemperature, sensor.referenceTemperature],
-                        [this.temperatureObjServices?.[i], Characteristic.CurrentTemperature, sensor.objTemperature],
-                        [this.temperatureAmbServices?.[i], Characteristic.CurrentTemperature, sensor.ambTemperature],
-                        [this.temperatureDewPointServices?.[i], Characteristic.CurrentTemperature, sensor.dewPointTemperature],
-                        [this.humidityServices?.[i], Characteristic.CurrentRelativeHumidity, sensor.humidity],
-                        [this.carbonDioxydeServices?.[i], Characteristic.CarbonDioxideDetected, sensor.carbonDioxyde > 1000],
-                        [this.carbonDioxydeServices?.[i], Characteristic.CarbonDioxideLevel, sensor.carbonDioxyde],
-                        [this.carbonDioxydeServices?.[i], Characteristic.CarbonDioxidePeakLevel, sensor.carbonDioxyde],
-                        [this.ambientLightServices?.[i], Characteristic.CurrentAmbientLightLevel, sensor.ambientLight],
-                        [this.motionServices?.[i], Characteristic.MotionDetected, sensor.motion],
+                        [this.temperatureServices, Characteristic.CurrentTemperature, sensor.temperature],
+                        [this.temperatureReferenceServices, Characteristic.CurrentTemperature, sensor.referenceTemperature],
+                        [this.temperatureObjServices, Characteristic.CurrentTemperature, sensor.objTemperature],
+                        [this.temperatureAmbServices, Characteristic.CurrentTemperature, sensor.ambTemperature],
+                        [this.temperatureDewPointServices, Characteristic.CurrentTemperature, sensor.dewPointTemperature],
+                        [this.humidityServices, Characteristic.CurrentRelativeHumidity, sensor.humidity],
+                        [this.carbonDioxydeServices, Characteristic.CarbonDioxideDetected, sensor.carbonDioxyde > 1000],
+                        [this.carbonDioxydeServices, Characteristic.CarbonDioxideLevel, sensor.carbonDioxyde],
+                        [this.carbonDioxydeServices, Characteristic.CarbonDioxidePeakLevel, sensor.carbonDioxyde],
+                        [this.ambientLightServices, Characteristic.CurrentAmbientLightLevel, sensor.ambientLight],
+                        [this.motionServices, Characteristic.MotionDetected, sensor.motion],
                     ];
 
                     for (const [service, charType, value] of servicesMap) {
-                        const characteristic = service?.getCharacteristic(charType);
-                        if (!characteristic) {
-                            continue;
-                        }
-                        service.updateCharacteristic(charType, value);
+                        const characteristic = service?.[i]?.getCharacteristic(charType);
+                        if (!characteristic) continue;
+
+                        service?.[i]?.updateCharacteristic(charType, value);
                     }
 
                     // energy
                     if (isEnergy) {
                         const energyMap = [
-                            [this.powerAndEnergyServices?.[i], Characteristic.Power, sensor.power],
-                            [this.powerAndEnergyServices?.[i], Characteristic.ApparentPower, sensor.apparentPower],
-                            [this.powerAndEnergyServices?.[i], Characteristic.ReactivePower, sensor.reactivePower],
-                            [this.powerAndEnergyServices?.[i], Characteristic.EnergyToday, sensor.energyToday],
-                            [this.powerAndEnergyServices?.[i], Characteristic.EnergyLastDay, sensor.energyLastDay],
-                            [this.powerAndEnergyServices?.[i], Characteristic.EnergyLifetime, sensor.energyLifetime],
-                            [this.powerAndEnergyServices?.[i], Characteristic.Current, sensor.current],
-                            [this.powerAndEnergyServices?.[i], Characteristic.Voltage, sensor.voltage],
-                            [this.powerAndEnergyServices?.[i], Characteristic.Factor, sensor.factor],
-                            [this.powerAndEnergyServices?.[i], Characteristic.Frequency, sensor.frequency],
-                            [this.powerAndEnergyServices?.[i], Characteristic.ReadingTime, sensor.time],
+                            [this.powerAndEnergyServices, Characteristic.Power, sensor.power],
+                            [this.powerAndEnergyServices, Characteristic.ApparentPower, sensor.apparentPower],
+                            [this.powerAndEnergyServices, Characteristic.ReactivePower, sensor.reactivePower],
+                            [this.powerAndEnergyServices, Characteristic.EnergyToday, sensor.energyToday],
+                            [this.powerAndEnergyServices, Characteristic.EnergyLastDay, sensor.energyLastDay],
+                            [this.powerAndEnergyServices, Characteristic.EnergyLifetime, sensor.energyLifetime],
+                            [this.powerAndEnergyServices, Characteristic.Current, sensor.current],
+                            [this.powerAndEnergyServices, Characteristic.Voltage, sensor.voltage],
+                            [this.powerAndEnergyServices, Characteristic.Factor, sensor.factor],
+                            [this.powerAndEnergyServices, Characteristic.Frequency, sensor.frequency],
+                            [this.powerAndEnergyServices, Characteristic.ReadingTime, sensor.time],
                         ];
 
                         for (const [service, charType, value] of energyMap) {
-                            const characteristic = service?.getCharacteristic(charType);
-                            if (!characteristic) {
-                                continue;
-                            }
-                            service.updateCharacteristic(charType, value);
+                            const characteristic = service?.[i]?.getCharacteristic(charType);
+                            if (!characteristic) continue;
+
+                            service?.[i]?.updateCharacteristic(charType, value);
                         }
                     }
 

@@ -92,17 +92,13 @@ class Switches extends EventEmitter {
                     this.switchesOutlets.push(switchOutlet);
 
                     //update characteristics
-                    const service = this.lightServices?.[i];
-                    if (service) {
-                        const serviceName = this.relaysNamePrefix ? `${this.info.deviceName} ${friendlyName}` : friendlyName;
-                        service.updateCharacteristic(Characteristic.ConfiguredName, serviceName);
-                        service.updateCharacteristic(Characteristic.On, power);
-                    }
+                    const serviceName = this.relaysNamePrefix ? `${this.info.deviceName} ${friendlyName}` : friendlyName;
+                    this.lightServices?.[i]
+                        ?.setCharacteristic(Characteristic.ConfiguredName, serviceName)
+                        .updateCharacteristic(Characteristic.On, power);
 
                     //log info
-                    if (!this.disableLogInfo) {
-                        this.emit('info', `${friendlyName}, state: ${power ? 'ON' : 'OFF'}`);
-                    }
+                    if (!this.disableLogInfo) this.emit('info', `${friendlyName}, state: ${power ? 'ON' : 'OFF'}`);
                 }
             }
 

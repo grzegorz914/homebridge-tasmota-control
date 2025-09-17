@@ -132,14 +132,12 @@ class Fans extends EventEmitter {
                     this.fans.push(fan);
 
                     //update characteristics
-                    const fanService = this.fanServices?.[i];
-                    if (fanService) {
-                        const serviceName = this.fansNamePrefix ? `${this.info.deviceName} ${friendlyName}` : friendlyName;
-                        fanService.updateCharacteristic(Characteristic.ConfiguredName, serviceName)
-                            .updateCharacteristic(Characteristic.On, powerFan)
-                            // .updateCharacteristic(Characteristic.Direction, direction)
-                            .updateCharacteristic(Characteristic.RotationSpeed, speed);
-                    }
+                    const serviceName = this.fansNamePrefix ? `${this.info.deviceName} ${friendlyName}` : friendlyName;
+                    this.fanServices?.[i]
+                        ?.setCharacteristic(Characteristic.ConfiguredName, serviceName)
+                        .updateCharacteristic(Characteristic.On, powerFan)
+                        // .updateCharacteristic(Characteristic.Direction, direction)
+                        .updateCharacteristic(Characteristic.RotationSpeed, speed);
 
 
                     //log info

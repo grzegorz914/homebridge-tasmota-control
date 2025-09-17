@@ -125,25 +125,15 @@ class Lights extends EventEmitter {
                     this.lights.push(light);
 
                     //update characteristics
-                    const service = this.lightServices?.[i];
-                    if (service) {
-                        const serviceName = this.lightsNamePrefix ? `${this.info.deviceName} ${friendlyName}` : friendlyName;
-                        service.updateCharacteristic(Characteristic.ConfiguredName, serviceName);
-                        service.updateCharacteristic(Characteristic.On, power);
+                    const serviceName = this.lightsNamePrefix ? `${this.info.deviceName} ${friendlyName}` : friendlyName;
+                    this.lightServices?.[i]
+                        ?.setCharacteristic(Characteristic.ConfiguredName, serviceName)
+                        .updateCharacteristic(Characteristic.On, power);
 
-                        if (brightnessType > 0) {
-                            service.updateCharacteristic(Characteristic.Brightness, bright);
-                        }
-                        if (colorTemperature !== false) {
-                            service.updateCharacteristic(Characteristic.ColorTemperature, colorTemperature);
-                        }
-                        if (hue !== false) {
-                            service.updateCharacteristic(Characteristic.Hue, hue);
-                        }
-                        if (saturation !== false) {
-                            service.updateCharacteristic(Characteristic.Saturation, saturation);
-                        }
-                    }
+                    if (brightnessType > 0) this.lightServices?.[i]?.updateCharacteristic(Characteristic.Brightness, bright);
+                    if (colorTemperature !== false) this.lightServices?.[i]?.updateCharacteristic(Characteristic.ColorTemperature, colorTemperature);
+                    if (hue !== false) this.lightServices?.[i]?.updateCharacteristic(Characteristic.Hue, hue);
+                    if (saturation !== false) this.lightServices?.[i]?.updateCharacteristic(Characteristic.Saturation, saturation);
 
 
                     //log info
