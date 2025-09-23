@@ -35,39 +35,39 @@ class tasmotaPlatform {
         const disableAccessory = device.disableAccessory || false;
         if (disableAccessory) continue;
 
+        const deviceName = device.name;
+        const host = device.host;
+        if (!deviceName || !host) {
+          log.warn(`Device Name: ${deviceName ? 'OK' : deviceName}, host: ${host ? 'OK' : host}, in config wrong or missing.`);
+          continue;
+        }
+
+        //log config
+        const url = `http://${host}/cm?cmnd=`;
+        const auth = device.auth || false;
+        const user = device.user || '';
+        const passwd = device.passwd || '';
+        const loadNameFromDevice = device.loadNameFromDevice || false;
+        const refreshInterval = (device.refreshInterval ?? 5000) * 1000;
+        const enableDebugMode = device.enableDebugMode || false;
+        const logLevel = {
+          debug: device.enableDebugMode,
+          info: !device.disableLogInfo,
+          success: !device.disableLogSuccess,
+          warn: !device.disableLogWarn,
+          error: !device.disableLogError,
+          devInfo: !device.disableLogDeviceInfo,
+        };
+
+        if (logLevel.debug) log.info(`Device: ${host} ${deviceName}, debug: Did finish launching.`);
+        const newConfig = {
+          ...device,
+          user: 'removed',
+          passwd: 'removed'
+        };
+        if (logLevel.debug) log.info(`Device: ${host} ${deviceName}, Config: ${JSON.stringify(newConfig, null, 2)}.`);
+
         try {
-          const deviceName = device.name;
-          const host = device.host;
-          if (!deviceName || !host) {
-            log.warn(`Device Name: ${deviceName ? 'OK' : deviceName}, host: ${host ? 'OK' : host}, in config wrong or missing.`);
-            continue;
-          }
-
-          //log config
-          const url = `http://${host}/cm?cmnd=`;
-          const auth = device.auth || false;
-          const user = device.user || '';
-          const passwd = device.passwd || '';
-          const loadNameFromDevice = device.loadNameFromDevice || false;
-          const refreshInterval = (device.refreshInterval ?? 5000) * 1000;
-          const enableDebugMode = device.enableDebugMode || false;
-          const logLevel = {
-            debug: device.enableDebugMode,
-            info: !device.disableLogInfo,
-            success: !device.disableLogSuccess,
-            warn: !device.disableLogWarn,
-            error: !device.disableLogError,
-            devInfo: !device.disableLogDeviceInfo,
-          };
-
-          if (logLevel.debug) log.info(`Device: ${host} ${deviceName}, debug: Did finish launching.`);
-          const newConfig = {
-            ...device,
-            user: 'removed',
-            passwd: 'removed'
-          };
-          if (logLevel.debug) log.info(`Device: ${host} ${deviceName}, Config: ${JSON.stringify(newConfig, null, 2)}.`);
-
           //create impulse generator
           const impulseGenerator = new ImpulseGenerator()
             .on('start', async () => {
@@ -152,7 +152,7 @@ class tasmotaPlatform {
                   i++;
                 }
               } catch (error) {
-                if (logLevel.error) log.error(`Device: ${host} ${deviceName}, ${error}, trying again.`);
+                if (logLevel.error) log.error(`Device: ${host} ${deviceName}, Start impulse generator error: ${error.message ?? error}, trying again.`);
               }
             }).on('state', (state) => {
               if (logLevel.debug) log.info(`Device: ${host} ${deviceName}, Start impulse generator ${state ? 'started' : 'stopped'}.`);
@@ -161,7 +161,7 @@ class tasmotaPlatform {
           //start impulse generator
           await impulseGenerator.start([{ name: 'start', sampling: 60000 }]);
         } catch (error) {
-          if (logLevel.error) log.error(`Device: ${host} ${deviceName}, Did finish launching error: ${error}.`);
+          if (logLevel.error) log.error(`Device: ${host} ${deviceName}, Did finish launching error: ${error.message ?? error}.`);
         }
       }
     });
