@@ -18,21 +18,18 @@
             "name": {
               "title": "Name",
               "type": "string",
-              "placeholder": "socket",
-              "required": true
+              "placeholder": "socket"
             },
             "host": {
               "title": "IP/Hostname",
               "type": "string",
               "placeholder": "192.168.1.5",
-              "format": "hostname",
-              "required": true
+              "format": "hostname"
             },
             "auth": {
               "title": "Authorization",
               "type": "boolean",
-              "default": false,
-              "required": false
+              "default": false
             },
             "user": {
               "title": "User",
@@ -40,8 +37,7 @@
               "placeholder": "username",
               "condition": {
                 "functionBody": "return model.devices[arrayIndices].auth === true;"
-              },
-              "required": false
+              }
             },
             "passwd": {
               "title": "Password",
@@ -50,15 +46,13 @@
               "format": "password",
               "condition": {
                 "functionBody": "return model.devices[arrayIndices].auth === true;"
-              },
-              "required": false
+              }
             },
             "disableAccessory": {
               "title": "Disable Accessory",
               "type": "boolean",
               "default": false,
-              "description": "Here You can disable this accessory.",
-              "required": false
+              "description": "Here You can disable this accessory."
             },
             "miElHvac": {
               "title": "RESTFul",
@@ -96,8 +90,7 @@
                       ]
                     }
                   ],
-                  "description": "Select the operating mode for Heat, if this mode is not supported, it will be disabled.",
-                  "required": true
+                  "description": "Select the operating mode for Heat, if this mode is not supported, it will be disabled."
                 },
                 "coolDryFanMode": {
                   "title": "Cool",
@@ -131,8 +124,7 @@
                       ]
                     }
                   ],
-                  "description": "Select the operating mode for Cool, if this mode is not supported, it will be disabled.",
-                  "required": true
+                  "description": "Select the operating mode for Cool, if this mode is not supported, it will be disabled."
                 },
                 "autoDryFanMode": {
                   "title": "Auto",
@@ -166,8 +158,7 @@
                       ]
                     }
                   ],
-                  "description": "Select the operating mode for Auto, if this mode is not supported, it will be disabled.",
-                  "required": true
+                  "description": "Select the operating mode for Auto, if this mode is not supported, it will be disabled."
                 },
                 "remoteTemperatureSensor": {
                   "title": "External Sensor",
@@ -177,8 +168,7 @@
                       "title": "Activate",
                       "type": "boolean",
                       "default": false,
-                      "description": "This enable external remote sensor for A.C. device.",
-                      "required": false
+                      "description": "This enable external remote sensor for A.C. device."
                     },
                     "path": {
                       "title": "Path",
@@ -188,8 +178,7 @@
                       "description": "Here set the path to the external temperature sensor.",
                       "condition": {
                         "functionBody": "return model.devices[arrayIndices].miElHvac.remoteTemperatureSensor.enable === true;"
-                      },
-                      "required": false
+                      }
                     },
                     "refreshInterval": {
                       "title": "Refresh Interval",
@@ -201,8 +190,7 @@
                       "description": "Here set the sensor data refresh time in (sec).",
                       "condition": {
                         "functionBody": "return model.devices[arrayIndices].miElHvac.remoteTemperatureSensor.enable === true;"
-                      },
-                      "required": false
+                      }
                     },
                     "auth": {
                       "title": "Authorization",
@@ -210,8 +198,7 @@
                       "default": false,
                       "condition": {
                         "functionBody": "return model.devices[arrayIndices].miElHvac.remoteTemperatureSensor.enable === true;"
-                      },
-                      "required": false
+                      }
                     },
                     "user": {
                       "title": "User",
@@ -219,8 +206,7 @@
                       "placeholder": "username",
                       "condition": {
                         "functionBody": "return model.devices[arrayIndices].miElHvac.remoteTemperatureSensor.enable === true && model.devices[arrayIndices].miElHvac.remoteTemperatureSensor.auth === true;"
-                      },
-                      "required": false
+                      }
                     },
                     "passwd": {
                       "title": "Password",
@@ -229,8 +215,7 @@
                       "format": "password",
                       "condition": {
                         "functionBody": "return model.devices[arrayIndices].miElHvac.remoteTemperatureSensor.enable === true && model.devices[arrayIndices].miElHvac.remoteTemperatureSensor.auth === true;"
-                      },
-                      "required": false
+                      }
                     }
                   }
                 },
@@ -240,12 +225,60 @@
                   "items": {
                     "type": "object",
                     "properties": {
+                      "displayType": {
+                        "title": "Type",
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 5,
+                        "default": 0,
+                        "oneOf": [
+                          {
+                            "title": "None/Disabled",
+                            "enum": [
+                              0
+                            ]
+                          },
+                          {
+                            "title": "Outlet",
+                            "enum": [
+                              1
+                            ]
+                          },
+                          {
+                            "title": "Switch",
+                            "enum": [
+                              2
+                            ]
+                          },
+                          {
+                            "title": "Motion Sensor",
+                            "enum": [
+                              3
+                            ]
+                          },
+                          {
+                            "title": "Occupancy Sensor",
+                            "enum": [
+                              4
+                            ]
+                          },
+                          {
+                            "title": "Contact Sensor",
+                            "enum": [
+                              5
+                            ]
+                          }
+                        ],
+                        "description": "Select the characteristic type to be displayed in HomeKit app."
+                      },
                       "name": {
                         "title": "Name",
                         "type": "string",
                         "placeholder": "Preset name",
                         "description": "Your own name displayed in Homebridge/HomeKit app.",
-                        "required": false
+                        "condition": {
+                          "functionBody": "return model.devices[arrayIndices[0]].miElHvac.presets[arrayIndices[1]].displayType > 0;"
+                        }
                       },
                       "mode": {
                         "title": "Operation Mode",
@@ -284,7 +317,9 @@
                           }
                         ],
                         "description": "Select the operation mode.",
-                        "required": false
+                        "condition": {
+                          "functionBody": "return model.devices[arrayIndices[0]].miElHvac.presets[arrayIndices[1]].displayType > 0;"
+                        }
                       },
                       "setTemp": {
                         "title": "Target Temperature",
@@ -295,9 +330,8 @@
                         "default": 20,
                         "description": "Here set the target temperature.",
                         "condition": {
-                          "functionBody": "return model.devices[arrayIndices].miElHvac.presets[arrayIndices].mode === heat || return model.devices[arrayIndices].miElHvac.presets[arrayIndices].mode === cool || return model.devices[arrayIndices].miElHvac.presets[arrayIndices].mode === auto;"
-                        },
-                        "required": false
+                          "functionBody": "return model.devices[arrayIndices[0]].miElHvac.presets[arrayIndices[1]].displayType > 0 && (model.devices[arrayIndices[0]].miElHvac.presets[arrayIndices[1]].mode === heat || return model.devices[arrayIndices[0]].miElHvac.presets[arrayIndices[1]].mode === cool || return model.devices[arrayIndices[0]].miElHvac.presets[arrayIndices[1]].mode === auto);"
+                        }
                       },
                       "fanSpeed": {
                         "title": "Fan Speed",
@@ -341,7 +375,9 @@
                           }
                         ],
                         "description": "Select the fan speed.",
-                        "required": false
+                        "condition": {
+                          "functionBody": "return model.devices[arrayIndices[0]].miElHvac.presets[arrayIndices[1]].displayType > 0;"
+                        }
                       },
                       "swingV": {
                         "title": "VANE Vertical Direction",
@@ -392,7 +428,9 @@
                           }
                         ],
                         "description": "Select the vane vertical direction.",
-                        "required": false
+                        "condition": {
+                          "functionBody": "return model.devices[arrayIndices[0]].miElHvac.presets[arrayIndices[1]].displayType > 0;"
+                        }
                       },
                       "swingH": {
                         "title": "VANE Horizontal Direction",
@@ -461,13 +499,36 @@
                           }
                         ],
                         "description": "Select the vane horizontal direction.",
-                        "required": false
+                        "condition": {
+                          "functionBody": "return model.devices[arrayIndices[0]].miElHvac.presets[arrayIndices[1]].displayType > 0;"
+                        }
                       },
+                      "namePrefix": {
+                        "title": "Prefix",
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Enable/disable the accessory name as a prefix for button/sensor name.",
+                        "condition": {
+                          "functionBody": "return model.devices[arrayIndices[0]].miElHvac.presets[arrayIndices[1]].displayType > 0;"
+                        }
+                      }
+                    },
+                    "required": [
+                      "displayType"
+                    ]
+                  }
+                },
+                "buttons": {
+                  "title": "Button",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
                       "displayType": {
                         "title": "Type",
                         "type": "integer",
                         "minimum": 0,
-                        "maximum": 5,
+                        "maximum": 2,
                         "default": 0,
                         "oneOf": [
                           {
@@ -487,51 +548,18 @@
                             "enum": [
                               2
                             ]
-                          },
-                          {
-                            "title": "Motion Sensor",
-                            "enum": [
-                              3
-                            ]
-                          },
-                          {
-                            "title": "Occupancy Sensor",
-                            "enum": [
-                              4
-                            ]
-                          },
-                          {
-                            "title": "Contact Sensor",
-                            "enum": [
-                              5
-                            ]
                           }
                         ],
-                        "description": "Select the characteristic type to be displayed in HomeKit app.",
-                        "required": true
+                        "description": "Select the characteristic type to be displayed in HomeKit app."
                       },
-                      "namePrefix": {
-                        "title": "Prefix",
-                        "type": "boolean",
-                        "default": false,
-                        "description": "Enable/disable the accessory name as a prefix for button/sensor name.",
-                        "required": false
-                      }
-                    }
-                  }
-                },
-                "buttons": {
-                  "title": "Button",
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
                       "name": {
                         "title": "Name",
                         "type": "string",
                         "placeholder": "Button name",
                         "description": "Your own name displayed in Homebridge/HomeKit app.",
-                        "required": false
+                        "condition": {
+                          "functionBody": "return model.devices[arrayIndices[0]].miElHvac.buttons[arrayIndices[1]].displayType > 0;"
+                        }
                       },
                       "mode": {
                         "title": "Mode",
@@ -776,13 +804,36 @@
                             ]
                           }
                         ],
-                        "required": false
+                        "condition": {
+                          "functionBody": "return model.devices[arrayIndices[0]].miElHvac.buttons[arrayIndices[1]].displayType > 0;"
+                        }
                       },
+                      "namePrefix": {
+                        "title": "Prefix",
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Enable/disable the accessory name as a prefix for button name.",
+                        "condition": {
+                          "functionBody": "return model.devices[arrayIndices[0]].miElHvac.buttons[arrayIndices[1]].displayType > 0;"
+                        }
+                      }
+                    },
+                    "required": [
+                      "displayType"
+                    ]
+                  }
+                },
+                "sensors": {
+                  "title": "Sensor",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
                       "displayType": {
                         "title": "Type",
                         "type": "integer",
                         "minimum": 0,
-                        "maximum": 2,
+                        "maximum": 3,
                         "default": 0,
                         "oneOf": [
                           {
@@ -792,43 +843,34 @@
                             ]
                           },
                           {
-                            "title": "Outlet",
+                            "title": "Motion Sensor",
                             "enum": [
                               1
                             ]
                           },
                           {
-                            "title": "Switch",
+                            "title": "Occupancy Sensor",
                             "enum": [
                               2
                             ]
+                          },
+                          {
+                            "title": "Contact Sensor",
+                            "enum": [
+                              3
+                            ]
                           }
                         ],
-                        "description": "Select the characteristic type to be displayed in HomeKit app.",
-                        "required": true
+                        "description": "Select the characteristic type to be displayed in HomeKit app."
                       },
-                      "namePrefix": {
-                        "title": "Prefix",
-                        "type": "boolean",
-                        "default": false,
-                        "description": "Enable/disable the accessory name as a prefix for button name.",
-                        "required": false
-                      }
-                    }
-                  }
-                },
-                "sensors": {
-                  "title": "Sensor",
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
                       "name": {
                         "title": "Name",
                         "type": "string",
                         "placeholder": "Sensor name",
                         "description": "Your own name displayed in Homebridge/HomeKit app.",
-                        "required": false
+                        "condition": {
+                          "functionBody": "return model.devices[arrayIndices[0]].miElHvac.sensors[arrayIndices[1]].displayType > 0;"
+                        }
                       },
                       "mode": {
                         "title": "Mode",
@@ -1169,51 +1211,23 @@
                             ]
                           }
                         ],
-                        "required": false
-                      },
-                      "displayType": {
-                        "title": "Type",
-                        "type": "integer",
-                        "minimum": 0,
-                        "maximum": 3,
-                        "default": 0,
-                        "oneOf": [
-                          {
-                            "title": "None/Disabled",
-                            "enum": [
-                              0
-                            ]
-                          },
-                          {
-                            "title": "Motion Sensor",
-                            "enum": [
-                              1
-                            ]
-                          },
-                          {
-                            "title": "Occupancy Sensor",
-                            "enum": [
-                              2
-                            ]
-                          },
-                          {
-                            "title": "Contact Sensor",
-                            "enum": [
-                              3
-                            ]
-                          }
-                        ],
-                        "description": "Select the characteristic type to be displayed in HomeKit app.",
-                        "required": true
+                        "condition": {
+                          "functionBody": "return model.devices[arrayIndices[0]].miElHvac.sensors[arrayIndices[1]].displayType > 0;"
+                        }
                       },
                       "namePrefix": {
                         "title": "Prefix",
                         "type": "boolean",
                         "default": false,
                         "description": "Enable/disable the accessory name as a prefix for sensor name.",
-                        "required": false
+                        "condition": {
+                          "functionBody": "return model.devices[arrayIndices[0]].miElHvac.sensors[arrayIndices[1]].displayType > 0;"
+                        }
                       }
-                    }
+                    },
+                    "required": [
+                      "displayType"
+                    ]
                   }
                 },
                 "frostProtect": {
@@ -1237,8 +1251,7 @@
                       "description": "Here set the low temperature at which device start to frost protect.",
                       "condition": {
                         "functionBody": "return model.devices[arrayIndices].miElHvac.frostProtect.enable === true;"
-                      },
-                      "required": false
+                      }
                     },
                     "highTemp": {
                       "title": "High Temperature",
@@ -1250,8 +1263,7 @@
                       "description": "Here set the high temperature at which device will be disable.",
                       "condition": {
                         "functionBody": "return model.devices[arrayIndices].miElHvac.frostProtect.enable === true;"
-                      },
-                      "required": false
+                      }
                     }
                   }
                 },
@@ -1259,17 +1271,20 @@
                   "title": "Room",
                   "type": "boolean",
                   "default": false,
-                  "description": "This enable extra room temperature sensor to use with automations in HomeKit app.",
-                  "required": false
+                  "description": "This enable extra room temperature sensor to use with automations in HomeKit app."
                 },
                 "temperatureSensorOutdoor": {
                   "title": "Outdoor",
                   "type": "boolean",
                   "default": false,
-                  "description": "This enable extra outdoor temperature sensor to use with automations in HomeKit app.",
-                  "required": false
+                  "description": "This enable extra outdoor temperature sensor to use with automations in HomeKit app."
                 }
-              }
+              },
+              "required": [
+                "heatDryFanMode",
+                "coolDryFanMode",
+                "autoDryFanMode"
+              ]
             },
             "relaysDisplayType": {
               "title": "Display Type",
@@ -1291,43 +1306,37 @@
                   ]
                 }
               ],
-              "description": "Here select characteristic display type for relays which are exposed in the HomeKit app.",
-              "required": false
+              "description": "Here select characteristic display type for relays which are exposed in the HomeKit app."
             },
             "relaysNamePrefix": {
               "title": "Name Prefix",
               "type": "boolean",
               "default": false,
-              "description": "Here enable/disable the accessory name as a prefix for relays name.",
-              "required": false
+              "description": "Here enable/disable the accessory name as a prefix for relays name."
             },
             "lightsNamePrefix": {
               "title": "Name Prefix",
               "type": "boolean",
               "default": false,
-              "description": "Here enable/disable the accessory name as a prefix for light name.",
-              "required": false
+              "description": "Here enable/disable the accessory name as a prefix for light name."
             },
             "fansNamePrefix": {
               "title": "Name Prefix",
               "type": "boolean",
               "default": false,
-              "description": "Here enable/disable the accessory name as a prefix for fan name.",
-              "required": false
+              "description": "Here enable/disable the accessory name as a prefix for fan name."
             },
             "sensorsNamePrefix": {
               "title": "Name Prefix",
               "type": "boolean",
               "default": false,
-              "description": "Here enable/disable the accessory name as a prefix for sensors name.",
-              "required": false
+              "description": "Here enable/disable the accessory name as a prefix for sensors name."
             },
             "loadNameFromDevice": {
               "title": "Load Name From Device",
               "type": "boolean",
               "default": false,
-              "description": "If enabled, the accessory name will be loaded direct from device.",
-              "required": false
+              "description": "If enabled, the accessory name will be loaded direct from device."
             },
             "refreshInterval": {
               "title": "Refresh Interval",
@@ -1336,47 +1345,44 @@
               "maximum": 60,
               "multipleOf": 0.5,
               "default": 5,
-              "description": "Here set the data refresh time in (sec).",
-              "required": true
+              "description": "Here set the data refresh time in (sec)."
             },
             "disableLogDeviceInfo": {
               "title": "Disable Log Device Info",
               "type": "boolean",
               "default": false,
-              "description": "This disable logging device info by every connections device to the network.",
-              "required": false
+              "description": "This disable logging device info by every connections device to the network."
             },
             "disableLogInfo": {
               "title": "Disable Log Info",
               "type": "boolean",
-              "default": false,
-              "required": false
+              "default": false
             },
             "disableLogSuccess": {
               "title": "Disable Log Success",
               "type": "boolean",
-              "default": false,
-              "required": false
+              "default": false
             },
             "disableLogWarn": {
               "title": "Disable Log Warn",
               "type": "boolean",
-              "default": false,
-              "required": false
+              "default": false
             },
             "disableLogError": {
               "title": "Disable Log Error",
               "type": "boolean",
-              "default": false,
-              "required": false
+              "default": false
             },
             "enableDebugMode": {
               "title": "Enable Log Debug",
               "type": "boolean",
-              "default": false,
-              "required": false
+              "default": false
             }
-          }
+          },
+          "required": [
+            "name",
+            "host"
+          ]
         }
       }
     }
@@ -1439,13 +1445,13 @@
                           "type": "tabarray",
                           "title": "{{ value.name  || 'preset'}}",
                           "items": [
+                            "devices[].miElHvac.presets[].displayType",
                             "devices[].miElHvac.presets[].name",
                             "devices[].miElHvac.presets[].mode",
                             "devices[].miElHvac.presets[].setTemp",
                             "devices[].miElHvac.presets[].fanSpeed",
                             "devices[].miElHvac.presets[].swingV",
                             "devices[].miElHvac.presets[].swingH",
-                            "devices[].miElHvac.presets[].displayType",
                             "devices[].miElHvac.presets[].namePrefix"
                           ]
                         }
@@ -1463,9 +1469,9 @@
                           "type": "tabarray",
                           "title": "{{ value.name || 'button' }}",
                           "items": [
+                            "devices[].miElHvac.buttons[].displayType",
                             "devices[].miElHvac.buttons[].name",
                             "devices[].miElHvac.buttons[].mode",
-                            "devices[].miElHvac.buttons[].displayType",
                             "devices[].miElHvac.buttons[].namePrefix"
                           ]
                         }
@@ -1485,9 +1491,9 @@
                           "type": "tabarray",
                           "title": "{{ value.name || 'sensor' }}",
                           "items": [
+                            "devices[].miElHvac.sensors[].displayType",
                             "devices[].miElHvac.sensors[].name",
                             "devices[].miElHvac.sensors[].mode",
-                            "devices[].miElHvac.sensors[].displayType",
                             "devices[].miElHvac.sensors[].namePrefix"
                           ]
                         }
