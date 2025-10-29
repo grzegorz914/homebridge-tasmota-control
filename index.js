@@ -42,14 +42,15 @@ class tasmotaPlatform {
           continue;
         }
 
-        //log config
+        //config
         const url = `http://${host}/cm?cmnd=`;
         const auth = device.auth || false;
         const user = device.user || '';
         const passwd = device.passwd || '';
         const loadNameFromDevice = device.loadNameFromDevice || false;
         const refreshInterval = (device.refreshInterval ?? 5000) * 1000;
-        const enableDebugMode = device.enableDebugMode || false;
+
+        //log
         const logLevel = {
           debug: device.enableDebugMode,
           info: !device.disableLogInfo,
@@ -73,7 +74,7 @@ class tasmotaPlatform {
             .on('start', async () => {
               try {
                 //get device info
-                const deviceInfo = new DeviceInfo(url, auth, user, passwd, deviceName, loadNameFromDevice, enableDebugMode)
+                const deviceInfo = new DeviceInfo(url, auth, user, passwd, deviceName, loadNameFromDevice, logLevel.debug)
                   .on('debug', (msg) => logLevel.debug && log.info(`Device: ${host} ${deviceName}, debug: ${msg}`))
                   .on('warn', (msg) => logLevel.warn && log.warn(`Device: ${host} ${deviceName}, ${msg}`))
                   .on('error', (msg) => logLevel.error && log.error(`Device: ${host} ${deviceName}, ${msg}`));
@@ -106,7 +107,7 @@ class tasmotaPlatform {
                         }
                       });
                     } catch (error) {
-                      if (logLevel.error) log.error(`Device: ${host} ${deviceName}, Prepare files error: ${error}`);
+                      if (logLevel.error) log.error(`Device: ${host} ${deviceName}, Prepare files error: ${error.message ?? error}`);
                       continue;
                     }
                   }
