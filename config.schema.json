@@ -330,7 +330,7 @@
                         "default": 20,
                         "description": "Here set the target temperature.",
                         "condition": {
-                          "functionBody": "return model.devices[arrayIndices[0]].miElHvac.presets[arrayIndices[1]].displayType > 0 && (model.devices[arrayIndices[0]].miElHvac.presets[arrayIndices[1]].mode === heat || return model.devices[arrayIndices[0]].miElHvac.presets[arrayIndices[1]].mode === cool || return model.devices[arrayIndices[0]].miElHvac.presets[arrayIndices[1]].mode === auto);"
+                          "functionBody": "return model.devices[arrayIndices[0]].miElHvac.presets[arrayIndices[1]].displayType > 0 && (model.devices[arrayIndices[0]].miElHvac.presets[arrayIndices[1]].mode === heat || model.devices[arrayIndices[0]].miElHvac.presets[arrayIndices[1]].mode === cool || model.devices[arrayIndices[0]].miElHvac.presets[arrayIndices[1]].mode === auto);"
                         }
                       },
                       "fanSpeed": {
