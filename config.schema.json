@@ -64,7 +64,7 @@
                   "minimum": 0,
                   "maximum": 3,
                   "default": 1,
-                  "oneOf": [
+                  "anyOf": [
                     {
                       "title": "None/Disabled",
                       "enum": [
@@ -98,7 +98,7 @@
                   "minimum": 0,
                   "maximum": 3,
                   "default": 1,
-                  "oneOf": [
+                  "anyOf": [
                     {
                       "title": "None/Disabled",
                       "enum": [
@@ -132,7 +132,7 @@
                   "minimum": 0,
                   "maximum": 3,
                   "default": 1,
-                  "oneOf": [
+                  "anyOf": [
                     {
                       "title": "None/Disabled",
                       "enum": [
@@ -231,7 +231,7 @@
                         "minimum": 0,
                         "maximum": 5,
                         "default": 0,
-                        "oneOf": [
+                        "anyOf": [
                           {
                             "title": "None/Disabled",
                             "enum": [
@@ -284,7 +284,7 @@
                         "title": "Operation Mode",
                         "type": "string",
                         "default": "heat",
-                        "oneOf": [
+                        "anyOf": [
                           {
                             "title": "HEAT",
                             "enum": [
@@ -336,7 +336,7 @@
                       "fanSpeed": {
                         "title": "Fan Speed",
                         "type": "string",
-                        "oneOf": [
+                        "anyOf": [
                           {
                             "title": "AUTO",
                             "enum": [
@@ -383,7 +383,7 @@
                         "title": "VANE Vertical Direction",
                         "type": "string",
                         "default": "auto",
-                        "oneOf": [
+                        "anyOf": [
                           {
                             "title": "AUTO",
                             "enum": [
@@ -436,7 +436,7 @@
                         "title": "VANE Horizontal Direction",
                         "type": "string",
                         "default": "swing",
-                        "oneOf": [
+                        "anyOf": [
                           {
                             "title": "AIR DIRECTION",
                             "enum": [
@@ -530,7 +530,7 @@
                         "minimum": 0,
                         "maximum": 2,
                         "default": 0,
-                        "oneOf": [
+                        "anyOf": [
                           {
                             "title": "None/Disabled",
                             "enum": [
@@ -568,7 +568,7 @@
                         "maximum": 63,
                         "default": 0,
                         "description": "Here select function.",
-                        "oneOf": [
+                        "anyOf": [
                           {
                             "title": "POWER",
                             "enum": [
@@ -835,7 +835,7 @@
                         "minimum": 0,
                         "maximum": 3,
                         "default": 0,
-                        "oneOf": [
+                        "anyOf": [
                           {
                             "title": "None/Disabled",
                             "enum": [
@@ -879,7 +879,7 @@
                         "maximum": 94,
                         "default": 0,
                         "description": "Here select function.",
-                        "oneOf": [
+                        "anyOf": [
                           {
                             "title": "POWER",
                             "enum": [
@@ -1238,8 +1238,7 @@
                       "title": "Activate",
                       "type": "boolean",
                       "default": false,
-                      "description": "This enable frost protect function.",
-                      "required": false
+                      "description": "This enable frost protect function."
                     },
                     "lowTemp": {
                       "title": "Low Temperature",
@@ -1292,7 +1291,7 @@
               "minimum": 0,
               "maximum": 1,
               "default": 0,
-              "oneOf": [
+              "anyOf": [
                 {
                   "title": "Outlet",
                   "enum": [
