@@ -6,7 +6,7 @@ import { ApiCommands, MiElHVAC, TemperatureDisplayUnits } from './constants.js';
 let Accessory, Characteristic, Service, Categories, AccessoryUUID;
 
 class MiElHvac extends EventEmitter {
-    constructor(api, config, info, serialNumber, refreshInterval) {
+    constructor(api, config, info, serialNumber) {
         super();
 
         Accessory = api.platformAccessory;
@@ -29,72 +29,40 @@ class MiElHvac extends EventEmitter {
         const remoteTemperatureSensor = miElHvac.remoteTemperatureSensor ?? {};
         const remoteTemperatureSensorEnable = remoteTemperatureSensor.enable || false;
         const remoteTemperatureSensorPath = remoteTemperatureSensor.path;
-        const remoteTemperatureSensorRefreshInterval = remoteTemperatureSensor.refreshInterval * 1000 || 5000;
         const remoteTemperatureSensorAuth = remoteTemperatureSensor.auth || false;
         const remoteTemperatureSensorUser = remoteTemperatureSensor.user;
         const remoteTemperatureSensorPasswd = remoteTemperatureSensor.passwd;
         this.remoteTemperatureSensorEnable = remoteTemperatureSensorEnable;
-        this.remoteTemperatureSensorRefreshInterval = remoteTemperatureSensorRefreshInterval;
 
         //presets
-        const presets = miElHvac.presets || [];
-        this.presetsConfigured = [];
-        for (const preset of presets) {
-            const displayType = preset.displayType;
-            if (!displayType) {
-                continue;
-            }
-
-            const presetyServiceType = ['', Service.Outlet, Service.Switch, Service.MotionSensor, Service.OccupancySensor, Service.ContactSensor][displayType];
-            const presetCharacteristicType = ['', Characteristic.On, Characteristic.On, Characteristic.MotionDetected, Characteristic.OccupancyDetected, Characteristic.ContactSensorState][displayType];
-            preset.serviceType = presetyServiceType;
-            preset.characteristicType = presetCharacteristicType;
+        this.presets = (miElHvac.presets || []).filter(preset => (preset.displayType ?? 0) > 0);
+        for (const preset of this.presets) {
+            preset.serviceType = [null, Service.Outlet, Service.Switch, Service.MotionSensor, Service.OccupancySensor, Service.ContactSensor][preset.displayType];
+            preset.characteristicType = [null, Characteristic.On, Characteristic.On, Characteristic.MotionDetected, Characteristic.OccupancyDetected, Characteristic.ContactSensorState][preset.displayType];
             preset.name = preset.name || 'Preset';
             preset.state = false;
             preset.previousSettings = {};
-            this.presetsConfigured.push(preset);
         }
-        this.presetsConfiguredCount = this.presetsConfigured.length || 0;
 
         //buttons
-        const buttons = miElHvac.buttons || [];
-        this.buttonsConfigured = [];
-        for (const button of buttons) {
-            const displayType = button.displayType;
-            if (!displayType) {
-                continue;
-            }
-
-            const buttonServiceType = ['', Service.Outlet, Service.Switch][displayType];
-            const buttonCharacteristicType = ['', Characteristic.On, Characteristic.On][displayType];
-            button.serviceType = buttonServiceType;
-            button.characteristicType = buttonCharacteristicType;
+        this.buttons = (miElHvac.buttons || []).filter(button => (button.displayType ?? 0) > 0);
+        for (const button of this.buttons) {
+            button.serviceType = [null, Service.Outlet, Service.Switch][button.displayType];
+            button.characteristicType = [null, Characteristic.On, Characteristic.On][button.displayType];
             button.name = button.name || 'Button';
             button.state = false;
             button.previousValue = null;
-            this.buttonsConfigured.push(button);
         }
-        this.buttonsConfiguredCount = this.buttonsConfigured.length || 0;
 
         //sensors
-        const sensors = miElHvac.sensors || [];
-        this.sensorsConfigured = [];
-        for (const sensor of sensors) {
-            const displayType = sensor.displayType;
-            if (!displayType) {
-                continue;
-            }
-
-            const sensorServiceType = ['', Service.MotionSensor, Service.OccupancySensor, Service.ContactSensor][displayType];
-            const sensorCharacteristicType = ['', Characteristic.MotionDetected, Characteristic.OccupancyDetected, Characteristic.ContactSensorState][displayType];
-            sensor.serviceType = sensorServiceType;
-            sensor.characteristicType = sensorCharacteristicType;
+        this.sensors = (miElHvac.sensors || []).filter(sensor => (sensor.displayType ?? 0) > 0);
+        for (const sensor of this.sensors) {
+            sensor.serviceType = [null, Service.MotionSensor, Service.OccupancySensor, Service.ContactSensor][sensor.displayType];
+            sensor.characteristicType = [null, Characteristic.MotionDetected, Characteristic.OccupancyDetected, Characteristic.ContactSensorState][sensor.displayType];
             sensor.name = sensor.name || 'Sensor';
             sensor.state = false;
             sensor.previousValue = null;
-            this.sensorsConfigured.push(sensor);
         }
-        this.sensorsConfiguredCount = this.sensorsConfigured.length || 0;
 
         //frost protect
         const frostProtect = miElHvac.frostProtect ?? {};
@@ -112,7 +80,6 @@ class MiElHvac extends EventEmitter {
         this.enableDebugMode = config.enableDebugMode || false;
         this.disableLogInfo = config.disableLogInfo || false;
         this.disableLogDeviceInfo = config.disableLogDeviceInfo || false;
-        this.refreshInterval = refreshInterval;
 
         //mielhvac
         this.mielHvac = {};
@@ -155,10 +122,10 @@ class MiElHvac extends EventEmitter {
                 await this.checkState();
             }))
             .on('updateRemoteTemp', () => this.handleWithLock('updateRemoteTemp', async () => {
-                await this.checkState();
+                await this.updateRemoteTemp();
             }))
             .on('state', (state) => {
-                this.emit('success', `Impulse generator ${state ? 'started' : 'stopped'}.`);
+                this.emit(state ? 'success' : 'warn', `Impulse generator ${state ? 'started' : 'stopped'}`);
             });
     }
 
@@ -434,8 +401,8 @@ class MiElHvac extends EventEmitter {
             }
 
             // Update presets state
-            if (this.presetsConfiguredCount > 0) {
-                this.presetsConfigured.forEach((preset, index) => {
+            if (this.presets.length > 0) {
+                this.presets.forEach((preset, index) => {
                     let iseeMode = operationMode;
                     if (iseeMode === 'heat_isee') iseeMode = 'heat';
                     else if (iseeMode === 'dry_isee') iseeMode = 'dry';
@@ -452,7 +419,7 @@ class MiElHvac extends EventEmitter {
                 });
             }
 
-            if (this.buttonsConfiguredCount > 0) {
+            if (this.buttons.length > 0) {
                 const modeMap = {
                     0: () => power === 1,
                     1: () => power && ['heat', 'heat_isee'].includes(operationMode),
@@ -521,7 +488,7 @@ class MiElHvac extends EventEmitter {
                     63: 'on', //nightmode
                 };
 
-                this.buttonsConfigured.forEach((button, index) => {
+                this.buttons.forEach((button, index) => {
                     const mode = button.mode;
                     let state = false;
 
@@ -550,14 +517,14 @@ class MiElHvac extends EventEmitter {
                 });
             }
 
-            if (this.sensorsConfiguredCount > 0) {
+            if (this.sensors.length > 0) {
                 const powerOn = power === 1;
 
                 // Helper: match by value with power check
                 const is = (val, match) => powerOn && val === match;
                 const isOneOf = (val, matches) => powerOn && matches.includes(val);
 
-                this.sensorsConfigured.forEach((sensor, index) => {
+                this.sensors.forEach((sensor, index) => {
                     const mode = sensor.mode;
 
                     const sensorStates = {
@@ -688,18 +655,6 @@ class MiElHvac extends EventEmitter {
             return true
         } catch (error) {
             throw new Error(`Update remote temperature error: ${error}`);
-        }
-    }
-
-    async startImpulseGenerator() {
-        try {
-            //start impulse generator 
-            const timers = [{ name: 'checkState', sampling: this.refreshInterval }];
-            if (this.remoteTemperatureSensorEnable) timers.push({ name: 'updateRemoteTemp', sampling: this.remoteTemperatureSensorRefreshInterval });
-            await this.impulseGenerator.start(timers);
-            return true;
-        } catch (error) {
-            throw new Error(`Impulse generator start error: ${error}`);
         }
     }
 
@@ -952,11 +907,11 @@ class MiElHvac extends EventEmitter {
             accessory.addService(this.miElHvacService);
 
             //presets services
-            if (this.presetsConfiguredCount > 0) {
+            if (this.presets.length > 0) {
                 if (this.enableDebugMode) this.emit('debug', 'Prepare presets services');
                 this.presetsServices = [];
 
-                this.presetsConfigured.forEach((preset, index) => {
+                this.presets.forEach((preset, index) => {
                     const { name: presetName, namePrefix, serviceType, characteristicType, mode, setTemp, fanSpeed, swingV, swingH } = preset;
                     const serviceName = namePrefix ? `${accessoryName} ${presetName}` : presetName;
 
@@ -1004,11 +959,11 @@ class MiElHvac extends EventEmitter {
             }
 
 
-            if (this.buttonsConfiguredCount > 0) {
+            if (this.buttons.length > 0) {
                 if (this.enableDebugMode) this.emit('debug', 'Prepare buttons services');
                 this.buttonsServices = [];
 
-                this.buttonsConfigured.forEach((button, index) => {
+                this.buttons.forEach((button, index) => {
                     const { mode, name: buttonName, namePrefix, serviceType, characteristicType } = button;
                     const serviceName = namePrefix ? `${accessoryName} ${buttonName}` : buttonName;
 
@@ -1127,13 +1082,12 @@ class MiElHvac extends EventEmitter {
                 });
             }
 
-
             //sensors services
-            if (this.sensorsConfiguredCount > 0) {
+            if (this.sensors.length > 0) {
                 if (this.enableDebugMode) this.emit('debug', `Prepare sensors services`);
                 this.sensorsServices = [];
 
-                this.sensorsConfigured.forEach((sensor, index) => {
+                this.sensors.forEach((sensor, index) => {
                     //get sensor name
                     const sensorName = sensor.name;
 

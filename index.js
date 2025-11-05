@@ -48,7 +48,9 @@ class tasmotaPlatform {
         const user = device.user || '';
         const passwd = device.passwd || '';
         const loadNameFromDevice = device.loadNameFromDevice || false;
-        const refreshInterval = (device.refreshInterval ?? 5000) * 1000;
+        const remoteTemperatureSensorEnable = device.miElHvac?.remoteTemperatureSensor?.enable;
+        const remoteTemperatureSensorRefreshInterval = (device.miElHvac?.remoteTemperatureSensor?.refreshInterval ?? 5) * 1000;
+        const refreshInterval = (device.refreshInterval ?? 5) * 1000;
 
         //log
         const logLevel = {
@@ -115,19 +117,19 @@ class tasmotaPlatform {
                   let deviceType;
                   switch (type) {
                     case 0: //mielhvac
-                      deviceType = new MiElHvac(api, device, info, serialNumber, refreshInterval);
+                      deviceType = new MiElHvac(api, device, info, serialNumber);
                       break;
                     case 1: //switches
-                      deviceType = new Switches(api, device, info, serialNumber, refreshInterval);
+                      deviceType = new Switches(api, device, info, serialNumber);
                       break;
                     case 2: //lights
-                      deviceType = new Lights(api, device, info, serialNumber, refreshInterval);
+                      deviceType = new Lights(api, device, info, serialNumber);
                       break;
                     case 3: //fans
-                      deviceType = new Fans(api, device, info, serialNumber, refreshInterval);
+                      deviceType = new Fans(api, device, info, serialNumber);
                       break;
                     case 4: //sensors
-                      deviceType = new Sensors(api, device, info, serialNumber, refreshInterval);
+                      deviceType = new Sensors(api, device, info, serialNumber);
                       break;
                     default:
                       if (logLevel.warn) log.warn(`Device: ${host} ${deviceName}, unknown device: ${info.deviceTypes}.`);
@@ -146,8 +148,13 @@ class tasmotaPlatform {
                     api.publishExternalAccessories(PluginName, [accessory]);
                     if (logLevel.success) log.success(`Device: ${host} ${deviceName}, Published as external accessory.`);
 
-                    await impulseGenerator.stop();
-                    await deviceType.startImpulseGenerator();
+                    //start impulse generator
+                    const timers = [{ name: 'checkState', sampling: refreshInterval }];
+                    if (remoteTemperatureSensorEnable) timers.push({ name: 'updateRemoteTemp', sampling: remoteTemperatureSensorRefreshInterval });
+                    await deviceType.impulseGenerator.state(true, timers);
+
+                    //stop impulse generator
+                    await impulseGenerator.state(false);
                   }
 
                   i++;
@@ -160,7 +167,7 @@ class tasmotaPlatform {
             });
 
           //start impulse generator
-          await impulseGenerator.start([{ name: 'start', sampling: 60000 }]);
+          await impulseGenerator.state(true, [{ name: 'start', sampling: 120000 }]);
         } catch (error) {
           if (logLevel.error) log.error(`Device: ${host} ${deviceName}, Did finish launching error: ${error.message ?? error}.`);
         }

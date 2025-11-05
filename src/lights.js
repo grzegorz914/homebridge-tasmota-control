@@ -6,7 +6,7 @@ import { ApiCommands } from './constants.js';
 let Accessory, Characteristic, Service, Categories, AccessoryUUID;
 
 class Lights extends EventEmitter {
-    constructor(api, config, info, serialNumber, refreshInterval) {
+    constructor(api, config, info, serialNumber) {
         super();
 
         Accessory = api.platformAccessory;
@@ -25,7 +25,6 @@ class Lights extends EventEmitter {
         this.enableDebugMode = config.enableDebugMode || false;
         this.disableLogInfo = config.disableLogInfo || false;
         this.disableLogDeviceInfo = config.disableLogDeviceInfo || false;
-        this.refreshInterval = refreshInterval;
         this.functions = new Functions();
 
         //axios instance
@@ -47,7 +46,7 @@ class Lights extends EventEmitter {
                 await this.checkState();
             }))
             .on('state', (state) => {
-                this.emit('success', `Impulse generator ${state ? 'started' : 'stopped'}.`);
+                this.emit(state ? 'success' : 'warn', `Impulse generator ${state ? 'started' : 'stopped'}`);
             });
     }
 
@@ -153,11 +152,10 @@ class Lights extends EventEmitter {
         }
     }
 
-    async startImpulseGenerator() {
+    async startStopImpulseGenerator(state, timers = []) {
         try {
             //start impulse generator 
-            const timers = [{ name: 'checkState', sampling: this.refreshInterval }];
-            await this.impulseGenerator.start(timers);
+            await this.melCloudAta.impulseGenerator.state(state, timers)
             return true;
         } catch (error) {
             throw new Error(`Impulse generator start error: ${error}`);

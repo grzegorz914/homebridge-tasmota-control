@@ -6,7 +6,7 @@ import { ApiCommands } from './constants.js';
 let Accessory, Characteristic, Service, Categories, AccessoryUUID;
 
 class Switches extends EventEmitter {
-    constructor(api, config, info, serialNumber, refreshInterval) {
+    constructor(api, config, info, serialNumber) {
         super();
 
         Accessory = api.platformAccessory;
@@ -26,7 +26,6 @@ class Switches extends EventEmitter {
         this.enableDebugMode = config.enableDebugMode || false;
         this.disableLogInfo = config.disableLogInfo || false;
         this.disableLogDeviceInfo = config.disableLogDeviceInfo || false;
-        this.refreshInterval = refreshInterval;
         this.functions = new Functions();
 
         //axios instance
@@ -48,7 +47,7 @@ class Switches extends EventEmitter {
                 await this.checkState();
             }))
             .on('state', (state) => {
-                this.emit('success', `Impulse generator ${state ? 'started' : 'stopped'}.`);
+                this.emit(state ? 'success' : 'warn', `Impulse generator ${state ? 'started' : 'stopped'}`);
             });
     }
 
@@ -105,17 +104,6 @@ class Switches extends EventEmitter {
             return true;
         } catch (error) {
             throw new Error(`Check state error: ${error}`);
-        }
-    }
-
-    async startImpulseGenerator() {
-        try {
-            //start impulse generator 
-            const timers = [{ name: 'checkState', sampling: this.refreshInterval }];
-            await this.impulseGenerator.start(timers);
-            return true;
-        } catch (error) {
-            throw new Error(`Impulse generator start error: ${error}`);
         }
     }
 
