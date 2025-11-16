@@ -91,7 +91,7 @@ class MiElHvac extends EventEmitter {
         const url = `http://${config.host}/cm?cmnd=`;
         this.axiosInstance = axios.create({
             baseURL: url,
-            timeout: 15000,
+            timeout: 30000,
             withCredentials: config.auth,
             auth: {
                 username: config.user,
@@ -103,7 +103,7 @@ class MiElHvac extends EventEmitter {
         if (remoteTemperatureSensorEnable) {
             this.axiosInstanceRemoteTemp = axios.create({
                 baseURL: remoteTemperatureSensorPath,
-                timeout: 10000,
+                timeout: 20000,
                 withCredentials: remoteTemperatureSensorAuth,
                 auth: {
                     username: remoteTemperatureSensorUser,

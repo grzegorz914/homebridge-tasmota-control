@@ -31,7 +31,7 @@ class Lights extends EventEmitter {
         const url = `http://${config.host}/cm?cmnd=`;
         this.axiosInstance = axios.create({
             baseURL: url,
-            timeout: 15000,
+            timeout: 30000,
             withCredentials: config.auth,
             auth: {
                 username: config.user,
