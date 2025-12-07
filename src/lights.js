@@ -57,12 +57,12 @@ class Lights extends EventEmitter {
         if (this.enableDebugMode) this.emit('debug', `Requesting status`);
         try {
             //power status
-            const powerStatusData = await this.axiosInstance(ApiCommands.PowerStatus);
+            const powerStatusData = await this.client(ApiCommands.PowerStatus);
             const powerStatus = powerStatusData.data ?? {};
             if (this.enableDebugMode) this.emit('debug', `Power status: ${JSON.stringify(powerStatus, null, 2)}`);
 
             //sensor status
-            const sensorStatusData = await this.axiosInstance(ApiCommands.Status);
+            const sensorStatusData = await this.client(ApiCommands.Status);
             const sensorStatus = sensorStatusData.data ?? {};
             if (this.enableDebugMode) this.emit('debug', `Sensors status: ${JSON.stringify(sensorStatus, null, 2)}`);
 
@@ -208,7 +208,7 @@ class Lights extends EventEmitter {
                                 const powerOff = this.lights.length === 1 ? ApiCommands.PowerOff : `${ApiCommands.Power}${relayNr}${ApiCommands.Off}`;
                                 state = state ? powerOn : powerOff;
 
-                                await this.axiosInstance.get(state);
+                                await this.client.get(state);
                                 if (!this.disableLogInfo) this.emit('info', `${friendlyName}, set state: ${state ? 'ON' : 'OFF'}`);
                             } catch (error) {
                                 this.emit('warn', `${friendlyName}, set state error: ${error}`);
@@ -223,7 +223,7 @@ class Lights extends EventEmitter {
                             .onSet(async (value) => {
                                 try {
                                     const brightness = ['', `${ApiCommands.Dimmer}${value}`, `${ApiCommands.HSBBrightness}${value}`][this.lights[i].brightnessType]; //0..100
-                                    await this.axiosInstance.get(brightness);
+                                    await this.client.get(brightness);
                                     if (!this.disableLogInfo) this.emit('info', `${friendlyName}, set brightness: ${value} %`);
                                 } catch (error) {
                                     this.emit('warn', `set brightness error: ${error}`);
@@ -240,7 +240,7 @@ class Lights extends EventEmitter {
                                 try {
                                     value = await this.functions.scaleValue(value, 140, 500, 153, 500);
                                     const colorTemperature = `${ApiCommands.ColorTemperature}${value}`; //153..500
-                                    await this.axiosInstance.get(colorTemperature);
+                                    await this.client.get(colorTemperature);
                                     if (!this.disableLogInfo) this.emit('info', `${friendlyName}, set color temperatur: ${value}`);
                                 } catch (error) {
                                     this.emit('warn', `set color temperatur error: ${error}`);
@@ -256,7 +256,7 @@ class Lights extends EventEmitter {
                             .onSet(async (value) => {
                                 try {
                                     const hue = `${ApiCommands.HSBHue}${value}`; //0..360
-                                    await this.axiosInstance.get(hue);
+                                    await this.client.get(hue);
                                     if (!this.disableLogInfo) this.emit('info', `${friendlyName}, set hue: ${value}`);
                                 } catch (error) {
                                     this.emit('warn', `set hue error: ${error}`);
@@ -272,7 +272,7 @@ class Lights extends EventEmitter {
                             .onSet(async (value) => {
                                 try {
                                     const saturation = `${ApiCommands.HSBSaturation}${value}`; //0..100
-                                    await this.axiosInstance.get(saturation);
+                                    await this.client.get(saturation);
                                     if (!this.disableLogInfo) this.emit('info', `set saturation: ${value}`);
                                 } catch (error) {
                                     this.emit('warn', `set saturation error: ${error}`);
