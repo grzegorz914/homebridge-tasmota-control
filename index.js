@@ -117,19 +117,19 @@ class tasmotaPlatform {
                   let deviceType;
                   switch (type) {
                     case 0: //mielhvac
-                      deviceType = new MiElHvac(api, device, info, serialNumber);
+                      deviceType = new MiElHvac(api, device, info, serialNumber, deviceInfo);
                       break;
                     case 1: //switches
-                      deviceType = new Switches(api, device, info, serialNumber);
+                      deviceType = new Switches(api, device, info, serialNumber, deviceInfo);
                       break;
                     case 2: //lights
-                      deviceType = new Lights(api, device, info, serialNumber);
+                      deviceType = new Lights(api, device, info, serialNumber, deviceInfo);
                       break;
                     case 3: //fans
-                      deviceType = new Fans(api, device, info, serialNumber);
+                      deviceType = new Fans(api, device, info, serialNumber, deviceInfo);
                       break;
                     case 4: //sensors
-                      deviceType = new Sensors(api, device, info, serialNumber);
+                      deviceType = new Sensors(api, device, info, serialNumber, deviceInfo);
                       break;
                     default:
                       if (logLevel.warn) log.warn(`Device: ${host} ${deviceName}, unknown device: ${info.deviceTypes}.`);

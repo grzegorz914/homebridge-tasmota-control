@@ -1,4 +1,3 @@
-import axios from 'axios';
 import EventEmitter from 'events';
 import ImpulseGenerator from './impulsegenerator.js';
 import Functions from './functions.js';
@@ -6,7 +5,7 @@ import { ApiCommands, SensorKeys } from './constants.js';
 let Accessory, Characteristic, Service, Categories, AccessoryUUID;
 
 class Sensors extends EventEmitter {
-    constructor(api, config, info, serialNumber) {
+    constructor(api, config, info, serialNumber, deviceInfo) {
         super();
 
         Accessory = api.platformAccessory;
@@ -30,16 +29,7 @@ class Sensors extends EventEmitter {
         this.sensorsCount = 0;
 
         //axios instance
-        const url = `http://${config.host}/cm?cmnd=`;
-        this.axiosInstance = axios.create({
-            baseURL: url,
-            timeout: 30000,
-            withCredentials: config.auth,
-            auth: {
-                username: config.user,
-                password: config.passwd
-            }
-        });
+        this.client = deviceInfo.client;
 
         //lock flags
         this.locks = false;
@@ -69,7 +59,7 @@ class Sensors extends EventEmitter {
         if (this.enableDebugMode) this.emit('debug', `Requesting status`);
         try {
             //sensor status
-            const sensorStatusData = await this.axiosInstance.get(ApiCommands.Status);
+            const sensorStatusData = await this.client.get(ApiCommands.Status);
             const sensorStatus = sensorStatusData.data ?? {};
             if (this.enableDebugMode) this.emit('debug', `Sensors status: ${JSON.stringify(sensorStatus, null, 2)}`);
 

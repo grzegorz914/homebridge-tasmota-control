@@ -1,4 +1,3 @@
-import axios from 'axios';
 import EventEmitter from 'events';
 import ImpulseGenerator from './impulsegenerator.js';
 import Functions from './functions.js';
@@ -6,7 +5,7 @@ import { ApiCommands } from './constants.js';
 let Accessory, Characteristic, Service, Categories, AccessoryUUID;
 
 class Switches extends EventEmitter {
-    constructor(api, config, info, serialNumber) {
+    constructor(api, config, info, serialNumber, deviceInfo) {
         super();
 
         Accessory = api.platformAccessory;
@@ -29,16 +28,7 @@ class Switches extends EventEmitter {
         this.functions = new Functions();
 
         //axios instance
-        const url = `http://${config.host}/cm?cmnd=`;
-        this.axiosInstance = axios.create({
-            baseURL: url,
-            timeout: 30000,
-            withCredentials: config.auth,
-            auth: {
-                username: config.user,
-                password: config.passwd
-            }
-        });
+        this.client = deviceInfo.client;
 
         //lock flags
         this.locks = false;
@@ -68,7 +58,7 @@ class Switches extends EventEmitter {
         if (this.enableDebugMode) this.emit('debug', `Requesting status`);
         try {
             //power status
-            const powerStatusData = await this.axiosInstance.get(ApiCommands.PowerStatus);
+            const powerStatusData = await this.client.get(ApiCommands.PowerStatus);
             const powerStatus = powerStatusData.data ?? {};
             if (this.enableDebugMode) this.emit('debug', `Power status: ${JSON.stringify(powerStatus, null, 2)}`);
 
@@ -164,7 +154,7 @@ class Switches extends EventEmitter {
                                 const powerOff = this.switchesOutlets.length === 1 ? ApiCommands.PowerOff : `${ApiCommands.Power}${relayNr}${ApiCommands.Off}`;
                                 state = state ? powerOn : powerOff;
 
-                                await this.axiosInstance.get(state);
+                                await this.client.get(state);
                                 if (!this.disableLogInfo) this.emit('info', `${friendlyName}, set state: ${state ? 'ON' : 'OFF'}`);
                             } catch (error) {
                                 this.emit('warn', `${friendlyName}, set state error: ${error}`);

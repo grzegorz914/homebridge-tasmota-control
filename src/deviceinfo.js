@@ -10,9 +10,9 @@ class DeviceInfo extends EventEmitter {
         this.enableDebugMode = enableDebugMode;
 
         //axios instance
-        this.axiosInstance = axios.create({
+        this.client = axios.create({
             baseURL: url,
-            timeout: 15000,
+            timeout: 20000,
             withCredentials: auth,
             auth: {
                 username: user,
@@ -25,7 +25,7 @@ class DeviceInfo extends EventEmitter {
     async getInfo() {
         if (this.enableDebugMode) this.emit('debug', `Requesting info`);
         try {
-            const deviceInfoData = await this.axiosInstance.get(ApiCommands.Status);
+            const deviceInfoData = await this.client.get(ApiCommands.Status);
             const deviceInfo = deviceInfoData.data ?? {};
             if (this.enableDebugMode) this.emit('debug', `Info: ${JSON.stringify(deviceInfo, null, 2)}`);
             await new Promise(resolve => setTimeout(resolve, 250));

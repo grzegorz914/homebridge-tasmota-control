@@ -6,7 +6,7 @@ import { ApiCommands, MiElHVAC, TemperatureDisplayUnits } from './constants.js';
 let Accessory, Characteristic, Service, Categories, AccessoryUUID;
 
 class MiElHvac extends EventEmitter {
-    constructor(api, config, info, serialNumber) {
+    constructor(api, config, info, serialNumber, deviceInfo) {
         super();
 
         Accessory = api.platformAccessory;
@@ -88,16 +88,7 @@ class MiElHvac extends EventEmitter {
         this.functions = new Functions();
 
         //axios instance
-        const url = `http://${config.host}/cm?cmnd=`;
-        this.axiosInstance = axios.create({
-            baseURL: url,
-            timeout: 30000,
-            withCredentials: config.auth,
-            auth: {
-                username: config.user,
-                password: config.passwd
-            }
-        });
+        this.client = deviceInfo.client;
 
         //axios instance remote temp
         if (remoteTemperatureSensorEnable) {
@@ -146,12 +137,12 @@ class MiElHvac extends EventEmitter {
         if (this.enableDebugMode) this.emit('debug', `Requesting status`);
         try {
             //power status
-            const powerStatusData = await this.axiosInstance.get(ApiCommands.PowerStatus);
+            const powerStatusData = await this.client.get(ApiCommands.PowerStatus);
             const powerStatus = powerStatusData.data ?? {};
             if (this.enableDebugMode) this.emit('debug', `Power status: ${JSON.stringify(powerStatus, null, 2)}`);
 
             //sensor status
-            const sensorStatusData = await this.axiosInstance.get(ApiCommands.Status);
+            const sensorStatusData = await this.client.get(ApiCommands.Status);
             const sensorStatus = sensorStatusData.data ?? {};
             if (this.enableDebugMode) this.emit('debug', `Sensors status: ${JSON.stringify(sensorStatus, null, 2)}`);
 
@@ -650,7 +641,7 @@ class MiElHvac extends EventEmitter {
 
             //set remote temp
             const temp = `${MiElHVAC.SetRemoteTemp}${remoteTemp}`
-            await this.axiosInstance.get(temp);
+            await this.client.get(temp);
 
             return true
         } catch (error) {
@@ -709,7 +700,7 @@ class MiElHvac extends EventEmitter {
                 .onSet(async (state) => {
                     try {
                         const power = [MiElHVAC.PowerOff, MiElHVAC.PowerOn][state];
-                        await this.axiosInstance.get(power);
+                        await this.client.get(power);
                         if (!this.disableLogInfo) this.emit('info', `Set power: ${state ? 'ON' : 'OFF'}`);
                     } catch (error) {
                         this.emit('warn', `Set power error: ${error}`);
@@ -734,13 +725,13 @@ class MiElHvac extends EventEmitter {
                     try {
                         switch (value) {
                             case 0: //AUTO
-                                await this.axiosInstance.get(autoDryFanMode);
+                                await this.client.get(autoDryFanMode);
                                 break;
                             case 1: //HEAT
-                                await this.axiosInstance.get(heatDryFanMode);
+                                await this.client.get(heatDryFanMode);
                                 break;
                             case 2: //COOL
-                                await this.axiosInstance.get(coolDryFanMode);
+                                await this.client.get(coolDryFanMode);
                                 break;
                         };
 
@@ -790,7 +781,7 @@ class MiElHvac extends EventEmitter {
 
                             //fan speed mode
                             const fanSpeedMap = ['auto', 'quiet', '1', '2', '3', '4'][fanSpeed];
-                            await this.axiosInstance.get(MiElHVAC.SetFanSpeed[fanSpeedMap]);
+                            await this.client.get(MiElHVAC.SetFanSpeed[fanSpeedMap]);
                             if (!this.disableLogInfo) this.emit('info', `Set fan speed mode: ${MiElHVAC.FanSpeed[fanSpeedModeText]}`);
                         } catch (error) {
                             this.emit('warn', `Set fan speed mode error: ${error}`);
@@ -807,17 +798,17 @@ class MiElHvac extends EventEmitter {
                         try {
                             switch (value) {
                                 case 0:
-                                    await this.axiosInstance.get(MiElHVAC.SetSwingV[this.previousStateSwingV]);
-                                    await this.axiosInstance.get(MiElHVAC.SetSwingH[this.previousStateSwingH]);
+                                    await this.client.get(MiElHVAC.SetSwingV[this.previousStateSwingV]);
+                                    await this.client.get(MiElHVAC.SetSwingH[this.previousStateSwingH]);
                                     break;
                                 case 1:
                                     //set vane v
                                     this.previousStateSwingV = this.mielHvac.vaneVerticalDirection;
-                                    await this.axiosInstance.get(MiElHVAC.SetSwingV.swing);
+                                    await this.client.get(MiElHVAC.SetSwingV.swing);
 
                                     //set vane h
                                     this.previousStateSwingH = this.mielHvac.vaneHorizontalDirection;
-                                    await this.axiosInstance.get(MiElHVAC.SetSwingH.swing);
+                                    await this.client.get(MiElHVAC.SetSwingH.swing);
                                     break;
                             }
                             if (!this.disableLogInfo) this.emit('info', `Set air direction mode: ${MiElHVAC.SwingMode[value]}`);
@@ -844,7 +835,7 @@ class MiElHvac extends EventEmitter {
                         }
 
                         const temp = `${MiElHVAC.SetTemp}${value}`
-                        await this.axiosInstance.get(temp);
+                        await this.client.get(temp);
                         if (!this.disableLogInfo) this.emit('info', `Set ${this.mielHvac.targetOperationMode === 2 ? 'temperature' : 'cooling threshold temperature'}: ${value}${this.mielHvac.temperatureUnit}`);
                     } catch (error) {
                         this.emit('warn', `Set cooling threshold temperature error: ${error}`);
@@ -869,7 +860,7 @@ class MiElHvac extends EventEmitter {
                             }
 
                             const temp = `${MiElHVAC.SetTemp}${value}`
-                            await this.axiosInstance.get(temp);
+                            await this.client.get(temp);
                             if (!this.disableLogInfo) this.emit('info', `Set ${this.mielHvac.targetOperationMode === 1 ? 'temperature' : 'heating threshold temperature'}: ${value}${this.mielHvac.temperatureUnit}`);
                         } catch (error) {
                             this.emit('warn', `Set heating threshold temperature error: ${error}`);
@@ -884,7 +875,7 @@ class MiElHvac extends EventEmitter {
                 .onSet(async (value) => {
                     try {
                         const lock = [MiElHVAC.SetProhibit.off, MiElHVAC.SetProhibit.all][value];
-                        await this.axiosInstance.get(lock);
+                        await this.client.get(lock);
                         if (!this.disableLogInfo) this.emit('info', `Set local physical controls: ${value ? 'LOCK' : 'UNLOCK'}`);
                     } catch (error) {
                         this.emit('warn', `Set lock physical controls error: ${error}`);
@@ -898,7 +889,7 @@ class MiElHvac extends EventEmitter {
                 .onSet(async (value) => {
                     try {
                         const unit = [MiElHVAC.SetDisplayUnit.c, MiElHVAC.SetDisplayUnit.f][value];
-                        //await this.axiosInstance.get(unit);
+                        //await this.client.get(unit);
                         if (!this.disableLogInfo) this.emit('info', `Set temperature display unit: ${TemperatureDisplayUnits[value]}`);
                     } catch (error) {
                         this.emit('warn', `Set temperature display unit error: ${error}`);
@@ -926,7 +917,7 @@ class MiElHvac extends EventEmitter {
                                 if (state) {
                                     // Power on if needed
                                     if (!this.mielHvac.power) {
-                                        await this.axiosInstance.get(MiElHVAC.PowerOn);
+                                        await this.client.get(MiElHVAC.PowerOn);
                                     }
 
                                     // Apply preset commands in sequence
@@ -939,7 +930,7 @@ class MiElHvac extends EventEmitter {
                                     ];
 
                                     for (const cmd of commands) {
-                                        await this.axiosInstance.get(cmd);
+                                        await this.client.get(cmd);
                                     }
 
                                     if (!this.disableLogInfo) {
@@ -1061,10 +1052,10 @@ class MiElHvac extends EventEmitter {
 
                                 data = mappings[mode]();
                                 if (!this.mielHvac.power && state && mode > 0 && mode <= 63) {
-                                    await this.axiosInstance.get(MiElHVAC.PowerOn);
+                                    await this.client.get(MiElHVAC.PowerOn);
                                 }
 
-                                await this.axiosInstance.get(data);
+                                await this.client.get(data);
 
                                 if (!this.disableLogInfo) {
                                     const action = state ? `Set: ${buttonName}` : `Unset: ${buttonName}, Set: ${button.previousValue}`;

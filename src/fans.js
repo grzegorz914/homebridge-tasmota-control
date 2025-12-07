@@ -1,4 +1,3 @@
-import axios from 'axios';
 import EventEmitter from 'events';
 import ImpulseGenerator from './impulsegenerator.js';
 import Functions from './functions.js';
@@ -6,7 +5,7 @@ import { ApiCommands } from './constants.js';
 let Accessory, Characteristic, Service, Categories, AccessoryUUID;
 
 class Fans extends EventEmitter {
-    constructor(api, config, info, serialNumber) {
+    constructor(api, config, info, serialNumber, deviceInfo) {
         super();
 
         Accessory = api.platformAccessory;
@@ -29,16 +28,7 @@ class Fans extends EventEmitter {
         this.functions = new Functions();
 
         //axios instance
-        const url = `http://${config.host}/cm?cmnd=`;
-        this.axiosInstance = axios.create({
-            baseURL: url,
-            timeout: 30000,
-            withCredentials: config.auth,
-            auth: {
-                username: config.user,
-                password: config.passwd
-            }
-        });
+        this.client = deviceInfo.client;
 
         //lock flags
         this.locks = {
@@ -70,13 +60,13 @@ class Fans extends EventEmitter {
         if (this.enableDebugMode) this.emit('debug', `Requesting status`);
         try {
             //power status
-            const powerStatusData = await this.axiosInstance.get(ApiCommands.PowerStatus);
+            const powerStatusData = await this.client.get(ApiCommands.PowerStatus);
             const powerStatus = powerStatusData.data ?? {};
             const powerStatusKeys = Object.keys(powerStatus);
             if (this.enableDebugMode) this.emit('debug', `Power status: ${JSON.stringify(powerStatus, null, 2)}`);
 
             //sensor status
-            const sensorStatusData = await this.axiosInstance.get(ApiCommands.Status);
+            const sensorStatusData = await this.client.get(ApiCommands.Status);
             const sensorStatus = sensorStatusData.data ?? {};
             if (this.enableDebugMode) this.emit('debug', `Sensors status: ${JSON.stringify(sensorStatus, null, 2)}`);
 
@@ -208,7 +198,7 @@ class Fans extends EventEmitter {
                             try {
                                 state = state ? 1 : 0;
                                 const speed = `${ApiCommands.FanSpeed}${state}`;
-                                await this.axiosInstance.get(speed);
+                                await this.client.get(speed);
                                 if (!this.disableLogInfo) this.emit('info', `${friendlyName}, set state: ${state ? 'ON' : 'OFF'}`);
                             } catch (error) {
                                 this.emit('warn', `${friendlyName}, set state error: ${error}`);
@@ -222,7 +212,7 @@ class Fans extends EventEmitter {
                     //   .onSet(async (value) => {
                     //        try {
                     //            const direction = `${ApiCommands.FanDirection}${value}`;
-                    //            await this.axiosInstance.get(direction);
+                    //            await this.client.get(direction);
                     //            if (!this.disableLogInfo) this.emit('info', `${friendlyName}, set direction: ${value}`);
                     //        } catch (error) {
                     //            this.emit('warn', `${friendlyName}, set direction error: ${error}`);
@@ -241,7 +231,7 @@ class Fans extends EventEmitter {
                         .onSet(async (value) => {
                             try {
                                 const speed = `${ApiCommands.FanSpeed}${value}`;
-                                await this.axiosInstance.get(speed);
+                                await this.client.get(speed);
                                 if (!this.disableLogInfo) this.emit('info', `${friendlyName}, set speed: ${value}`);
                             } catch (error) {
                                 this.emit('warn', `${friendlyName}, set rotation speed error: ${error}`);
@@ -271,7 +261,7 @@ class Fans extends EventEmitter {
                                 const powerOn = this.lights.length === 1 ? (this.lights[i].power1 ? `${ApiCommands.Power}${relayNr}${ApiCommands.On}` : ApiCommands.PowerOn) : `${ApiCommands.Power}${relayNr}${ApiCommands.On}`;
                                 const powerOff = this.lights.length === 1 ? (this.lights[i].power1 ? `${ApiCommands.Power}${relayNr}${ApiCommands.Off}` : ApiCommands.PowerOff) : `${ApiCommands.Power}${relayNr}${ApiCommands.Off}`;
                                 state = state ? powerOn : powerOff;
-                                await this.axiosInstance.get(state);
+                                await this.client.get(state);
                                 if (!this.disableLogInfo) this.emit('info', `${friendlyName}, set state: ${state ? 'ON' : 'OFF'}`);
                             } catch (error) {
                                 this.emit('warn', `${friendlyName}, set state error: ${error}`);
