@@ -21,9 +21,9 @@ class Lights extends EventEmitter {
 
         //other config
         this.lightsNamePrefix = config.lightsNamePrefix || false;
-        this.enableDebugMode = config.enableDebugMode || false;
-        this.disableLogInfo = config.disableLogInfo || false;
-        this.disableLogDeviceInfo = config.disableLogDeviceInfo || false;
+        this.logDeviceInfo = config.log?.deviceInfo || false;
+        this.logInfo = config.log?.info || false;
+        this.logDebug = config.log?.debug || false;
         this.functions = new Functions();
 
         //axios instance
@@ -54,17 +54,17 @@ class Lights extends EventEmitter {
     }
 
     async checkState() {
-        if (this.enableDebugMode) this.emit('debug', `Requesting status`);
+        if (this.logDebug) this.emit('debug', `Requesting status`);
         try {
             //power status
             const powerStatusData = await this.client(ApiCommands.PowerStatus);
             const powerStatus = powerStatusData.data ?? {};
-            if (this.enableDebugMode) this.emit('debug', `Power status: ${JSON.stringify(powerStatus, null, 2)}`);
+            if (this.logDebug) this.emit('debug', `Power status: ${JSON.stringify(powerStatus, null, 2)}`);
 
             //sensor status
             const sensorStatusData = await this.client(ApiCommands.Status);
             const sensorStatus = sensorStatusData.data ?? {};
-            if (this.enableDebugMode) this.emit('debug', `Sensors status: ${JSON.stringify(sensorStatus, null, 2)}`);
+            if (this.logDebug) this.emit('debug', `Sensors status: ${JSON.stringify(sensorStatus, null, 2)}`);
 
             //sensor status keys
             const sensorStatusKeys = Object.keys(sensorStatus);
@@ -126,7 +126,7 @@ class Lights extends EventEmitter {
 
 
                     //log info
-                    if (!this.disableLogInfo) {
+                    if (this.logInfo) {
                         this.emit('info', `${friendlyName}, state: ${power ? 'ON' : 'OFF'}`);
                         if (brightnessType !== 0) this.emit('info', `${friendlyName}, brightness: ${bright} %`);
                         if (colorTemperature) this.emit('info', `${friendlyName}, color temperatur: ${colorTemperature}`);
@@ -165,7 +165,7 @@ class Lights extends EventEmitter {
 
     //prepare accessory
     async prepareAccessory() {
-        if (this.enableDebugMode) this.emit('debug', `Prepare Accessory`);
+        if (this.logDebug) this.emit('debug', `Prepare Accessory`);
 
         try {
             //accessory
@@ -175,7 +175,7 @@ class Lights extends EventEmitter {
             const accessory = new Accessory(accessoryName, accessoryUUID, accessoryCategory);
 
             //Prepare information service
-            if (this.enableDebugMode) this.emit('debug', `Prepare Information Service`);
+            if (this.logDebug) this.emit('debug', `Prepare Information Service`);
             accessory.getService(Service.AccessoryInformation)
                 .setCharacteristic(Characteristic.Manufacturer, 'Tasmota')
                 .setCharacteristic(Characteristic.Model, this.info.modelName ?? 'Model Name')
@@ -184,9 +184,9 @@ class Lights extends EventEmitter {
                 .setCharacteristic(Characteristic.ConfiguredName, accessoryName);
 
             //Prepare services 
-            if (this.enableDebugMode) this.emit('debug', `Prepare Services`);
+            if (this.logDebug) this.emit('debug', `Prepare Services`);
             if (this.lights.length > 0) {
-                if (this.enableDebugMode) this.emit('debug', `Prepare Light Services`);
+                if (this.logDebug) this.emit('debug', `Prepare Light Services`);
                 this.lightServices = [];
 
                 for (let i = 0; i < this.lights.length; i++) {
@@ -209,7 +209,7 @@ class Lights extends EventEmitter {
                                 state = state ? powerOn : powerOff;
 
                                 await this.client.get(state);
-                                if (!this.disableLogInfo) this.emit('info', `${friendlyName}, set state: ${state ? 'ON' : 'OFF'}`);
+                                if (this.logInfo) this.emit('info', `${friendlyName}, set state: ${state ? 'ON' : 'OFF'}`);
                             } catch (error) {
                                 this.emit('warn', `${friendlyName}, set state error: ${error}`);
                             }
@@ -224,7 +224,7 @@ class Lights extends EventEmitter {
                                 try {
                                     const brightness = ['', `${ApiCommands.Dimmer}${value}`, `${ApiCommands.HSBBrightness}${value}`][this.lights[i].brightnessType]; //0..100
                                     await this.client.get(brightness);
-                                    if (!this.disableLogInfo) this.emit('info', `${friendlyName}, set brightness: ${value} %`);
+                                    if (this.logInfo) this.emit('info', `${friendlyName}, set brightness: ${value} %`);
                                 } catch (error) {
                                     this.emit('warn', `set brightness error: ${error}`);
                                 }
@@ -241,7 +241,7 @@ class Lights extends EventEmitter {
                                     value = await this.functions.scaleValue(value, 140, 500, 153, 500);
                                     const colorTemperature = `${ApiCommands.ColorTemperature}${value}`; //153..500
                                     await this.client.get(colorTemperature);
-                                    if (!this.disableLogInfo) this.emit('info', `${friendlyName}, set color temperatur: ${value}`);
+                                    if (this.logInfo) this.emit('info', `${friendlyName}, set color temperatur: ${value}`);
                                 } catch (error) {
                                     this.emit('warn', `set color temperatur error: ${error}`);
                                 }
@@ -257,7 +257,7 @@ class Lights extends EventEmitter {
                                 try {
                                     const hue = `${ApiCommands.HSBHue}${value}`; //0..360
                                     await this.client.get(hue);
-                                    if (!this.disableLogInfo) this.emit('info', `${friendlyName}, set hue: ${value}`);
+                                    if (this.logInfo) this.emit('info', `${friendlyName}, set hue: ${value}`);
                                 } catch (error) {
                                     this.emit('warn', `set hue error: ${error}`);
                                 }
@@ -273,7 +273,7 @@ class Lights extends EventEmitter {
                                 try {
                                     const saturation = `${ApiCommands.HSBSaturation}${value}`; //0..100
                                     await this.client.get(saturation);
-                                    if (!this.disableLogInfo) this.emit('info', `set saturation: ${value}`);
+                                    if (this.logInfo) this.emit('info', `set saturation: ${value}`);
                                 } catch (error) {
                                     this.emit('warn', `set saturation error: ${error}`);
                                 }
@@ -299,7 +299,7 @@ class Lights extends EventEmitter {
             this.emit('success', `Connect Success`)
 
             //check device info 
-            if (!this.disableLogDeviceInfo) await this.deviceInfo();
+            if (this.logDeviceInfo) await this.deviceInfo();
 
             //start prepare accessory
             const accessory = await this.prepareAccessory();

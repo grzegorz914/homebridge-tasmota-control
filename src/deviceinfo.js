@@ -3,11 +3,11 @@ import EventEmitter from 'events';
 import { ApiCommands, LightKeys, SensorKeys } from './constants.js';
 
 class DeviceInfo extends EventEmitter {
-    constructor(url, auth, user, passwd, deviceName, loadNameFromDevice, enableDebugMode) {
+    constructor(url, auth, user, passwd, deviceName, loadNameFromDevice, logDebug) {
         super();
         this.name = deviceName
         this.loadNameFromDevice = loadNameFromDevice;
-        this.enableDebugMode = enableDebugMode;
+        this.logDebug = logDebug;
 
         //axios instance
         this.client = axios.create({
@@ -23,11 +23,11 @@ class DeviceInfo extends EventEmitter {
     }
 
     async getInfo() {
-        if (this.enableDebugMode) this.emit('debug', `Requesting info`);
+        if (this.logDebug) this.emit('debug', `Requesting info`);
         try {
             const deviceInfoData = await this.client.get(ApiCommands.Status);
             const deviceInfo = deviceInfoData.data ?? {};
-            if (this.enableDebugMode) this.emit('debug', `Info: ${JSON.stringify(deviceInfo, null, 2)}`);
+            if (this.logDebug) this.emit('debug', `Info: ${JSON.stringify(deviceInfo, null, 2)}`);
             await new Promise(resolve => setTimeout(resolve, 250));
 
             //status
@@ -75,7 +75,7 @@ class DeviceInfo extends EventEmitter {
                 serialNumber: addressMac,
                 firmwareRevision: firmwareRevision
             };
-            this.emit('debug', `Sensor: ${JSON.stringify(obj, null, 2)}`)
+            if (this.logDebug) this.emit('debug', `Sensor: ${JSON.stringify(obj, null, 2)}`)
             return obj;
         } catch (error) {
             throw new Error(`Check info error: ${error}`);

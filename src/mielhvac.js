@@ -77,9 +77,9 @@ class MiElHvac extends EventEmitter {
 
         //other config
         this.sensorsNamePrefix = config.sensorsNamePrefix || false;
-        this.enableDebugMode = config.enableDebugMode || false;
-        this.disableLogInfo = config.disableLogInfo || false;
-        this.disableLogDeviceInfo = config.disableLogDeviceInfo || false;
+        this.logDeviceInfo = config.log?.deviceInfo || false;
+        this.logInfo = config.log?.info || false;
+        this.logDebug = config.log?.debug || false;
 
         //mielhvac
         this.mielHvac = {};
@@ -134,17 +134,17 @@ class MiElHvac extends EventEmitter {
     }
 
     async checkState() {
-        if (this.enableDebugMode) this.emit('debug', `Requesting status`);
+        if (this.logDebug) this.emit('debug', `Requesting status`);
         try {
             //power status
             const powerStatusData = await this.client.get(ApiCommands.PowerStatus);
             const powerStatus = powerStatusData.data ?? {};
-            if (this.enableDebugMode) this.emit('debug', `Power status: ${JSON.stringify(powerStatus, null, 2)}`);
+            if (this.logDebug) this.emit('debug', `Power status: ${JSON.stringify(powerStatus, null, 2)}`);
 
             //sensor status
             const sensorStatusData = await this.client.get(ApiCommands.Status);
             const sensorStatus = sensorStatusData.data ?? {};
-            if (this.enableDebugMode) this.emit('debug', `Sensors status: ${JSON.stringify(sensorStatus, null, 2)}`);
+            if (this.logDebug) this.emit('debug', `Sensors status: ${JSON.stringify(sensorStatus, null, 2)}`);
 
             //sensor status keys
             const sensorStatusKeys = Object.keys(sensorStatus);
@@ -606,7 +606,7 @@ class MiElHvac extends EventEmitter {
             this.outdoorTemperatureSensorService?.updateCharacteristic(Characteristic.CurrentTemperature, outdoorTemperature);
 
             //log current state
-            if (!this.disableLogInfo) {
+            if (this.logInfo) {
                 this.emit('info', `Power: ${power ? 'ON' : 'OFF'}`);
                 const info = power ? this.emit('info', `Target operation mode: ${operationMode.toUpperCase()}`) : false;
                 const info1 = power ? this.emit('info', `Current operation mode: ${operationModeStatus.toUpperCase()}`) : false;
@@ -637,7 +637,7 @@ class MiElHvac extends EventEmitter {
             //get remote temp
             const rmoteTempData = await this.axiosInstanceRemoteTemp.get();
             const remoteTemp = rmoteTempData.data ?? false;
-            if (this.enableDebugMode) this.emit('debug', `Remote temp: ${JSON.stringify(remoteTemp, null, 2)}`);
+            if (this.logDebug) this.emit('debug', `Remote temp: ${JSON.stringify(remoteTemp, null, 2)}`);
 
             //set remote temp
             const temp = `${MiElHVAC.SetRemoteTemp}${remoteTemp}`
@@ -662,7 +662,7 @@ class MiElHvac extends EventEmitter {
 
     //prepare accessory
     async prepareAccessory() {
-        if (this.enableDebugMode) this.emit('debug', `Prepare Accessory`);
+        if (this.logDebug) this.emit('debug', `Prepare Accessory`);
 
         try {
             //accessory
@@ -672,7 +672,7 @@ class MiElHvac extends EventEmitter {
             const accessory = new Accessory(accessoryName, accessoryUUID, accessoryCategory);
 
             //Prepare information service
-            if (this.enableDebugMode) this.emit('debug', `Prepare Information Service`);
+            if (this.logDebug) this.emit('debug', `Prepare Information Service`);
             accessory.getService(Service.AccessoryInformation)
                 .setCharacteristic(Characteristic.Manufacturer, 'Tasmota')
                 .setCharacteristic(Characteristic.Model, this.info.modelName ?? 'Model Name')
@@ -681,8 +681,8 @@ class MiElHvac extends EventEmitter {
                 .setCharacteristic(Characteristic.ConfiguredName, accessoryName);
 
             //Prepare services 
-            if (this.enableDebugMode) this.emit('debug', `Prepare Services`);
-            if (this.enableDebugMode) this.emit('debug', `Prepare mitsubishi hvac service`);
+            if (this.logDebug) this.emit('debug', `Prepare Services`);
+            if (this.logDebug) this.emit('debug', `Prepare mitsubishi hvac service`);
             const autoDryFanMode = [MiElHVAC.SetMode.auto, MiElHVAC.SetMode.auto, MiElHVAC.SetMode.dry, MiElHVAC.SetMode.fan][this.autoDryFanMode]; //NONE, AUTO, DRY, FAN
             const heatDryFanMode = [MiElHVAC.SetMode.heat, MiElHVAC.SetMode.heat, MiElHVAC.SetMode.dry, MiElHVAC.SetMode.fan][this.heatDryFanMode]; //NONE, HEAT, DRY, FAN
             const coolDryFanMode = [MiElHVAC.SetMode.cool, MiElHVAC.SetMode.cool, MiElHVAC.SetMode.dry, MiElHVAC.SetMode.fan][this.coolDryFanMode]; //NONE, COOL, DRY, FAN
@@ -701,7 +701,7 @@ class MiElHvac extends EventEmitter {
                     try {
                         const power = [MiElHVAC.PowerOff, MiElHVAC.PowerOn][state];
                         await this.client.get(power);
-                        if (!this.disableLogInfo) this.emit('info', `Set power: ${state ? 'ON' : 'OFF'}`);
+                        if (this.logInfo) this.emit('info', `Set power: ${state ? 'ON' : 'OFF'}`);
                     } catch (error) {
                         this.emit('warn', `Set power error: ${error}`);
                     }
@@ -735,7 +735,7 @@ class MiElHvac extends EventEmitter {
                                 break;
                         };
 
-                        if (!this.disableLogInfo) this.emit('info', `Set operation mode: ${MiElHVAC.OperationMode[value]}`);
+                        if (this.logInfo) this.emit('info', `Set operation mode: ${MiElHVAC.OperationMode[value]}`);
                     } catch (error) {
                         this.emit('warn', `Set operation mode error: ${error}`);
                     }
@@ -782,7 +782,7 @@ class MiElHvac extends EventEmitter {
                             //fan speed mode
                             const fanSpeedMap = ['auto', 'quiet', '1', '2', '3', '4'][fanSpeed];
                             await this.client.get(MiElHVAC.SetFanSpeed[fanSpeedMap]);
-                            if (!this.disableLogInfo) this.emit('info', `Set fan speed mode: ${MiElHVAC.FanSpeed[fanSpeedModeText]}`);
+                            if (this.logInfo) this.emit('info', `Set fan speed mode: ${MiElHVAC.FanSpeed[fanSpeedModeText]}`);
                         } catch (error) {
                             this.emit('warn', `Set fan speed mode error: ${error}`);
                         }
@@ -811,7 +811,7 @@ class MiElHvac extends EventEmitter {
                                     await this.client.get(MiElHVAC.SetSwingH.swing);
                                     break;
                             }
-                            if (!this.disableLogInfo) this.emit('info', `Set air direction mode: ${MiElHVAC.SwingMode[value]}`);
+                            if (this.logInfo) this.emit('info', `Set air direction mode: ${MiElHVAC.SwingMode[value]}`);
                         } catch (error) {
                             this.emit('warn', `Set vane swing mode error: ${error}`);
                         }
@@ -836,7 +836,7 @@ class MiElHvac extends EventEmitter {
 
                         const temp = `${MiElHVAC.SetTemp}${value}`
                         await this.client.get(temp);
-                        if (!this.disableLogInfo) this.emit('info', `Set ${this.mielHvac.targetOperationMode === 2 ? 'temperature' : 'cooling threshold temperature'}: ${value}${this.mielHvac.temperatureUnit}`);
+                        if (this.logInfo) this.emit('info', `Set ${this.mielHvac.targetOperationMode === 2 ? 'temperature' : 'cooling threshold temperature'}: ${value}${this.mielHvac.temperatureUnit}`);
                     } catch (error) {
                         this.emit('warn', `Set cooling threshold temperature error: ${error}`);
                     }
@@ -861,7 +861,7 @@ class MiElHvac extends EventEmitter {
 
                             const temp = `${MiElHVAC.SetTemp}${value}`
                             await this.client.get(temp);
-                            if (!this.disableLogInfo) this.emit('info', `Set ${this.mielHvac.targetOperationMode === 1 ? 'temperature' : 'heating threshold temperature'}: ${value}${this.mielHvac.temperatureUnit}`);
+                            if (this.logInfo) this.emit('info', `Set ${this.mielHvac.targetOperationMode === 1 ? 'temperature' : 'heating threshold temperature'}: ${value}${this.mielHvac.temperatureUnit}`);
                         } catch (error) {
                             this.emit('warn', `Set heating threshold temperature error: ${error}`);
                         }
@@ -876,7 +876,7 @@ class MiElHvac extends EventEmitter {
                     try {
                         const lock = [MiElHVAC.SetProhibit.off, MiElHVAC.SetProhibit.all][value];
                         await this.client.get(lock);
-                        if (!this.disableLogInfo) this.emit('info', `Set local physical controls: ${value ? 'LOCK' : 'UNLOCK'}`);
+                        if (this.logInfo) this.emit('info', `Set local physical controls: ${value ? 'LOCK' : 'UNLOCK'}`);
                     } catch (error) {
                         this.emit('warn', `Set lock physical controls error: ${error}`);
                     }
@@ -890,7 +890,7 @@ class MiElHvac extends EventEmitter {
                     try {
                         const unit = [MiElHVAC.SetDisplayUnit.c, MiElHVAC.SetDisplayUnit.f][value];
                         //await this.client.get(unit);
-                        if (!this.disableLogInfo) this.emit('info', `Set temperature display unit: ${TemperatureDisplayUnits[value]}`);
+                        if (this.logInfo) this.emit('info', `Set temperature display unit: ${TemperatureDisplayUnits[value]}`);
                     } catch (error) {
                         this.emit('warn', `Set temperature display unit error: ${error}`);
                     }
@@ -899,7 +899,7 @@ class MiElHvac extends EventEmitter {
 
             //presets services
             if (this.presets.length > 0) {
-                if (this.enableDebugMode) this.emit('debug', 'Prepare presets services');
+                if (this.logDebug) this.emit('debug', 'Prepare presets services');
                 this.presetsServices = [];
 
                 this.presets.forEach((preset, index) => {
@@ -933,7 +933,7 @@ class MiElHvac extends EventEmitter {
                                         await this.client.get(cmd);
                                     }
 
-                                    if (!this.disableLogInfo) {
+                                    if (this.logInfo) {
                                         this.emit('info', `Set: ${presetName}`);
                                     }
 
@@ -951,7 +951,7 @@ class MiElHvac extends EventEmitter {
 
 
             if (this.buttons.length > 0) {
-                if (this.enableDebugMode) this.emit('debug', 'Prepare buttons services');
+                if (this.logDebug) this.emit('debug', 'Prepare buttons services');
                 this.buttonsServices = [];
 
                 this.buttons.forEach((button, index) => {
@@ -1057,7 +1057,7 @@ class MiElHvac extends EventEmitter {
 
                                 await this.client.get(data);
 
-                                if (!this.disableLogInfo) {
+                                if (this.logInfo) {
                                     const action = state ? `Set: ${buttonName}` : `Unset: ${buttonName}, Set: ${button.previousValue}`;
                                     if (mode > 0) this.emit('info', action);
                                 }
@@ -1075,7 +1075,7 @@ class MiElHvac extends EventEmitter {
 
             //sensors services
             if (this.sensors.length > 0) {
-                if (this.enableDebugMode) this.emit('debug', `Prepare sensors services`);
+                if (this.logDebug) this.emit('debug', `Prepare sensors services`);
                 this.sensorsServices = [];
 
                 this.sensors.forEach((sensor, index) => {
@@ -1103,7 +1103,7 @@ class MiElHvac extends EventEmitter {
 
             //room temperature sensor service
             if (this.temperatureSensor && this.mielHvac.roomTemperature !== null) {
-                if (this.enableDebugMode) this.emit('debug', `Prepare room temperature sensor service`);
+                if (this.logDebug) this.emit('debug', `Prepare room temperature sensor service`);
                 this.roomTemperatureSensorService = new Service.TemperatureSensor(`${serviceName} Room`, `Room Temperature Sensor`);
                 this.roomTemperatureSensorService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                 this.roomTemperatureSensorService.setCharacteristic(Characteristic.ConfiguredName, `${accessoryName} Room`);
@@ -1122,7 +1122,7 @@ class MiElHvac extends EventEmitter {
 
             //outdoor temperature sensor service
             if (this.temperatureSensorOutdoor && this.mielHvac.hasOutdoorTemperature && this.mielHvac.outdoorTemperature !== null) {
-                if (this.enableDebugMode) this.emit('debug', `Prepare outdoor temperature sensor service`);
+                if (this.logDebug) this.emit('debug', `Prepare outdoor temperature sensor service`);
                 this.outdoorTemperatureSensorService = new Service.TemperatureSensor(`${serviceName} Outdoor`, `Outdoor Temperature Sensor`);
                 this.outdoorTemperatureSensorService.addOptionalCharacteristic(Characteristic.ConfiguredName);
                 this.outdoorTemperatureSensorService.setCharacteristic(Characteristic.ConfiguredName, `${accessoryName} Outdoor`);
@@ -1156,7 +1156,7 @@ class MiElHvac extends EventEmitter {
             this.emit('success', `Connect Success`)
 
             //check device info 
-            if (!this.disableLogDeviceInfo) await this.deviceInfo();
+            if (this.logDeviceInfo) await this.deviceInfo();
 
             //start prepare accessory
             const accessory = await this.prepareAccessory();

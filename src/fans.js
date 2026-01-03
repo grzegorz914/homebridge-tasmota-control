@@ -22,9 +22,9 @@ class Fans extends EventEmitter {
         //other config
         this.lightsNamePrefix = config.lightsNamePrefix || false;
         this.fansNamePrefix = config.fansNamePrefix || false;
-        this.enableDebugMode = config.enableDebugMode || false;
-        this.disableLogInfo = config.disableLogInfo || false;
-        this.disableLogDeviceInfo = config.disableLogDeviceInfo || false;
+        this.logDeviceInfo = config.log?.deviceInfo || false;
+        this.logInfo = config.log?.info || false;
+        this.logDebug = config.log?.debug || false;
         this.functions = new Functions();
 
         //axios instance
@@ -57,18 +57,18 @@ class Fans extends EventEmitter {
     }
 
     async checkState() {
-        if (this.enableDebugMode) this.emit('debug', `Requesting status`);
+        if (this.logDebug) this.emit('debug', `Requesting status`);
         try {
             //power status
             const powerStatusData = await this.client.get(ApiCommands.PowerStatus);
             const powerStatus = powerStatusData.data ?? {};
             const powerStatusKeys = Object.keys(powerStatus);
-            if (this.enableDebugMode) this.emit('debug', `Power status: ${JSON.stringify(powerStatus, null, 2)}`);
+            if (this.logDebug) this.emit('debug', `Power status: ${JSON.stringify(powerStatus, null, 2)}`);
 
             //sensor status
             const sensorStatusData = await this.client.get(ApiCommands.Status);
             const sensorStatus = sensorStatusData.data ?? {};
-            if (this.enableDebugMode) this.emit('debug', `Sensors status: ${JSON.stringify(sensorStatus, null, 2)}`);
+            if (this.logDebug) this.emit('debug', `Sensors status: ${JSON.stringify(sensorStatus, null, 2)}`);
 
             //sensor status keys
             const sensorStatusKeys = Object.keys(sensorStatus);
@@ -130,7 +130,7 @@ class Fans extends EventEmitter {
 
 
                     //log info
-                    if (!this.disableLogInfo) {
+                    if (this.logInfo) {
                         this.emit('info', `${friendlyName}, light: ${power ? 'ON' : 'OFF'}`);
                         this.emit('info', `${friendlyName}, fan: ${powerFan ? 'ON' : 'OFF'}`);
                         //this.emit('info', `${friendlyName}, direction: ${direction}`);
@@ -158,7 +158,7 @@ class Fans extends EventEmitter {
 
     //prepare accessory
     async prepareAccessory() {
-        if (this.enableDebugMode) this.emit('debug', `Prepare Accessory`);
+        if (this.logDebug) this.emit('debug', `Prepare Accessory`);
 
         try {
             //accessory
@@ -168,7 +168,7 @@ class Fans extends EventEmitter {
             const accessory = new Accessory(accessoryName, accessoryUUID, accessoryCategory);
 
             //Prepare information service
-            if (this.enableDebugMode) this.emit('debug', `Prepare Information Service`);
+            if (this.logDebug) this.emit('debug', `Prepare Information Service`);
             accessory.getService(Service.AccessoryInformation)
                 .setCharacteristic(Characteristic.Manufacturer, 'Tasmota')
                 .setCharacteristic(Characteristic.Model, this.info.modelName ?? 'Model Name')
@@ -177,9 +177,9 @@ class Fans extends EventEmitter {
                 .setCharacteristic(Characteristic.ConfiguredName, accessoryName);
 
             //Prepare services 
-            if (this.enableDebugMode) this.emit('debug', `Prepare Services`);
+            if (this.logDebug) this.emit('debug', `Prepare Services`);
             if (this.fans.length > 0) {
-                if (this.enableDebugMode) this.emit('debug', `Prepare Fan Services`);
+                if (this.logDebug) this.emit('debug', `Prepare Fan Services`);
                 this.fanServices = [];
 
                 for (let i = 0; i < this.fans.length; i++) {
@@ -199,7 +199,7 @@ class Fans extends EventEmitter {
                                 state = state ? 1 : 0;
                                 const speed = `${ApiCommands.FanSpeed}${state}`;
                                 await this.client.get(speed);
-                                if (!this.disableLogInfo) this.emit('info', `${friendlyName}, set state: ${state ? 'ON' : 'OFF'}`);
+                                if (this.logInfo) this.emit('info', `${friendlyName}, set state: ${state ? 'ON' : 'OFF'}`);
                             } catch (error) {
                                 this.emit('warn', `${friendlyName}, set state error: ${error}`);
                             }
@@ -213,7 +213,7 @@ class Fans extends EventEmitter {
                     //        try {
                     //            const direction = `${ApiCommands.FanDirection}${value}`;
                     //            await this.client.get(direction);
-                    //            if (!this.disableLogInfo) this.emit('info', `${friendlyName}, set direction: ${value}`);
+                    //            if (this.logInfo) this.emit('info', `${friendlyName}, set direction: ${value}`);
                     //        } catch (error) {
                     //            this.emit('warn', `${friendlyName}, set direction error: ${error}`);
                     //        }
@@ -232,7 +232,7 @@ class Fans extends EventEmitter {
                             try {
                                 const speed = `${ApiCommands.FanSpeed}${value}`;
                                 await this.client.get(speed);
-                                if (!this.disableLogInfo) this.emit('info', `${friendlyName}, set speed: ${value}`);
+                                if (this.logInfo) this.emit('info', `${friendlyName}, set speed: ${value}`);
                             } catch (error) {
                                 this.emit('warn', `${friendlyName}, set rotation speed error: ${error}`);
                             }
@@ -262,7 +262,7 @@ class Fans extends EventEmitter {
                                 const powerOff = this.lights.length === 1 ? (this.lights[i].power1 ? `${ApiCommands.Power}${relayNr}${ApiCommands.Off}` : ApiCommands.PowerOff) : `${ApiCommands.Power}${relayNr}${ApiCommands.Off}`;
                                 state = state ? powerOn : powerOff;
                                 await this.client.get(state);
-                                if (!this.disableLogInfo) this.emit('info', `${friendlyName}, set state: ${state ? 'ON' : 'OFF'}`);
+                                if (this.logInfo) this.emit('info', `${friendlyName}, set state: ${state ? 'ON' : 'OFF'}`);
                             } catch (error) {
                                 this.emit('warn', `${friendlyName}, set state error: ${error}`);
                             }
@@ -273,12 +273,12 @@ class Fans extends EventEmitter {
 
             //sensors
             if (this.sensorsCount > 0) {
-                if (this.enableDebugMode) this.emit('debug', `Prepare Sensor Services`);
+                if (this.logDebug) this.emit('debug', `Prepare Sensor Services`);
 
                 //temperature
                 const sensorsTemperatureCount = this.sensorsTemperatureCount;
                 if (sensorsTemperatureCount > 0) {
-                    if (this.enableDebugMode) this.emit('debug', `Prepare Temperature Sensor Services`);
+                    if (this.logDebug) this.emit('debug', `Prepare Temperature Sensor Services`);
                     this.sensorTemperatureServices = [];
                     for (let i = 0; i < sensorsTemperatureCount; i++) {
                         const sensorName = this.sensorsName[i];
@@ -289,7 +289,7 @@ class Fans extends EventEmitter {
                         sensorTemperatureService.getCharacteristic(Characteristic.CurrentTemperature)
                             .onGet(async () => {
                                 const value = this.sensorsTemperature[i];
-                                if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} temperature: ${value} °${this.tempUnit}`);
+                                if (this.logInfo) this.emit('info', `sensor: ${sensorName} temperature: ${value} °${this.tempUnit}`);
                                 return value;
                             });
                         this.sensorTemperatureServices.push(sensorTemperatureService);
@@ -299,7 +299,7 @@ class Fans extends EventEmitter {
                 //reference temperature
                 const sensorsReferenceTemperatureCount = this.sensorsReferenceTemperatureCount;
                 if (sensorsReferenceTemperatureCount > 0) {
-                    if (this.enableDebugMode) this.emit('debug', `Prepare Reference Temperature Sensor Services`);
+                    if (this.logDebug) this.emit('debug', `Prepare Reference Temperature Sensor Services`);
                     this.sensorReferenceTemperatureServices = [];
                     for (let i = 0; i < sensorsReferenceTemperatureCount; i++) {
                         const sensorName = this.sensorsName[i];
@@ -310,7 +310,7 @@ class Fans extends EventEmitter {
                         sensorReferenceTemperatureService.getCharacteristic(Characteristic.CurrentTemperature)
                             .onGet(async () => {
                                 const value = this.sensorsReferenceTemperature[i];
-                                if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} reference temperature: ${value} °${this.tempUnit}`);
+                                if (this.logInfo) this.emit('info', `sensor: ${sensorName} reference temperature: ${value} °${this.tempUnit}`);
                                 return value;
                             });
                         this.sensorReferenceTemperatureServices.push(sensorReferenceTemperatureService);
@@ -320,7 +320,7 @@ class Fans extends EventEmitter {
                 //object temperature
                 const sensorsObjTemperatureCount = this.sensorsObjTemperatureCount;
                 if (sensorsObjTemperatureCount > 0) {
-                    if (this.enableDebugMode) this.emit('debug', `Prepare Obj Temperature Sensor Services`);
+                    if (this.logDebug) this.emit('debug', `Prepare Obj Temperature Sensor Services`);
                     this.sensorObjTemperatureServices = [];
                     for (let i = 0; i < sensorsObjTemperatureCount; i++) {
                         const sensorName = this.sensorsName[i];
@@ -331,7 +331,7 @@ class Fans extends EventEmitter {
                         sensorObjTemperatureService.getCharacteristic(Characteristic.CurrentTemperature)
                             .onGet(async () => {
                                 const value = this.sensorsObjTemperature[i];
-                                if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} obj temperature: ${value} °${this.tempUnit}`);
+                                if (this.logInfo) this.emit('info', `sensor: ${sensorName} obj temperature: ${value} °${this.tempUnit}`);
                                 return value;
                             });
                         this.sensorObjTemperatureServices.push(sensorObjTemperatureService);
@@ -341,7 +341,7 @@ class Fans extends EventEmitter {
                 //ambient temperature
                 const sensorsAmbTemperatureCount = this.sensorsAmbTemperatureCount;
                 if (sensorsAmbTemperatureCount > 0) {
-                    if (this.enableDebugMode) this.emit('debug', `Prepare Amb Temperature Sensor Services`);
+                    if (this.logDebug) this.emit('debug', `Prepare Amb Temperature Sensor Services`);
                     this.sensorAmbTemperatureServices = [];
                     for (let i = 0; i < sensorsAmbTemperatureCount; i++) {
                         const sensorName = this.sensorsName[i];
@@ -352,7 +352,7 @@ class Fans extends EventEmitter {
                         sensorAmbTemperatureService.getCharacteristic(Characteristic.CurrentTemperature)
                             .onGet(async () => {
                                 const value = this.sensorsAmbTemperature[i];
-                                if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} amb temperature: ${value} °${this.tempUnit}`);
+                                if (this.logInfo) this.emit('info', `sensor: ${sensorName} amb temperature: ${value} °${this.tempUnit}`);
                                 return value;
                             });
                         this.sensorAmbTemperatureServices.push(sensorAmbTemperatureService);
@@ -362,7 +362,7 @@ class Fans extends EventEmitter {
                 //dew point temperature
                 const sensorsDewPointTemperatureCount = this.sensorsDewPointTemperatureCount;
                 if (sensorsDewPointTemperatureCount > 0) {
-                    if (this.enableDebugMode) this.emit('debug', `Prepare Dew Point Temperature Sensor Services`);
+                    if (this.logDebug) this.emit('debug', `Prepare Dew Point Temperature Sensor Services`);
                     this.sensorDewPointTemperatureServices = [];
                     for (let i = 0; i < sensorsDewPointTemperatureCount; i++) {
                         const sensorName = this.sensorsName[i];
@@ -373,7 +373,7 @@ class Fans extends EventEmitter {
                         sensorDewPointTemperatureService.getCharacteristic(Characteristic.CurrentTemperature)
                             .onGet(async () => {
                                 const value = this.sensorsDewPointTemperature[i];
-                                if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} dew point: ${value} °${this.tempUnit}`);
+                                if (this.logInfo) this.emit('info', `sensor: ${sensorName} dew point: ${value} °${this.tempUnit}`);
                                 return value;
                             });
                         this.sensorDewPointTemperatureServices.push(sensorDewPointTemperatureService);
@@ -383,7 +383,7 @@ class Fans extends EventEmitter {
                 //humidity
                 const sensorsHumidityCount = this.sensorsHumidityCount;
                 if (sensorsHumidityCount > 0) {
-                    if (this.enableDebugMode) this.emit('debug', `Prepare Humidity Sensor Services`);
+                    if (this.logDebug) this.emit('debug', `Prepare Humidity Sensor Services`);
                     this.sensorHumidityServices = [];
                     for (let i = 0; i < sensorsHumidityCount; i++) {
                         const sensorName = this.sensorsName[i];
@@ -394,7 +394,7 @@ class Fans extends EventEmitter {
                         sensorHumidityService.getCharacteristic(Characteristic.CurrentRelativeHumidity)
                             .onGet(async () => {
                                 const value = this.sensorsHumidity[i];
-                                if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} humidity: ${value} %`);
+                                if (this.logInfo) this.emit('info', `sensor: ${sensorName} humidity: ${value} %`);
                                 return value;
                             });
                         this.sensorHumidityServices.push(sensorHumidityService);
@@ -408,7 +408,7 @@ class Fans extends EventEmitter {
                 //carbon dioxyde
                 const sensorsCarbonDioxydeCount = this.sensorsCarbonDioxydeCount;
                 if (sensorsCarbonDioxydeCount > 0) {
-                    if (this.enableDebugMode) this.emit('debug', `Prepare Carbon Dioxyde Sensor Services`);
+                    if (this.logDebug) this.emit('debug', `Prepare Carbon Dioxyde Sensor Services`);
                     this.sensorCarbonDioxydeServices = [];
                     for (let i = 0; i < sensorsCarbonDioxydeCount; i++) {
                         const sensorName = this.sensorsName[i];
@@ -419,19 +419,19 @@ class Fans extends EventEmitter {
                         sensorCarbonDioxydeService.getCharacteristic(Characteristic.CarbonDioxideDetected)
                             .onGet(async () => {
                                 const state = this.sensorsCarbonDioxyde[i] > 1000;
-                                if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} carbon dioxyde detected: ${state ? 'Yes' : 'No'}`);
+                                if (this.logInfo) this.emit('info', `sensor: ${sensorName} carbon dioxyde detected: ${state ? 'Yes' : 'No'}`);
                                 return state;
                             });
                         sensorCarbonDioxydeService.getCharacteristic(Characteristic.CarbonDioxideLevel)
                             .onGet(async () => {
                                 const value = this.sensorsCarbonDioxyde[i];
-                                if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} carbon dioxyde level: ${value} ppm`);
+                                if (this.logInfo) this.emit('info', `sensor: ${sensorName} carbon dioxyde level: ${value} ppm`);
                                 return value;
                             });
                         sensorCarbonDioxydeService.getCharacteristic(Characteristic.CarbonDioxidePeakLevel)
                             .onGet(async () => {
                                 const value = this.sensorsCarbonDioxyde[i];
-                                if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} carbon dioxyde peak level: ${value} ppm`);
+                                if (this.logInfo) this.emit('info', `sensor: ${sensorName} carbon dioxyde peak level: ${value} ppm`);
                                 return value;
                             });
                         this.sensorCarbonDioxydeServices.push(sensorCarbonDioxydeService);
@@ -441,7 +441,7 @@ class Fans extends EventEmitter {
                 //ambient light
                 const sensorsAmbientLightCount = this.sensorsAmbientLightCount;
                 if (sensorsAmbientLightCount > 0) {
-                    if (this.enableDebugMode) this.emit('debug', `Prepare Ambient Light Sensor Services`);
+                    if (this.logDebug) this.emit('debug', `Prepare Ambient Light Sensor Services`);
                     this.sensorAmbientLightServices = [];
                     for (let i = 0; i < sensorsAmbientLightCount; i++) {
                         const sensorName = this.sensorsName[i];
@@ -452,7 +452,7 @@ class Fans extends EventEmitter {
                         sensorAmbientLightService.getCharacteristic(Characteristic.CurrentAmbientLightLevel)
                             .onGet(async () => {
                                 const value = this.sensorsAmbientLight[i];
-                                if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} ambient light: ${value} lx`);
+                                if (this.logInfo) this.emit('info', `sensor: ${sensorName} ambient light: ${value} lx`);
                                 return value;
                             });
                         this.sensorAmbientLightServices.push(sensorAmbientLightService);
@@ -462,7 +462,7 @@ class Fans extends EventEmitter {
                 //motion
                 const sensorsMotionCount = this.sensorsMotionCount;
                 if (sensorsMotionCount > 0) {
-                    if (this.enableDebugMode) this.emit('debug', `Prepare Motion Sensor Services`);
+                    if (this.logDebug) this.emit('debug', `Prepare Motion Sensor Services`);
                     this.sensorMotionServices = [];
                     for (let i = 0; i < sensorsMotionCount; i++) {
                         const sensorName = this.sensorsName[i];
@@ -473,7 +473,7 @@ class Fans extends EventEmitter {
                         sensorMotionService.getCharacteristic(Characteristic.MotionDetected)
                             .onGet(async () => {
                                 const state = this.sensorsMotion[i];
-                                if (!this.disableLogInfo) this.emit('info', `sensor: ${sensorName} motion: ${state ? 'ON' : 'OFF'}`);
+                                if (this.logInfo) this.emit('info', `sensor: ${sensorName} motion: ${state ? 'ON' : 'OFF'}`);
                                 return state;
                             });
                         this.sensorMotionServices.push(sensorMotionService);
@@ -497,7 +497,7 @@ class Fans extends EventEmitter {
             this.emit('success', `Connect Success`)
 
             //check device info 
-            if (!this.disableLogDeviceInfo) await this.deviceInfo();
+            if (this.logDeviceInfo) await this.deviceInfo();
 
             //start prepare accessory
             const accessory = await this.prepareAccessory();

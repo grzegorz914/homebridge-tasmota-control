@@ -25,6 +25,11 @@ Homebridge plugin for Tasmota flashed devices.
 | [Config UI X](https://github.com/homebridge/homebridge-config-ui-x) | [Config UI X Wiki](https://github.com/homebridge/homebridge-config-ui-x/wiki) | Homebridge Web User Interface | Recommended |
 | [Tasmota Control](https://www.npmjs.com/package/homebridge-tasmota-control) | [Plug-In Wiki](https://github.com/grzegorz914/homebridge-tasmota-control/wiki) | Homebridge Plug-In | Required |
 
+## Warning
+
+* For plugin < v1.8.0 use Homebridge UI <= v5.5.0.
+* For plugin >= v1.8.0 use Homebridge UI >= v5.13.0.
+
 ## About The Plugin
 
 * Plugin work with Tasmota v6.0.0 and abowe.
@@ -150,9 +155,9 @@ Homebridge plugin for Tasmota flashed devices.
 | `sensorsNamePrefix` | Here enable/disable the accessory name as a prefix for sensors name. |
 | `loadNameFromDevice` | If enabled, the accessory name will be loaded direct from device. |
 | `refreshInterval` | Here set the data refresh time in (sec). |
-| `disableLogDeviceInfo` | If enabled, add ability to disable log device info by every connections device to the network. |
-| `disableLogInfo` | If enabled, disable log info, all values and state will not be displayed in Homebridge log console. |
-| `disableLogSuccess` | If enabled, disable logging device success. |
-| `disableLogWarn` | If enabled, disable logging device warnings. |
-| `disableLogError` | If enabled, disable logging device error. |
-| `enableDebugMode` | If enabled, deep log will be present in homebridge console. |
+| `log.deviceInfo` | If enabled, log device info will be displayed by every connections device to the network. |
+| `log.success` | If enabled, success log will be displayed in console. |
+| `log.info` | If enabled, info log will be displayed in console. |
+| `log.warn` | If enabled, warn log will be displayed in console. |
+| `log.error` | If enabled, error log will be displayed in console. |
+| `log.debug` | If enabled, debug log will be displayed in console. |

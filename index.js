@@ -52,14 +52,14 @@ class tasmotaPlatform {
         const remoteTemperatureSensorRefreshInterval = (device.miElHvac?.remoteTemperatureSensor?.refreshInterval ?? 5) * 1000;
         const refreshInterval = (device.refreshInterval ?? 5) * 1000;
 
-        //log
+        //log config
         const logLevel = {
-          debug: device.enableDebugMode,
-          info: !device.disableLogInfo,
-          success: !device.disableLogSuccess,
-          warn: !device.disableLogWarn,
-          error: !device.disableLogError,
-          devInfo: !device.disableLogDeviceInfo,
+          devInfo: device.log?.deviceInfo,
+          success: device.log?.success,
+          info: device.log?.info,
+          warn: device.log?.warn,
+          error: device.log?.error,
+          debug: device.log?.debug
         };
 
         if (logLevel.debug) log.info(`Device: ${host} ${deviceName}, debug: Did finish launching.`);
@@ -77,9 +77,9 @@ class tasmotaPlatform {
               try {
                 //get device info
                 const deviceInfo = new DeviceInfo(url, auth, user, passwd, deviceName, loadNameFromDevice, logLevel.debug)
-                  .on('debug', (msg) => logLevel.debug && log.info(`Device: ${host} ${deviceName}, debug: ${msg}`))
-                  .on('warn', (msg) => logLevel.warn && log.warn(`Device: ${host} ${deviceName}, ${msg}`))
-                  .on('error', (msg) => logLevel.error && log.error(`Device: ${host} ${deviceName}, ${msg}`));
+                  .on('debug', (msg) => log.info(`Device: ${host} ${deviceName}, debug: ${msg}`))
+                  .on('warn', (msg) => log.warn(`Device: ${host} ${deviceName}, ${msg}`))
+                  .on('error', (msg) => log.error(`Device: ${host} ${deviceName}, ${msg}`));
 
                 const info = await deviceInfo.getInfo();
                 if (!info.serialNumber) {
@@ -136,12 +136,12 @@ class tasmotaPlatform {
                       continue;
                   }
 
-                  deviceType.on('devInfo', (msg) => logLevel.devInfo && log.info(msg))
-                    .on('success', (msg) => logLevel.success && log.success(`Device: ${host} ${deviceName}, ${msg}`))
-                    .on('info', (msg) => logLevel.info && log.info(`Device: ${host} ${deviceName}, ${msg}`))
-                    .on('debug', (msg) => logLevel.debug && log.info(`Device: ${host} ${deviceName}, debug: ${msg}`))
-                    .on('warn', (msg) => logLevel.warn && log.warn(`Device: ${host} ${deviceName}, ${msg}`))
-                    .on('error', (msg) => logLevel.error && log.error(`Device: ${host} ${deviceName}, ${msg}`));
+                  deviceType.on('devInfo', (msg) => log.info(msg))
+                    .on('success', (msg) => log.success(`Device: ${host} ${deviceName}, ${msg}`))
+                    .on('info', (msg) => log.info(`Device: ${host} ${deviceName}, ${msg}`))
+                    .on('debug', (msg) => log.info(`Device: ${host} ${deviceName}, debug: ${msg}`))
+                    .on('warn', (msg) => log.warn(`Device: ${host} ${deviceName}, ${msg}`))
+                    .on('error', (msg) => log.error(`Device: ${host} ${deviceName}, ${msg}`));
 
                   const accessory = await deviceType.start();
                   if (accessory) {

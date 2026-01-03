@@ -22,9 +22,9 @@ class Switches extends EventEmitter {
         //other config
         this.relaysDisplayType = config.relaysDisplayType || 0;
         this.relaysNamePrefix = config.relaysNamePrefix || false;
-        this.enableDebugMode = config.enableDebugMode || false;
-        this.disableLogInfo = config.disableLogInfo || false;
-        this.disableLogDeviceInfo = config.disableLogDeviceInfo || false;
+        this.logDeviceInfo = config.log?.deviceInfo || false;
+        this.logInfo = config.log?.info || false;
+        this.logDebug = config.log?.debug || false;
         this.functions = new Functions();
 
         //axios instance
@@ -55,12 +55,12 @@ class Switches extends EventEmitter {
     }
 
     async checkState() {
-        if (this.enableDebugMode) this.emit('debug', `Requesting status`);
+        if (this.logDebug) this.emit('debug', `Requesting status`);
         try {
             //power status
             const powerStatusData = await this.client.get(ApiCommands.PowerStatus);
             const powerStatus = powerStatusData.data ?? {};
-            if (this.enableDebugMode) this.emit('debug', `Power status: ${JSON.stringify(powerStatus, null, 2)}`);
+            if (this.logDebug) this.emit('debug', `Power status: ${JSON.stringify(powerStatus, null, 2)}`);
 
             //relays
             const relaysCount = this.relaysCount;
@@ -87,7 +87,7 @@ class Switches extends EventEmitter {
                         .updateCharacteristic(Characteristic.On, power);
 
                     //log info
-                    if (!this.disableLogInfo) this.emit('info', `${friendlyName}, state: ${power ? 'ON' : 'OFF'}`);
+                    if (this.logInfo) this.emit('info', `${friendlyName}, state: ${power ? 'ON' : 'OFF'}`);
                 }
             }
 
@@ -110,7 +110,7 @@ class Switches extends EventEmitter {
 
     //prepare accessory
     async prepareAccessory() {
-        if (this.enableDebugMode) this.emit('debug', `Prepare Accessory`);
+        if (this.logDebug) this.emit('debug', `Prepare Accessory`);
 
         try {
             //accessory
@@ -120,7 +120,7 @@ class Switches extends EventEmitter {
             const accessory = new Accessory(accessoryName, accessoryUUID, accessoryCategory);
 
             //Prepare information service
-            if (this.enableDebugMode) this.emit('debug', `Prepare Information Service`);
+            if (this.logDebug) this.emit('debug', `Prepare Information Service`);
             accessory.getService(Service.AccessoryInformation)
                 .setCharacteristic(Characteristic.Manufacturer, 'Tasmota')
                 .setCharacteristic(Characteristic.Model, this.info.modelName ?? 'Model Name')
@@ -129,9 +129,9 @@ class Switches extends EventEmitter {
                 .setCharacteristic(Characteristic.ConfiguredName, accessoryName);
 
             //Prepare services 
-            if (this.enableDebugMode) this.emit('debug', `Prepare Services`);
+            if (this.logDebug) this.emit('debug', `Prepare Services`);
             if (this.switchesOutlets.length > 0) {
-                if (this.enableDebugMode) this.emit('debug', `Prepare Switch/Outlet Services`);
+                if (this.logDebug) this.emit('debug', `Prepare Switch/Outlet Services`);
                 this.switchOutletServices = [];
 
                 for (let i = 0; i < this.switchesOutlets.length; i++) {
@@ -155,7 +155,7 @@ class Switches extends EventEmitter {
                                 state = state ? powerOn : powerOff;
 
                                 await this.client.get(state);
-                                if (!this.disableLogInfo) this.emit('info', `${friendlyName}, set state: ${state ? 'ON' : 'OFF'}`);
+                                if (this.logInfo) this.emit('info', `${friendlyName}, set state: ${state ? 'ON' : 'OFF'}`);
                             } catch (error) {
                                 this.emit('warn', `${friendlyName}, set state error: ${error}`);
                             }
@@ -180,7 +180,7 @@ class Switches extends EventEmitter {
             this.emit('success', `Connect Success`)
 
             //check device info 
-            if (!this.disableLogDeviceInfo) await this.deviceInfo();
+            if (this.logDeviceInfo) await this.deviceInfo();
 
             //start prepare accessory
             const accessory = await this.prepareAccessory();
