@@ -136,8 +136,8 @@ class tasmotaPlatform {
                       continue;
                   }
 
-                  deviceType.on('devInfo', (msg) => log.info(msg))
-                    .on('success', (msg) => log.success(`Device: ${host} ${deviceName}, ${msg}`))
+                  deviceType.on('devInfo', (msg) => logLevel.devInfo && log.info(msg))
+                    .on('success', (msg) => logLevel.success && log.success(`Device: ${host} ${deviceName}, ${msg}`))
                     .on('info', (msg) => log.info(`Device: ${host} ${deviceName}, ${msg}`))
                     .on('debug', (msg) => log.info(`Device: ${host} ${deviceName}, debug: ${msg}`))
                     .on('warn', (msg) => log.warn(`Device: ${host} ${deviceName}, ${msg}`))
