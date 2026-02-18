@@ -15,6 +15,8 @@
 
 Homebridge plugin for Tasmota flashed devices.
 
+<a href="https://buycoffee.to/grzegorz914" target="_blank"><img src="https://buycoffee.to/static/img/share/share-button-primary.png" style="width: 234px; height: 61px" alt="Postaw mi kawę na buycoffee.to"></a>
+
 </span>
 
 ## Package Requirements
