@@ -165,16 +165,13 @@ class MiElHvac extends EventEmitter {
                 return null;
             }
 
-            const power = miElHvac.Power === 'on' ? 1 : 0;
-            const roomTemperature = miElHvac.Temperature ?? null;
+            const power = miElHvac.PowerState === 'on' ? 1 : 0;
+            const roomTemperature = miElHvac.RoomTemperature;
             if (!roomTemperature) return null;
 
-            const outdoorTemperature = miElHvac.OutdoorTemperature ?? null;
             const setTemperature = miElHvac.SetTemperature;
             const operationMode = miElHvac.Mode ?? 'Unknown';
-            const operationModeStatus = miElHvac.ModeStatus ?? 'Unknown';
             const fanSpeed = miElHvac.FanSpeed ?? 'Unknown';
-            const fanSpeedStatus = miElHvac.FanStatus ?? 'Unknown';
             const vaneVerticalDirection = miElHvac.SwingV ?? 'Unknown';
             const vaneHorizontalDirection = miElHvac.SwingH ?? 'Unknown';
             const prohibit = miElHvac.Prohibit ?? 'Unknown';
@@ -183,16 +180,19 @@ class MiElHvac extends EventEmitter {
             const powerFull = miElHvac.PowerFull ?? 'Unknown';
             const nightMode = miElHvac.NightMode ?? 'Unknown';
             const airDirection = miElHvac.AirDirection ?? 'Unknown';
-            const compressor = miElHvac.Compressor ?? 'Unknown';
+            const compressorStatus = miElHvac.CompressorStatus ?? 'Unknown';
             const compressorFrequency = miElHvac.CompressorFrequency ?? 0;
-            const operationPower = miElHvac.OperationPower ?? 0;
-            const operationEnergy = miElHvac.OperationEnergy ?? 0;
-            const operationStatus = miElHvac.OperationStatus ?? 'Unknown';
+            const operationPower = miElHvac.Power ?? 0;
+            const operationEnergy = miElHvac.Energy ?? 0;
+            const operationStage = miElHvac.OperationStage ?? 'Unknown';
+            const fanSpeedStage = miElHvac.FanStage ?? 'Unknown';
+            const operationModeStage = miElHvac.ModeStage ?? 'Unknown';
+            const outdoorTemperature = miElHvac.OutdoorTemperature ?? null;
             const swingMode = vaneVerticalDirection === 'swing' && vaneHorizontalDirection === 'swing' ? 1 : 0;
-            const defaultCoolingSetTemperature = parseFloat(await this.functions.readData(this.info.defaultCoolingSetTemperatureFile));
-            const defaultHeatingSetTemperature = parseFloat(await this.functions.readData(this.info.defaultHeatingSetTemperatureFile));
             const remoteTemperatureSensorState = miElHvac.RemoteTemperatureSensorState ?? false; //ON, OFF
             const remoteTemperatureSensorAutoClearTime = miElHvac.RemoteTemperatureSensorAutoClearTime ?? 0; //time in ms
+            const defaultCoolingSetTemperature = parseFloat(await this.functions.readData(this.info.defaultCoolingSetTemperatureFile));
+            const defaultHeatingSetTemperature = parseFloat(await this.functions.readData(this.info.defaultHeatingSetTemperatureFile));
 
             const modelSupportsHeat = true;
             const modelSupportsDry = true;
@@ -215,7 +215,7 @@ class MiElHvac extends EventEmitter {
                 outdoorTemperature: outdoorTemperature,
                 setTemperature: setTemperature,
                 operationMode: operationMode,
-                operationModeStatus: operationModeStatus,
+                operationModeStage: operationModeStage,
                 currentOperationMode: 0,
                 targetOperationMode: 0,
                 vaneVerticalDirection: vaneVerticalDirection,
@@ -227,11 +227,11 @@ class MiElHvac extends EventEmitter {
                 nightMode: nightMode,
                 airDirection: airDirection,
                 swingMode: swingMode,
-                compressor: compressor,
+                compressorStatus: compressorStatus,
                 compressorFrequency: compressorFrequency,
                 operationPower: operationPower,
                 operationEnergy: operationEnergy,
-                operationStatus: operationStatus,
+                operationStage: operationStage,
                 defaultCoolingSetTemperature: defaultCoolingSetTemperature,
                 defaultHeatingSetTemperature: defaultHeatingSetTemperature,
                 remoteTemperatureSensorState: remoteTemperatureSensorState,
@@ -267,7 +267,7 @@ class MiElHvac extends EventEmitter {
                 'auto_leader': 4
             };
 
-            const statusIndex = operationModeStatusMap[operationModeStatus] ?? 0;
+            const statusIndex = operationModeStatusMap[operationModeStage] ?? 0;
             switch (operationMode) {
                 case 'heat':
                     obj.currentOperationMode = [2, 1, 2, 3, 0][statusIndex]; // INACTIVE, IDLE, HEATING, COOLING
@@ -566,25 +566,25 @@ class MiElHvac extends EventEmitter {
 
                         60: remoteTemperatureSensorState,
 
-                        70: operationStatus === 'normal',
-                        71: operationStatus === 'filter',
-                        72: operationStatus === 'defrost',
-                        73: operationStatus === 'standby',
-                        74: operationStatus === 'preheat',
+                        70: operationStage === 'normal',
+                        71: operationStage === 'filter',
+                        72: operationStage === 'defrost',
+                        73: operationStage === 'standby',
+                        74: operationStage === 'preheat',
 
-                        80: fanSpeedStatus === 'off',
-                        81: fanSpeedStatus === 'quiet',
-                        82: fanSpeedStatus === '1',
-                        83: fanSpeedStatus === '2',
-                        84: fanSpeedStatus === '3',
-                        85: fanSpeedStatus === '4',
-                        86: fanSpeedStatus === '5',
+                        80: fanSpeedStage === 'off',
+                        81: fanSpeedStage === 'quiet',
+                        82: fanSpeedStage === '1',
+                        83: fanSpeedStage === '2',
+                        84: fanSpeedStage === '3',
+                        85: fanSpeedStage === '4',
+                        86: fanSpeedStage === '5',
 
                         90: operationMode !== 'auto',
-                        91: operationModeStatus === 'auto_fan',
-                        92: operationModeStatus === 'auto_heat',
-                        93: operationModeStatus === 'auto_cool',
-                        94: operationModeStatus === 'auto_leader',
+                        91: operationModeStage === 'auto_fan',
+                        92: operationModeStage === 'auto_heat',
+                        93: operationModeStage === 'auto_cool',
+                        94: operationModeStage === 'auto_leader',
                     };
 
                     if (mode in sensorStates) {
@@ -609,19 +609,19 @@ class MiElHvac extends EventEmitter {
             if (this.logInfo) {
                 this.emit('info', `Power: ${power ? 'ON' : 'OFF'}`);
                 const info = power ? this.emit('info', `Target operation mode: ${operationMode.toUpperCase()}`) : false;
-                const info1 = power ? this.emit('info', `Current operation mode: ${operationModeStatus.toUpperCase()}`) : false;
+                const info1 = power ? this.emit('info', `Current operation mode: ${operationModeStage.toUpperCase()}`) : false;
                 const info2 = power ? this.emit('info', `Target temperature: ${setTemperature}${temperatureUnit}`) : false;
                 const info3 = power ? this.emit('info', `Current temperature: ${roomTemperature}${temperatureUnit}`) : false;
                 const info4 = power && outdoorTemperature !== null ? this.emit('info', `Outdoor temperature: ${outdoorTemperature}${temperatureUnit}`) : false;
                 const info5 = power && modelSupportsFanSpeed ? this.emit('info', `Target Fan speed: ${fanSpeed.toUpperCase()}`) : false;
-                const info6 = power && modelSupportsFanSpeed ? this.emit('info', `Current Fan speed: ${fanSpeedStatus.toUpperCase()}`) : false;
+                const info6 = power && modelSupportsFanSpeed ? this.emit('info', `Current Fan speed: ${fanSpeedStage.toUpperCase()}`) : false;
                 const info7 = power && vaneHorizontalDirection !== 'Unknown' ? this.emit('info', `Vane horizontal: ${MiElHVAC.HorizontalVane[vaneHorizontalDirection] ?? vaneHorizontalDirection}`) : false;
                 const info8 = power && vaneVerticalDirection !== 'Unknown' ? this.emit('info', `Vane vertical: ${MiElHVAC.VerticalVane[vaneVerticalDirection] ?? vaneVerticalDirection}`) : false;
                 const info9 = power ? this.emit('info', `Swing mode: ${MiElHVAC.SwingMode[swingMode]}`) : false;
                 const info10 = power && vaneHorizontalDirection === 'isee' && airDirection !== 'Unknown' ? this.emit('info', `Air direction: ${MiElHVAC.AirDirection[airDirection]}`) : false;
                 const info11 = power ? this.emit('info', `Prohibit: ${MiElHVAC.Prohibit[prohibit]}`) : false;
                 const info12 = power ? this.emit('info', `Temperature display unit: ${temperatureUnit}`) : false;
-                const info13 = power ? this.emit('info', `Compressor: ${compressor.toUpperCase()}`) : false;
+                const info13 = power ? this.emit('info', `Compressor: ${compressorStatus.toUpperCase()}`) : false;
                 const info14 = power ? this.emit('info', `OperationPower: ${operationPower}W`) : false;
                 const info15 = power ? this.emit('info', `OperationEnergy: ${operationEnergy}kWh`) : false;
             }
