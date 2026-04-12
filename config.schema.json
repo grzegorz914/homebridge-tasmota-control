@@ -12,7 +12,7 @@
       "name": {
         "title": "Platform",
         "type": "string",
-        "default": "Tasmpta Control"
+        "default": "Tasmota Control"
       },
       "devices": {
         "title": "Devices",
