@@ -10,170 +10,208 @@ import ImpulseGenerator from './src/impulsegenerator.js';
 import { PluginName, PlatformName } from './src/constants.js';
 import CustomCharacteristics from './src/customcharacteristics.js';
 
-class tasmotaPlatform {
+class TasmotaPlatform {
   constructor(log, config, api) {
-    // only load if configured
     if (!config || !Array.isArray(config.devices)) {
-      log(`No configuration found for ${PluginName}.`);
+      log.warn(`No configuration found for ${PluginName}`);
       return;
     }
-    this.accessories = [];
 
-    //check if prefs directory exist
+    this.accessories = [];
+    this.deviceImpulseGenerators = new Map();
+
     const prefDir = join(api.user.storagePath(), 'tasmota');
     try {
       mkdirSync(prefDir, { recursive: true });
     } catch (error) {
-      log.error(`Prepare directory error: ${error}.`);
+      log.error(`Prepare directory error: ${error.message ?? error}`);
       return;
     }
 
-    api.on('didFinishLaunching', async () => {
-      for (const device of config.devices) {
-
-        //check accessory is enabled
-        const disableAccessory = device.disableAccessory || false;
-        if (disableAccessory) continue;
-
-        const deviceName = device.name;
-        const host = device.host;
-        if (!deviceName || !host) {
-          log.warn(`Device Name: ${deviceName ? 'OK' : deviceName}, host: ${host ? 'OK' : host}, in config wrong or missing.`);
-          continue;
-        }
-
-        //config
-        const url = `http://${host}/cm?cmnd=`;
-        const auth = device.auth || false;
-        const user = device.user || '';
-        const passwd = device.passwd || '';
-        const loadNameFromDevice = device.loadNameFromDevice || false;
-        const remoteTemperatureSensorEnable = device.miElHvac?.remoteTemperatureSensor?.enable;
-        const remoteTemperatureSensorRefreshInterval = (device.miElHvac?.remoteTemperatureSensor?.refreshInterval ?? 5) * 1000;
-        const refreshInterval = (device.refreshInterval ?? 5) * 1000;
-
-        //log config
-        const logLevel = {
-          devInfo: device.log?.deviceInfo,
-          success: device.log?.success,
-          info: device.log?.info,
-          warn: device.log?.warn,
-          error: device.log?.error,
-          debug: device.log?.debug
-        };
-
-        if (logLevel.debug) log.info(`Device: ${host} ${deviceName}, debug: Did finish launching.`);
-        const newConfig = {
-          ...device,
-          user: 'removed',
-          passwd: 'removed'
-        };
-        if (logLevel.debug) log.info(`Device: ${host} ${deviceName}, Config: ${JSON.stringify(newConfig, null, 2)}.`);
-
-        try {
-          //create impulse generator
-          const impulseGenerator = new ImpulseGenerator()
-            .on('start', async () => {
-              try {
-                //get device info
-                const deviceInfo = new DeviceInfo(url, auth, user, passwd, deviceName, loadNameFromDevice, logLevel.debug)
-                  .on('debug', (msg) => log.info(`Device: ${host} ${deviceName}, debug: ${msg}`))
-                  .on('warn', (msg) => log.warn(`Device: ${host} ${deviceName}, ${msg}`))
-                  .on('error', (msg) => log.error(`Device: ${host} ${deviceName}, ${msg}`));
-
-                const info = await deviceInfo.getInfo();
-                if (!info.serialNumber) {
-                  log.warn(`Device: ${host} ${deviceName}, serial not found.`);
-                  return;
-                }
-
-                let i = 0;
-                for (const type of info.deviceTypes) {
-                  const serialNumber = i === 0 ? info.serialNumber : `${info.serialNumber}${i}`;
-
-                  //check files exists, if not then create it
-                  if (type === 0) {
-                    try {
-                      const postFix = device.host.split('.').join('');
-                      info.defaultHeatingSetTemperatureFile = `${prefDir}/defaultHeatingSetTemperature_${postFix}`;
-                      info.defaultCoolingSetTemperatureFile = `${prefDir}/defaultCoolingSetTemperature_${postFix}`;
-                      const files = [
-                        info.defaultHeatingSetTemperatureFile,
-                        info.defaultCoolingSetTemperatureFile
-                      ];
-
-                      files.forEach((file, index) => {
-                        if (!existsSync(file)) {
-                          const data = ['20', '23'][index];
-                          writeFileSync(file, data);
-                        }
-                      });
-                    } catch (error) {
-                      if (logLevel.error) log.error(`Device: ${host} ${deviceName}, Prepare files error: ${error.message ?? error}`);
-                      continue;
-                    }
-                  }
-
-                  let deviceType;
-                  switch (type) {
-                    case 0: //mielhvac
-                      deviceType = new MiElHvac(api, device, info, serialNumber, deviceInfo);
-                      break;
-                    case 1: //switches
-                      deviceType = new Switches(api, device, info, serialNumber, deviceInfo);
-                      break;
-                    case 2: //lights
-                      deviceType = new Lights(api, device, info, serialNumber, deviceInfo);
-                      break;
-                    case 3: //fans
-                      deviceType = new Fans(api, device, info, serialNumber, deviceInfo);
-                      break;
-                    case 4: //sensors
-                      deviceType = new Sensors(api, device, info, serialNumber, deviceInfo);
-                      break;
-                    default:
-                      if (logLevel.warn) log.warn(`Device: ${host} ${deviceName}, unknown device: ${info.deviceTypes}.`);
-                      continue;
-                  }
-
-                  deviceType.on('devInfo', (msg) => logLevel.devInfo && log.info(msg))
-                    .on('success', (msg) => logLevel.success && log.success(`Device: ${host} ${deviceName}, ${msg}`))
-                    .on('info', (msg) => log.info(`Device: ${host} ${deviceName}, ${msg}`))
-                    .on('debug', (msg) => log.info(`Device: ${host} ${deviceName}, debug: ${msg}`))
-                    .on('warn', (msg) => log.warn(`Device: ${host} ${deviceName}, ${msg}`))
-                    .on('error', (msg) => log.error(`Device: ${host} ${deviceName}, ${msg}`));
-
-                  const accessory = await deviceType.start();
-                  if (accessory) {
-                    api.publishExternalAccessories(PluginName, [accessory]);
-                    if (logLevel.success) log.success(`Device: ${host} ${deviceName}, Published as external accessory.`);
-
-                    //start impulse generator
-                    const timers = [{ name: 'checkState', sampling: refreshInterval }];
-                    if (remoteTemperatureSensorEnable) timers.push({ name: 'updateRemoteTemp', sampling: remoteTemperatureSensorRefreshInterval });
-                    await deviceType.impulseGenerator.state(true, timers);
-
-                    //stop impulse generator
-                    await impulseGenerator.state(false);
-                  }
-
-                  i++;
-                }
-              } catch (error) {
-                if (logLevel.error) log.error(`Device: ${host} ${deviceName}, Start impulse generator error: ${error.message ?? error}, trying again.`);
-              }
-            }).on('state', (state) => {
-              if (logLevel.debug) log.info(`Device: ${host} ${deviceName}, Start impulse generator ${state ? 'started' : 'stopped'}.`);
-            });
-
-          //start impulse generator
-          await impulseGenerator.state(true, [{ name: 'start', sampling: 120000 }]);
-        } catch (error) {
-          if (logLevel.error) log.error(`Device: ${host} ${deviceName}, Did finish launching error: ${error.message ?? error}.`);
-        }
-      }
+    api.on('didFinishLaunching', () => {
+      // Each device is set up independently — a failure in one does not
+      // block the others. Promise.allSettled runs all in parallel.
+      Promise.allSettled(
+        config.devices.map(device =>
+          this.setupDevice(device, prefDir, log, api)
+        )
+      ).then(results => {
+        results.forEach((result, i) => {
+          if (result.status === 'rejected') {
+            log.error(`Device[${i}] setup error: ${result.reason?.message ?? result.reason}`);
+          }
+        });
+      });
     });
   }
+
+  // ── Per-device setup ──────────────────────────────────────────────────────
+
+  async setupDevice(device, prefDir, log, api) {
+    const disableAccessory = device.disableAccessory ?? false;
+    if (disableAccessory) return;
+
+    const deviceName = device.name;
+    const host = device.host;
+
+    if (!deviceName || !host) {
+      const reason = !deviceName ? 'name missing' : 'host missing';
+      log.warn(`Device ${deviceName ?? '(unnamed)'}: ${reason} — will not be published in the Home app`);
+      return;
+    }
+
+    const url = `http://${host}/cm?cmnd=`;
+    const auth = device.auth ?? false;
+    const user = device.user ?? '';
+    const passwd = device.passwd ?? '';
+    const loadNameFromDevice = device.loadNameFromDevice ?? false;
+    const remoteTemperatureSensorEnable = device.miElHvac?.remoteTemperatureSensor?.enable ?? false;
+    const remoteTemperatureSensorRefreshInterval = (device.miElHvac?.remoteTemperatureSensor?.refreshInterval ?? 5) * 1000;
+    const refreshInterval = (device.refreshInterval ?? 5) * 1000;
+
+    const logLevel = {
+      devInfo: device.log?.deviceInfo ?? false,
+      success: device.log?.success ?? false,
+      info: device.log?.info ?? false,
+      warn: device.log?.warn ?? false,
+      error: device.log?.error ?? false,
+      debug: device.log?.debug ?? false,
+    };
+
+    if (logLevel.debug) {
+      log.info(`${host} ${deviceName}, debug: did finish launching`);
+      const safeConfig = { ...device, user: 'removed', passwd: 'removed' };
+      log.info(`${host} ${deviceName}, config: ${JSON.stringify(safeConfig, null, 2)}`);
+    }
+
+    // The startup impulse generator retries the full connect+discover cycle
+    // every 120 s until it succeeds, then hands off to the device impulse
+    // generators and stops itself.
+    const impulseGenerator = new ImpulseGenerator()
+      .on('start', async () => {
+        try {
+          await this.startDevice(
+            device, host, deviceName, url, auth, user, passwd,
+            loadNameFromDevice, remoteTemperatureSensorEnable,
+            remoteTemperatureSensorRefreshInterval, refreshInterval,
+            prefDir, logLevel, log, api, impulseGenerator
+          );
+        } catch (error) {
+          if (logLevel.error) log.error(`${host} ${deviceName}, Start impulse generator error, ${error.message ?? error}, trying again.`);
+        }
+      })
+      .on('state', (state) => {
+        if (logLevel.debug) log.info(`${host} ${deviceName}, Start impulse generator ${state ? 'started' : 'stopped'}.`);
+      });
+
+    await impulseGenerator.state(true, [{ name: 'start', sampling: 120_000 }]);
+  }
+
+  // ── Connect, discover and register accessories for one device ─────────────
+
+  async startDevice(device, host, deviceName, url, auth, user, passwd, loadNameFromDevice, remoteTemperatureSensorEnable, remoteTemperatureSensorRefreshInterval, refreshInterval, prefDir, logLevel, log, api, impulseGenerator) {
+    const deviceInfo = new DeviceInfo(url, auth, user, passwd, deviceName, loadNameFromDevice, logLevel.debug)
+      .on('debug', (msg) => log.info(`${host} ${deviceName}, debug: ${msg}`))
+      .on('warn', (msg) => log.warn(`${host} ${deviceName}, ${msg}`))
+      .on('error', (msg) => log.error(`${host} ${deviceName}, ${msg}`));
+
+    const info = await deviceInfo.getInfo();
+
+    if (!info.serialNumber) {
+      if (logLevel.warn) log.warn(`${host} ${deviceName}, serial not found — will retry.`);
+      return;
+    }
+
+    // Stop the startup generator — device info resolved successfully
+    await impulseGenerator.state(false);
+
+    // Clean up any previously registered impulse generators for this host
+    if (this.deviceImpulseGenerators.has(host)) {
+      for (const gen of this.deviceImpulseGenerators.get(host)) {
+        await gen.state(false);
+      }
+    }
+
+    const activeGenerators = [];
+    this.deviceImpulseGenerators.set(host, activeGenerators);
+
+    // Register each device type discovered on this host
+    for (const [index, type] of info.deviceTypes.entries()) {
+      await this.registerDevice({
+        device, host, deviceName, type, index, info, deviceInfo,
+        remoteTemperatureSensorEnable, remoteTemperatureSensorRefreshInterval,
+        refreshInterval, prefDir, logLevel, log, api, activeGenerators,
+      });
+    }
+  }
+
+  // ── Register a single device type as a Homebridge accessory ──────────────
+
+  async registerDevice({ device, host, deviceName, type, index, info, deviceInfo, remoteTemperatureSensorEnable, remoteTemperatureSensorRefreshInterval, refreshInterval, prefDir, logLevel, log, api, activeGenerators }) {
+    const serialNumber = index === 0 ? info.serialNumber : `${info.serialNumber}${index}`;
+
+    // Prepare temperature files only for MiEl HVAC type
+    if (type === 0) {
+      try {
+        const postFix = host.split('.').join('');
+        info.defaultHeatingSetTemperatureFile = `${prefDir}/defaultHeatingSetTemperature_${postFix}`;
+        info.defaultCoolingSetTemperatureFile = `${prefDir}/defaultCoolingSetTemperature_${postFix}`;
+
+        const temperatureFiles = [
+          { file: info.defaultHeatingSetTemperatureFile, defaultValue: '20' },
+          { file: info.defaultCoolingSetTemperatureFile, defaultValue: '23' },
+        ];
+        for (const { file, defaultValue } of temperatureFiles) {
+          if (!existsSync(file)) writeFileSync(file, defaultValue);
+        }
+      } catch (error) {
+        if (logLevel.error) log.error(`${host} ${deviceName}, Prepare files error: ${error.message ?? error}`);
+        return;
+      }
+    }
+
+    // Skip accessories already present in the Homebridge cache
+    if (this.accessories.some(acc => acc.UUID === serialNumber)) {
+      if (logLevel.debug) log.info(`${host} ${deviceName}, serial ${serialNumber} already registered — skipping.`);
+      return;
+    }
+
+    let deviceClass;
+    switch (type) {
+      case 0: deviceClass = new MiElHvac(api, device, info, serialNumber, deviceInfo); break; // HVAC
+      case 1: deviceClass = new Switches(api, device, info, serialNumber, deviceInfo); break; // switches
+      case 2: deviceClass = new Lights(api, device, info, serialNumber, deviceInfo); break; // lights
+      case 3: deviceClass = new Fans(api, device, info, serialNumber, deviceInfo); break; // fans
+      case 4: deviceClass = new Sensors(api, device, info, serialNumber, deviceInfo); break; // sensors
+      default:
+        if (logLevel.warn) log.warn(`${host} ${deviceName}, received unknown device type: ${type}.`);
+        return;
+    }
+
+    deviceClass
+      .on('devInfo', (msg) => logLevel.devInfo && log.info(msg))
+      .on('success', (msg) => logLevel.success && log.success(`${host} ${deviceName}, ${msg}`))
+      .on('info', (msg) => log.info(`${host} ${deviceName}, ${msg}`))
+      .on('debug', (msg) => log.info(`${host} ${deviceName}, debug: ${msg}`))
+      .on('warn', (msg) => log.warn(`${host} ${deviceName}, ${msg}`))
+      .on('error', (msg) => log.error(`${host} ${deviceName}, ${msg}`));
+
+    const accessory = await deviceClass.start();
+    if (accessory) {
+      api.publishExternalAccessories(PluginName, [accessory]);
+      if (logLevel.success) log.success(`${host} ${deviceName}, Published as external accessory.`);
+
+      const timers = [{ name: 'checkState', sampling: refreshInterval }];
+      if (remoteTemperatureSensorEnable) {
+        timers.push({ name: 'updateRemoteTemp', sampling: remoteTemperatureSensorRefreshInterval });
+      }
+
+      await deviceClass.impulseGenerator.state(true, timers);
+      activeGenerators.push(deviceClass.impulseGenerator);
+    }
+  }
+
+  // ── Homebridge accessory cache ────────────────────────────────────────────
 
   configureAccessory(accessory) {
     this.accessories.push(accessory);
@@ -182,5 +220,5 @@ class tasmotaPlatform {
 
 export default (api) => {
   CustomCharacteristics(api);
-  api.registerPlatform(PluginName, PlatformName, tasmotaPlatform);
-}
+  api.registerPlatform(PluginName, PlatformName, TasmotaPlatform);
+};
