@@ -82,8 +82,8 @@ class Switches extends EventEmitter {
 
                     //update characteristics
                     const serviceName = this.relaysNamePrefix ? `${this.info.deviceName} ${friendlyName}` : friendlyName;
-                    this.lightServices?.[i]
-                        ?.setCharacteristic(Characteristic.ConfiguredName, serviceName)
+                    this.switchOutletServices?.[i]
+                        ?.updateCharacteristic(Characteristic.ConfiguredName, serviceName)
                         .updateCharacteristic(Characteristic.On, power);
 
                     //log info

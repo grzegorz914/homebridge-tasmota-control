@@ -57,12 +57,12 @@ class Lights extends EventEmitter {
         if (this.logDebug) this.emit('debug', `Requesting status`);
         try {
             //power status
-            const powerStatusData = await this.client(ApiCommands.PowerStatus);
+            const powerStatusData = await this.client.get(ApiCommands.PowerStatus);
             const powerStatus = powerStatusData.data ?? {};
             if (this.logDebug) this.emit('debug', `Power status: ${JSON.stringify(powerStatus, null, 2)}`);
 
             //sensor status
-            const sensorStatusData = await this.client(ApiCommands.Status);
+            const sensorStatusData = await this.client.get(ApiCommands.Status);
             const sensorStatus = sensorStatusData.data ?? {};
             if (this.logDebug) this.emit('debug', `Sensors status: ${JSON.stringify(sensorStatus, null, 2)}`);
 
@@ -116,7 +116,7 @@ class Lights extends EventEmitter {
                     //update characteristics
                     const serviceName = this.lightsNamePrefix ? `${this.info.deviceName} ${friendlyName}` : friendlyName;
                     this.lightServices?.[i]
-                        ?.setCharacteristic(Characteristic.ConfiguredName, serviceName)
+                        ?.updateCharacteristic(Characteristic.ConfiguredName, serviceName)
                         .updateCharacteristic(Characteristic.On, power);
 
                     if (brightnessType > 0) this.lightServices?.[i]?.updateCharacteristic(Characteristic.Brightness, bright);
@@ -139,16 +139,6 @@ class Lights extends EventEmitter {
             return true;
         } catch (error) {
             throw new Error(`Check state error: ${error}`);
-        }
-    }
-
-    async startStopImpulseGenerator(state, timers = []) {
-        try {
-            //start impulse generator 
-            await this.melCloudAta.impulseGenerator.state(state, timers)
-            return true;
-        } catch (error) {
-            throw new Error(`Impulse generator start error: ${error}`);
         }
     }
 

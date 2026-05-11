@@ -206,7 +206,6 @@ export const SensorKeys = [
     "HDC2010",
     "HP303B",
     "HYT",
-    "HP303B",
     "K30",
     "K70",
     "LM75AD",

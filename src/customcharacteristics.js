@@ -146,7 +146,7 @@ export default (api) => {
     }
     Characteristic.Factor = Factor;
 
-    class Freqency extends Characteristic {
+    class Frequency extends Characteristic {
         constructor() {
             super('Frequency', '00000080-000B-1000-8000-0026BB765291');
             this.setProps({
@@ -160,7 +160,7 @@ export default (api) => {
             this.value = this.getDefaultValue();
         }
     }
-    Characteristic.Freqency = Freqency;
+    Characteristic.Frequency = Frequency;
 
     class ReadingTime extends Characteristic {
         constructor() {

@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - For plugin < v1.8.0 use Homebridge UI <= v5.5.0
 - For plugin >= v1.8.0 use Homebridge UI >= v5.13.0
 
+## [1.8.10] - (11.05.2026)
+
+## Fixed
+
+- fixed HTTP request error in lights — `this.client(...)` corrected to `this.client.get(...)`
+- fixed polling not updating switch/outlet services — `lightServices` corrected to `switchOutletServices`
+- fixed `Frequency` characteristic typo (`Freqency`) in custom characteristics and sensors
+- removed dead `startStopImpulseGenerator` method in lights referencing non-existent property
+- removed unreachable sensor block in fans accessory setup (properties were never initialized)
+- removed duplicate `HP303B` entry from `SensorKeys`
+
 ## [1.8.0] - (03.01.2026)
 
 ## Changes

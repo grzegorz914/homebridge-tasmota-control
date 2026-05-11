@@ -468,7 +468,7 @@ class Sensors extends EventEmitter {
                                 });
                         }
                         if (sensor.frequency) {
-                            powerAndEnergyService.getCharacteristic(Characteristic.Freqency)
+                            powerAndEnergyService.getCharacteristic(Characteristic.Frequency)
                                 .onGet(async () => {
                                     const value = sensor.frequency;
                                     if (this.logInfo) this.emit('info', `sensor: ${sensorName} frequency: ${value} Hz`);
