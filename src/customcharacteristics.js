@@ -189,7 +189,7 @@ export default (api) => {
             this.addOptionalCharacteristic(Characteristic.Current);
             this.addOptionalCharacteristic(Characteristic.Voltage);
             this.addOptionalCharacteristic(Characteristic.Factor);
-            this.addOptionalCharacteristic(Characteristic.Freqency);
+            this.addOptionalCharacteristic(Characteristic.Frequency);
             this.addOptionalCharacteristic(Characteristic.ReadingTime);
             this.addOptionalCharacteristic(Characteristic.ConfiguredName);
         }
