@@ -138,6 +138,8 @@ class Sensors extends EventEmitter {
                     ];
 
                     for (const [service, charType, value] of servicesMap) {
+                        if (value === undefined || value === null) continue;
+
                         const characteristic = service?.[i]?.getCharacteristic(charType);
                         if (!characteristic) continue;
 
@@ -161,6 +163,8 @@ class Sensors extends EventEmitter {
                         ];
 
                         for (const [service, charType, value] of energyMap) {
+                            if (value === undefined || value === null) continue;
+
                             const characteristic = service?.[i]?.getCharacteristic(charType);
                             if (!characteristic) continue;
 

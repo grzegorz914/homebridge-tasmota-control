@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - For plugin < v1.8.0 use Homebridge UI <= v5.5.0
 - For plugin >= v1.8.0 use Homebridge UI >= v5.13.0
 
+## [1.8.12] - (29.07.2026)
+
+## Fixed
+
+- fix [#27](https://github.com/grzegorz914/homebridge-tasmota-control/issues/27)
+
 ## [1.8.11] - (29.07.2026)
 
 ## Fixed
