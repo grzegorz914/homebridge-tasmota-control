@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - For plugin < v1.8.0 use Homebridge UI <= v5.5.0
 - For plugin >= v1.8.0 use Homebridge UI >= v5.13.0
 
+## [1.8.13] - (29.10.2026)
+
+### Changes
+
+- fixed: security, updated the locked versions of axios and follow-redirects to fix the vulnerabilities reported by Dependabot, the minimum version of axios is now 1.20.0
+
 ## [1.8.12] - (29.07.2026)
 
 ## Fixed
