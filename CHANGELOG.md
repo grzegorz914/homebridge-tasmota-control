@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - For plugin < v1.8.0 use Homebridge UI <= v5.5.0
 - For plugin >= v1.8.0 use Homebridge UI >= v5.13.0
 
-## [1.9.0-beta.0] - (30.10.2026)
+## [1.9.0] - (30.10.2026)
 
 ### Changes
 
