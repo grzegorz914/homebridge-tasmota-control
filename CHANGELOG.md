@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - For plugin < v1.8.0 use Homebridge UI <= v5.5.0
 - For plugin >= v1.8.0 use Homebridge UI >= v5.13.0
 
+## [1.9.0-beta.0] - (30.10.2026)
+
+### Changes
+
+- added: lights with the RGB and white channels split into two lights (`SetOption37 128`), the first light is the RGB with brightness, hue and saturation and the second is the white with its own brightness (`Dimmer2`) and the color temperature (`CT`) when the device has it, before both lights were shown as RGB and the color of the white light was sent to the RGB light
+
 ## [1.8.13] - (29.10.2026)
 
 ### Changes

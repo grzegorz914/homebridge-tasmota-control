@@ -13,6 +13,8 @@ export const ApiCommands = {
     "Blink": "%20blink",
     "BlinkOff": "%20blinkoff",
     "Dimmer": "Dimmer%20",
+    "DimmerRgb": "Dimmer1%20",
+    "DimmerWhite": "Dimmer2%20",
     "DimmerAllChannels": "Dimmer1%20",
     "DimmerForRgbChannels": "Dimmer2%20",
     "DimmerForWhiteChannels": "Dimmer3%20",

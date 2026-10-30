@@ -75,6 +75,8 @@ class Lights extends EventEmitter {
 
             //relays
             const relaysCount = this.relaysCount;
+            //RGB and white channels split into two lights (SetOption37 128), the status has Dimmer1 for the RGB and Dimmer2 for the white light
+            const channelsSplit = relaysCount >= 2 && statusSts.Dimmer1 !== undefined && statusSts.Dimmer2 !== undefined;
             if (relaysCount > 0) {
                 this.lights = [];
 
@@ -84,22 +86,26 @@ class Lights extends EventEmitter {
                     const powerKey = relaysCount === 1 ? 'POWER' : `POWER${powerNr}`;
                     const power = powerStatus[powerKey] === 'ON';
 
+                    //split channels, the first light is the RGB and the second is the white (Dimmer2 and CT), the colors belong only to the RGB light
+                    const splitWhite = channelsSplit && i === 1;
+                    const splitRgb = channelsSplit && i === 0;
+
                     //dimmer
-                    const dimmer = statusSts.Dimmer ?? false;
+                    const dimmer = splitWhite ? statusSts.Dimmer2 : splitRgb ? statusSts.Dimmer1 : statusSts.Dimmer ?? false;
 
                     //color temperature scale tasmota 153..500 to homekit 140..500
-                    const colorTemp = statusSts.CT ?? false;
+                    const colorTemp = splitRgb ? false : statusSts.CT ?? false;
                     const colorTemperature = colorTemp !== false ? await this.functions.scaleValue(colorTemp, 153, 500, 140, 500) : false;
 
                     //hasb color map to array number
-                    const hsbColor = statusSts.HSBColor ? statusSts.HSBColor.split(',').map((value) => Number(value.trim())) : false;
+                    const hsbColor = !splitWhite && statusSts.HSBColor ? statusSts.HSBColor.split(',').map((value) => Number(value.trim())) : false;
 
                     //extract hsb colors
                     const [hue, saturation, brightness] = hsbColor !== false ? hsbColor : [false, false, false];
 
-                    //brightness type and brightness
-                    const brightnessType = brightness !== false ? 2 : dimmer !== false ? 1 : 0;
-                    const bright = [0, dimmer, brightness][brightnessType];
+                    //brightness type and brightness, 3 is the dimmer of the white light of the split channels
+                    const brightnessType = splitWhite ? 3 : brightness !== false ? 2 : dimmer !== false ? 1 : 0;
+                    const bright = [0, dimmer, brightness, dimmer][brightnessType];
 
                     //push to array
                     const light = {
@@ -212,7 +218,7 @@ class Lights extends EventEmitter {
                             })
                             .onSet(async (value) => {
                                 try {
-                                    const brightness = ['', `${ApiCommands.Dimmer}${value}`, `${ApiCommands.HSBBrightness}${value}`][this.lights[i].brightnessType]; //0..100
+                                    const brightness = ['', `${ApiCommands.Dimmer}${value}`, `${ApiCommands.HSBBrightness}${value}`, `${ApiCommands.DimmerWhite}${value}`][this.lights[i].brightnessType]; //0..100
                                     await this.client.get(brightness);
                                     if (this.logInfo) this.emit('info', `${friendlyName}, set brightness: ${value} %`);
                                 } catch (error) {
